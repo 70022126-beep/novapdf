@@ -1,48 +1,47 @@
-import "./App.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import Header from "./components/Header";
+import Hero from "./components/Hero";
+import Tools from "./components/Tools";
+
+import MergePDF from "./pages/MergePDF/MergePDF";
+import SplitPDF from "./pages/SplitPDF/SplitPDF";
+import CompressPDF from "./pages/CompressPDF/CompressPDF";
+
+function Home() {
+  return (
+    <>
+      <Hero />
+      <Tools />
+    </>
+  );
+}
 
 function App() {
   return (
-    <div className="app">
-      <header className="navbar">
-        <div className="logo">
-          📄 <span>NovaPDF</span>
-        </div>
+    <BrowserRouter>
+      <Header />
 
-        <nav>
-          <a href="#">Inicio</a>
-          <a href="#">Herramientas</a>
-          <a href="#">Precios</a>
-          <a href="#">Contacto</a>
-        </nav>
+      <Routes>
+        <Route path="/" element={<Home />} />
 
-        <button className="btn-login">
-          Iniciar sesión
-        </button>
-      </header>
+        <Route
+          path="/merge-pdf"
+          element={<MergePDF />}
+        />
 
-      <main className="hero">
+        <Route
+          path="/split-pdf"
+          element={<SplitPDF />}
+        />
 
-        <span className="badge">
-          🚀 Plataforma moderna para documentos
-        </span>
+        <Route
+          path="/compress-pdf"
+          element={<CompressPDF />}
+        />
+      </Routes>
 
-        <h1>
-          Todas tus herramientas PDF
-          <br />
-          en un solo lugar
-        </h1>
-
-        <p>
-          Une, divide, comprime, convierte y administra
-          tus documentos de forma rápida y segura.
-        </p>
-
-        <button className="btn-primary">
-          Comenzar gratis
-        </button>
-
-      </main>
-    </div>
+    </BrowserRouter>
   );
 }
 

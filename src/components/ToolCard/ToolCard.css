@@ -1,0 +1,57 @@
+.tool-card {
+  background: white;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  padding: 30px;
+
+  text-align: center;
+
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.06);
+
+  transition: 0.3s;
+}
+
+.tool-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.1);
+}
+
+.tool-icon {
+  font-size: 42px;
+  margin-bottom: 15px;
+}
+
+.tool-card h3 {
+  font-size: 22px;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.tool-card p {
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.tool-card button {
+  border: none;
+
+  background: #2563eb;
+  color: white;
+
+  padding: 11px 25px;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  font-size: 15px;
+
+  transition: 0.3s;
+}
+
+.tool-card button:hover {
+  background: #1d4ed8;
+}

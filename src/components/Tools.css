@@ -1,0 +1,26 @@
+.tools {
+  padding: 80px 60px;
+  text-align: center;
+  background: #f8fafc;
+}
+
+.tools h2 {
+  font-size: 36px;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+
+.tools > p {
+  color: #64748b;
+  font-size: 18px;
+  margin-bottom: 45px;
+}
+
+.tools-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+}
