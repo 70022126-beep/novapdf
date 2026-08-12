@@ -1,0 +1,1155 @@
+/* =========================================================
+   NOVAPDF - COMPRIMIR PDF
+   ========================================================= */
+
+.compress-page {
+  min-height: calc(100vh - 75px);
+
+  padding: 55px 30px 90px;
+
+  box-sizing: border-box;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      #eff6ff 0%,
+      transparent 35%
+    ),
+    #f8fafc;
+}
+
+/* =========================================================
+   ENCABEZADO
+   ========================================================= */
+
+.compress-header {
+  max-width: 900px;
+
+  margin: 0 auto 40px;
+
+  text-align: center;
+}
+
+.compress-badge {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  margin-bottom: 16px;
+
+  padding: 8px 16px;
+
+  border: 1px solid #bfdbfe;
+
+  border-radius: 999px;
+
+  background: #eff6ff;
+
+  color: #1d4ed8;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  box-shadow:
+    0 4px 12px rgba(
+      37,
+      99,
+      235,
+      0.08
+    );
+}
+
+.compress-header h1 {
+  margin: 0 0 14px;
+
+  color: #0f172a;
+
+  font-size: clamp(
+    34px,
+    5vw,
+    48px
+  );
+
+  font-weight: 800;
+
+  line-height: 1.1;
+
+  letter-spacing: -1px;
+}
+
+.compress-header p {
+  max-width: 650px;
+
+  margin: 0 auto;
+
+  color: #64748b;
+
+  font-size: 17px;
+
+  line-height: 1.6;
+}
+
+/* =========================================================
+   ÁREA DE CARGA
+   ========================================================= */
+
+.compress-upload-box {
+  position: relative;
+
+  max-width: 800px;
+
+  min-height: 240px;
+
+  margin: 0 auto;
+
+  padding: 45px 30px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.96
+    );
+
+  border: 2px dashed #bfdbfe;
+
+  border-radius: 22px;
+
+  text-align: center;
+
+  box-shadow:
+    0 12px 35px rgba(
+      15,
+      23,
+      42,
+      0.06
+    ),
+    0 2px 8px rgba(
+      15,
+      23,
+      42,
+      0.03
+    );
+
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.compress-upload-box:hover {
+  border-color: #93c5fd;
+
+  box-shadow:
+    0 16px 40px rgba(
+      37,
+      99,
+      235,
+      0.08
+    );
+}
+
+.compress-upload-box.dragging {
+  border-color: #2563eb;
+
+  background: #eff6ff;
+
+  transform: scale(1.015);
+
+  box-shadow:
+    0 18px 45px rgba(
+      37,
+      99,
+      235,
+      0.14
+    );
+}
+
+.compress-upload-icon {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  width: 70px;
+
+  height: 70px;
+
+  margin-bottom: 18px;
+
+  border-radius: 18px;
+
+  background: #eff6ff;
+
+  font-size: 38px;
+
+  transition:
+    transform 0.25s ease;
+}
+
+.compress-upload-box.dragging
+  .compress-upload-icon {
+  transform: scale(1.12);
+
+  background: #dbeafe;
+}
+
+.compress-upload-box h2 {
+  margin: 0 0 9px;
+
+  color: #0f172a;
+
+  font-size: 23px;
+
+  font-weight: 750;
+}
+
+.compress-upload-box p {
+  max-width: 550px;
+
+  margin: 0 0 24px;
+
+  color: #64748b;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+}
+
+.compress-upload-button {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  padding: 13px 25px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: #2563eb;
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font-size: 15px;
+
+  font-weight: 700;
+
+  box-shadow:
+    0 5px 15px rgba(
+      37,
+      99,
+      235,
+      0.2
+    );
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.compress-upload-button:hover {
+  background: #1d4ed8;
+
+  transform: translateY(-2px);
+}
+
+.compress-upload-button input {
+  display: none;
+}
+
+.compress-upload-box > small {
+  display: block;
+
+  margin-top: 13px;
+
+  color: #94a3b8;
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   ARCHIVO SELECCIONADO
+   ========================================================= */
+
+.compress-file-selected {
+  width: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 16px;
+
+  padding: 18px;
+
+  box-sizing: border-box;
+
+  background: #f8fafc;
+
+  border: 1px solid #dbeafe;
+
+  border-radius: 14px;
+
+  text-align: left;
+}
+
+.compress-file-icon {
+  width: 58px;
+
+  height: 58px;
+
+  flex: 0 0 58px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 13px;
+
+  background: #eff6ff;
+
+  font-size: 30px;
+}
+
+.compress-file-info {
+  flex: 1;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.compress-file-info strong {
+  display: block;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  color: #0f172a;
+
+  font-size: 15px;
+}
+
+.compress-file-info small {
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+.compress-remove-button {
+  width: 42px;
+
+  height: 42px;
+
+  flex: 0 0 42px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border: 1px solid #fecaca;
+
+  border-radius: 10px;
+
+  background: #fef2f2;
+
+  color: #dc2626;
+
+  cursor: pointer;
+
+  font-size: 17px;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.compress-remove-button:hover:not(
+    :disabled
+  ) {
+  background: #fee2e2;
+
+  transform: scale(1.05);
+}
+
+.compress-remove-button:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   ERROR
+   ========================================================= */
+
+.compress-error {
+  max-width: 800px;
+
+  margin: 18px auto 0;
+
+  padding: 14px 18px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #fecaca;
+
+  border-radius: 11px;
+
+  background: #fef2f2;
+
+  color: #991b1b;
+
+  font-size: 14px;
+
+  font-weight: 600;
+}
+
+/* =========================================================
+   OPCIONES
+   ========================================================= */
+
+.compress-options {
+  max-width: 1000px;
+
+  margin: 30px auto 0;
+
+  padding: 30px;
+
+  box-sizing: border-box;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 8px 28px rgba(
+      15,
+      23,
+      42,
+      0.05
+    );
+}
+
+.compress-options h2 {
+  margin: 0 0 7px;
+
+  color: #0f172a;
+
+  font-size: 22px;
+
+  font-weight: 750;
+}
+
+.compress-options-description {
+  margin: 0 0 20px;
+
+  color: #64748b;
+
+  font-size: 14px;
+}
+
+/* =========================================================
+   NIVELES
+   ========================================================= */
+
+.compression-levels {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+}
+
+.compression-level-card {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 13px;
+
+  min-height: 82px;
+
+  padding: 16px;
+
+  border: 2px solid #e2e8f0;
+
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  color: #0f172a;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.compression-level-card:hover:not(
+    :disabled
+  ) {
+  border-color: #93c5fd;
+
+  background: #f8fbff;
+
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 7px 18px rgba(
+      15,
+      23,
+      42,
+      0.06
+    );
+}
+
+.compression-level-card.active {
+  border-color: #2563eb;
+
+  background: #eff6ff;
+
+  box-shadow:
+    0 0 0 3px #dbeafe;
+}
+
+.compression-level-card:disabled {
+  opacity: 0.55;
+
+  cursor: not-allowed;
+}
+
+.compression-level-icon {
+  font-size: 27px;
+}
+
+.compression-level-content {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.compression-level-content strong {
+  color: #0f172a;
+
+  font-size: 15px;
+
+  font-weight: 800;
+}
+
+.compression-level-content span {
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+.compression-check {
+  position: absolute;
+
+  top: 10px;
+
+  right: 10px;
+
+  width: 24px;
+
+  height: 24px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #2563eb;
+
+  color: #ffffff;
+
+  font-size: 13px;
+
+  font-weight: 800;
+}
+
+/* =========================================================
+   INFORMACIÓN
+   ========================================================= */
+
+.compress-info-box {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin-top: 22px;
+}
+
+.compress-info-box > div {
+  padding: 14px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 11px;
+
+  background: #f8fafc;
+}
+
+.compress-info-box span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  font-weight: 600;
+}
+
+.compress-info-box strong {
+  display: block;
+
+  color: #0f172a;
+
+  font-size: 15px;
+
+  font-weight: 800;
+}
+
+/* =========================================================
+   PROGRESO
+   ========================================================= */
+
+.compress-progress {
+  margin-top: 22px;
+
+  padding: 18px 20px;
+
+  border: 1px solid #dbeafe;
+
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 5px 16px rgba(
+      15,
+      23,
+      42,
+      0.04
+    );
+}
+
+.compress-progress-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 10px;
+
+  color: #334155;
+
+  font-size: 14px;
+
+  font-weight: 700;
+}
+
+.compress-progress-header strong {
+  color: #2563eb;
+
+  font-size: 16px;
+}
+
+.compress-progress-bar {
+  width: 100%;
+
+  height: 10px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background: #e2e8f0;
+}
+
+.compress-progress-fill {
+  height: 100%;
+
+  border-radius: 999px;
+
+  background: #2563eb;
+
+  transition:
+    width 0.2s ease;
+}
+
+.compress-progress small {
+  display: block;
+
+  margin-top: 9px;
+
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   BOTÓN COMPRIMIR
+   ========================================================= */
+
+.compress-button {
+  width: 100%;
+
+  margin-top: 18px;
+
+  padding: 16px 20px;
+
+  border: none;
+
+  border-radius: 11px;
+
+  background: #2563eb;
+
+  color: #ffffff;
+
+  cursor: pointer;
+
+  font-size: 16px;
+
+  font-weight: 750;
+
+  box-shadow:
+    0 6px 17px rgba(
+      37,
+      99,
+      235,
+      0.18
+    );
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.compress-button:hover:not(
+    :disabled
+  ) {
+  background: #1d4ed8;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 9px 22px rgba(
+      37,
+      99,
+      235,
+      0.23
+    );
+}
+
+.compress-button:disabled {
+  background: #93c5fd;
+
+  cursor: not-allowed;
+
+  box-shadow: none;
+}
+
+/* =========================================================
+   RESULTADO
+   ========================================================= */
+
+.compress-result {
+  max-width: 1000px;
+
+  margin: 22px auto 0;
+
+  padding: 30px 25px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #bbf7d0;
+
+  border-radius: 17px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f0fdf4,
+      #ecfdf5
+    );
+
+  text-align: center;
+
+  animation:
+    compressResultAppear
+    0.3s ease;
+}
+
+@keyframes compressResultAppear {
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0);
+  }
+}
+
+.compress-result-icon {
+  width: 56px;
+
+  height: 56px;
+
+  margin: 0 auto 11px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #dcfce7;
+
+  font-size: 29px;
+}
+
+.compress-result h2 {
+  margin: 0 0 8px;
+
+  color: #166534;
+
+  font-size: 21px;
+
+  font-weight: 800;
+}
+
+.compress-result > p {
+  margin: 0 0 20px;
+
+  color: #15803d;
+
+  font-size: 14px;
+}
+
+/* =========================================================
+   ESTADÍSTICAS DEL RESULTADO
+   ========================================================= */
+
+.compress-result-stats {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin-bottom: 20px;
+}
+
+.compress-result-stats > div {
+  padding: 14px;
+
+  border: 1px solid #bbf7d0;
+
+  border-radius: 10px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.7
+    );
+}
+
+.compress-result-stats span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #15803d;
+
+  font-size: 11px;
+
+  font-weight: 600;
+}
+
+.compress-result-stats strong {
+  display: block;
+
+  color: #166534;
+
+  font-size: 17px;
+
+  font-weight: 800;
+}
+
+/* =========================================================
+   ADVERTENCIA
+   ========================================================= */
+
+.compress-warning {
+  margin: 0 auto 18px;
+
+  padding: 11px 14px;
+
+  border: 1px solid #fde68a;
+
+  border-radius: 9px;
+
+  background: #fffbeb;
+
+  color: #92400e;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+/* =========================================================
+   DESCARGA
+   ========================================================= */
+
+.compress-download-button {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  padding: 13px 23px;
+
+  border-radius: 9px;
+
+  background: #16a34a;
+
+  color: #ffffff;
+
+  text-decoration: none;
+
+  font-size: 14px;
+
+  font-weight: 750;
+
+  box-shadow:
+    0 5px 14px rgba(
+      22,
+      163,
+      74,
+      0.18
+    );
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.compress-download-button:hover {
+  background: #15803d;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 8px 18px rgba(
+      22,
+      163,
+      74,
+      0.23
+    );
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 850px) {
+
+  .compress-page {
+    padding: 45px 20px 70px;
+  }
+
+  .compression-levels {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+/* =========================================================
+   MÓVIL
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .compress-page {
+    padding: 35px 15px 60px;
+  }
+
+  .compress-header {
+    margin-bottom: 28px;
+  }
+
+  .compress-header h1 {
+    font-size: 34px;
+  }
+
+  .compress-header p {
+    font-size: 15px;
+  }
+
+  .compress-upload-box {
+    min-height: 220px;
+
+    padding: 35px 20px;
+  }
+
+  .compress-options {
+    padding: 20px;
+  }
+
+  .compress-info-box {
+    grid-template-columns: 1fr;
+  }
+
+  .compress-result-stats {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+/* =========================================================
+   CELULAR PEQUEÑO
+   ========================================================= */
+
+@media (max-width: 450px) {
+
+  .compress-page {
+    padding: 28px 10px 50px;
+  }
+
+  .compress-header h1 {
+    font-size: 30px;
+  }
+
+  .compress-header p {
+    font-size: 14px;
+  }
+
+  .compress-upload-box {
+    padding: 30px 15px;
+
+    border-radius: 17px;
+  }
+
+  .compress-upload-icon {
+    width: 60px;
+
+    height: 60px;
+
+    font-size: 32px;
+  }
+
+  .compress-upload-box h2 {
+    font-size: 19px;
+  }
+
+  .compress-file-selected {
+    gap: 10px;
+
+    padding: 13px;
+  }
+
+  .compress-file-icon {
+    width: 48px;
+
+    height: 48px;
+
+    flex-basis: 48px;
+
+    font-size: 25px;
+  }
+
+  .compress-remove-button {
+    width: 38px;
+
+    height: 38px;
+
+    flex-basis: 38px;
+  }
+
+  .compress-options {
+    padding: 16px;
+  }
+
+  .compression-level-card {
+    min-height: 72px;
+
+    padding: 13px;
+  }
+
+  .compress-result {
+    padding: 24px 16px;
+  }
+
+}

@@ -17,20 +17,29 @@ function SplitPDF() {
   const [showPages, setShowPages] = useState(false);
   const [selectedPages, setSelectedPages] = useState([]);
   const [downloadUrl, setDownloadUrl] = useState("");
+
   const [splitMode, setSplitMode] = useState("selected");
   const [pageRange, setPageRange] = useState("");
+
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
 
-  // =========================
+  // Cantidad real de archivos creados
+  const [createdFilesCount, setCreatedFilesCount] = useState(0);
+
+  // =========================================================
   // CARGAR ARCHIVO PDF
-  // =========================
+  // =========================================================
 
   const handleSelectedFile = async (selectedFile) => {
     if (!selectedFile) return;
 
-    if (selectedFile.type !== "application/pdf") {
+    const isPDF =
+      selectedFile.type === "application/pdf" ||
+      selectedFile.name.toLowerCase().endsWith(".pdf");
+
+    if (!isPDF) {
       setError("Solo puedes seleccionar archivos PDF.");
       setFile(null);
       setPageCount(0);
@@ -41,6 +50,8 @@ function SplitPDF() {
       setError("");
       setIsProcessing(false);
       setProcessingProgress(0);
+      setDownloadUrl("");
+      setCreatedFilesCount(0);
 
       const arrayBuffer = await selectedFile.arrayBuffer();
 
@@ -53,7 +64,6 @@ function SplitPDF() {
       setPages([]);
       setShowPages(false);
       setSelectedPages([]);
-      setDownloadUrl("");
       setPageRange("");
     } catch (error) {
       console.error(error);
@@ -64,12 +74,14 @@ function SplitPDF() {
 
       setFile(null);
       setPageCount(0);
+      setPages([]);
+      setSelectedPages([]);
     }
   };
 
-  // =========================
+  // =========================================================
   // SELECCIONAR DESDE BOTÓN
-  // =========================
+  // =========================================================
 
   const handleFile = (event) => {
     const selectedFile = event.target.files[0];
@@ -81,9 +93,9 @@ function SplitPDF() {
     event.target.value = "";
   };
 
-  // =========================
+  // =========================================================
   // ARRASTRAR PDF
-  // =========================
+  // =========================================================
 
   const handleDragOver = (event) => {
     event.preventDefault();
@@ -103,7 +115,11 @@ function SplitPDF() {
 
     if (!droppedFile) return;
 
-    if (droppedFile.type !== "application/pdf") {
+    const isPDF =
+      droppedFile.type === "application/pdf" ||
+      droppedFile.name.toLowerCase().endsWith(".pdf");
+
+    if (!isPDF) {
       setError("Solo puedes arrastrar archivos PDF.");
       return;
     }
@@ -111,11 +127,13 @@ function SplitPDF() {
     handleSelectedFile(droppedFile);
   };
 
-  // =========================
+  // =========================================================
   // SELECCIONAR / DESELECCIONAR PÁGINA
-  // =========================
+  // =========================================================
 
   const togglePageSelection = (pageNumber) => {
+    if (isProcessing) return;
+
     setSelectedPages((prevSelected) => {
       if (prevSelected.includes(pageNumber)) {
         return prevSelected.filter(
@@ -123,32 +141,47 @@ function SplitPDF() {
         );
       }
 
-      return [...prevSelected, pageNumber];
+      return [...prevSelected, pageNumber].sort(
+        (a, b) => a - b
+      );
     });
+
+    // Si cambia la selección, ocultamos resultado anterior
+    setDownloadUrl("");
+    setCreatedFilesCount(0);
   };
 
-  // =========================
+  // =========================================================
   // SELECCIONAR TODAS
-  // =========================
+  // =========================================================
 
   const selectAllPages = () => {
+    if (isProcessing) return;
+
     setSelectedPages(
       pages.map((page) => page.number)
     );
+
+    setDownloadUrl("");
+    setCreatedFilesCount(0);
   };
 
-  // =========================
+  // =========================================================
   // DESELECCIONAR TODAS
-  // =========================
+  // =========================================================
 
   const deselectAllPages = () => {
+    if (isProcessing) return;
+
     setSelectedPages([]);
     setPageRange("");
+    setDownloadUrl("");
+    setCreatedFilesCount(0);
   };
 
-  // =========================
+  // =========================================================
   // FORMATEAR SELECCIÓN
-  // =========================
+  // =========================================================
 
   const formatSelectedPages = () => {
     if (selectedPages.length === 0) {
@@ -188,11 +221,13 @@ function SplitPDF() {
     return ranges.join(", ");
   };
 
-  // =========================
+  // =========================================================
   // SELECCIONAR POR RANGO
-  // =========================
+  // =========================================================
 
   const applyPageRange = () => {
+    if (isProcessing) return;
+
     if (!pageRange.trim()) {
       setError(
         "Escribe las páginas que deseas seleccionar."
@@ -245,24 +280,27 @@ function SplitPDF() {
         }
       }
 
-      setSelectedPages(
-        Array.from(selected).sort(
-          (a, b) => a - b
-        )
+      const newSelection = Array.from(selected).sort(
+        (a, b) => a - b
       );
 
+      setSelectedPages(newSelection);
       setError("");
       setPageRange("");
+      setDownloadUrl("");
+      setCreatedFilesCount(0);
     } catch (error) {
+      console.error(error);
+
       setError(
         "Rango inválido. Usa un formato como: 1, 5, 10-15, 20"
       );
     }
   };
 
-  // =========================
+  // =========================================================
   // CARGAR MINIATURAS
-  // =========================
+  // =========================================================
 
   const loadPages = async () => {
     if (!file) return;
@@ -335,23 +373,32 @@ function SplitPDF() {
     }
   };
 
-  // =========================
-  // DIVIDIR CADA PÁGINA
-  // =========================
+  // =========================================================
+  // DIVIDIR CADA PÁGINA SELECCIONADA
+  // =========================================================
 
   const splitEachPage = async () => {
     if (!file) {
+      setError("Primero selecciona un archivo PDF.");
+      return;
+    }
+
+    // MUY IMPORTANTE:
+    // Este modo también respeta la selección.
+    if (selectedPages.length === 0) {
       setError(
-        "Primero selecciona un archivo PDF."
+        "Selecciona al menos una página para dividir."
       );
       return;
     }
 
     try {
       setError("");
+      setDownloadUrl("");
+      setCreatedFilesCount(0);
+
       setIsProcessing(true);
       setProcessingProgress(0);
-      setDownloadUrl("");
 
       const arrayBuffer =
         await file.arrayBuffer();
@@ -359,23 +406,35 @@ function SplitPDF() {
       const originalPdf =
         await PDFDocument.load(arrayBuffer);
 
-      const totalPages =
-        originalPdf.getPageCount();
-
       const zip = new JSZip();
+
+      // =====================================================
+      // AQUÍ ESTÁ LA CLAVE
+      // SOLO SE USAN LAS PÁGINAS SELECCIONADAS
+      // =====================================================
+
+      const pagesToSplit = [
+        ...selectedPages,
+      ].sort((a, b) => a - b);
+
+      const totalSelected =
+        pagesToSplit.length;
 
       for (
         let i = 0;
-        i < totalPages;
+        i < totalSelected;
         i++
       ) {
+        const pageNumber =
+          pagesToSplit[i];
+
         const newPdf =
           await PDFDocument.create();
 
         const [copiedPage] =
           await newPdf.copyPages(
             originalPdf,
-            [i]
+            [pageNumber - 1]
           );
 
         newPdf.addPage(copiedPage);
@@ -384,18 +443,16 @@ function SplitPDF() {
           await newPdf.save();
 
         zip.file(
-          `NovaPDF-pagina-${i + 1}.pdf`,
+          `NovaPDF-pagina-${pageNumber}.pdf`,
           pdfBytes
         );
 
         const progress = Math.round(
-          ((i + 1) / totalPages) * 100
+          ((i + 1) / totalSelected) * 100
         );
 
         setProcessingProgress(progress);
 
-        // Permite que el navegador actualice
-        // visualmente la barra de progreso
         await new Promise((resolve) =>
           setTimeout(resolve, 0)
         );
@@ -410,21 +467,27 @@ function SplitPDF() {
         URL.createObjectURL(zipBlob);
 
       setDownloadUrl(url);
+
+      // Guardamos la cantidad REAL creada
+      setCreatedFilesCount(totalSelected);
+
       setError("");
     } catch (error) {
       console.error(error);
 
       setError(
-        "No se pudo dividir el PDF en páginas individuales."
+        "No se pudo dividir las páginas seleccionadas."
       );
+
+      setDownloadUrl("");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // =========================
-  // EXTRAER PÁGINAS SELECCIONADAS
-  // =========================
+  // =========================================================
+  // EXTRAER PÁGINAS SELECCIONADAS EN UN SOLO PDF
+  // =========================================================
 
   const splitPDF = async () => {
     if (!file) {
@@ -443,6 +506,11 @@ function SplitPDF() {
 
     try {
       setError("");
+      setDownloadUrl("");
+      setCreatedFilesCount(0);
+
+      setIsProcessing(true);
+      setProcessingProgress(0);
 
       const arrayBuffer =
         await file.arrayBuffer();
@@ -453,7 +521,9 @@ function SplitPDF() {
       const newPdf =
         await PDFDocument.create();
 
-      const pageIndices = [...selectedPages]
+      const pageIndices = [
+        ...selectedPages,
+      ]
         .sort((a, b) => a - b)
         .map(
           (pageNumber) =>
@@ -484,6 +554,9 @@ function SplitPDF() {
         URL.createObjectURL(blob);
 
       setDownloadUrl(url);
+
+      setCreatedFilesCount(1);
+      setProcessingProgress(100);
       setError("");
     } catch (error) {
       console.error(error);
@@ -491,14 +564,18 @@ function SplitPDF() {
       setError(
         "No se pudo dividir el PDF. Verifica que el archivo sea válido."
       );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // =========================
+  // =========================================================
   // ELIMINAR ARCHIVO
-  // =========================
+  // =========================================================
 
   const removeFile = () => {
+    if (isProcessing) return;
+
     setFile(null);
     setPageCount(0);
     setPages([]);
@@ -509,16 +586,38 @@ function SplitPDF() {
     setError("");
     setIsProcessing(false);
     setProcessingProgress(0);
+    setCreatedFilesCount(0);
   };
 
-  // =========================
+  // =========================================================
+  // CAMBIAR MODO
+  // =========================================================
+
+  const changeSplitMode = (mode) => {
+    if (isProcessing) return;
+
+    // IMPORTANTE:
+    // NO borramos selectedPages.
+    // La selección permanece al cambiar de modo.
+
+    setSplitMode(mode);
+    setDownloadUrl("");
+    setCreatedFilesCount(0);
+    setError("");
+    setProcessingProgress(0);
+  };
+
+  // =========================================================
   // INTERFAZ
-  // =========================
+  // =========================================================
 
   return (
     <section className="split-page">
 
+      {/* ================================================= */}
       {/* ENCABEZADO */}
+      {/* ================================================= */}
+
       <div className="split-header">
 
         <div className="split-badge">
@@ -536,8 +635,10 @@ function SplitPDF() {
 
       </div>
 
-
+      {/* ================================================= */}
       {/* CARGAR PDF */}
+      {/* ================================================= */}
+
       <div
         className={`split-upload-box ${
           isDragging ? "dragging" : ""
@@ -613,6 +714,7 @@ function SplitPDF() {
             <button
               className="split-remove-button"
               onClick={removeFile}
+              disabled={isProcessing}
             >
               🗑️
             </button>
@@ -623,16 +725,20 @@ function SplitPDF() {
 
       </div>
 
-
+      {/* ================================================= */}
       {/* ERROR */}
+      {/* ================================================= */}
+
       {error && (
         <div className="split-error">
           ⚠️ {error}
         </div>
       )}
 
-
+      {/* ================================================= */}
       {/* CONTINUAR */}
+      {/* ================================================= */}
+
       {file && (
         <div className="split-next-section">
 
@@ -648,6 +754,7 @@ function SplitPDF() {
           <button
             className="split-continue-button"
             onClick={loadPages}
+            disabled={isProcessing}
           >
             ✂️ Continuar
           </button>
@@ -655,12 +762,17 @@ function SplitPDF() {
         </div>
       )}
 
-
+      {/* ================================================= */}
       {/* PÁGINAS */}
+      {/* ================================================= */}
+
       {showPages && (
         <div className="split-pages-section">
 
+          {/* ================================================= */}
           {/* MODO DE DIVISIÓN */}
+          {/* ================================================= */}
+
           <div className="split-mode-section">
 
             <h3>
@@ -676,8 +788,9 @@ function SplitPDF() {
                     : ""
                 }`}
                 onClick={() =>
-                  setSplitMode("selected")
+                  changeSplitMode("selected")
                 }
+                disabled={isProcessing}
               >
                 📄 Extraer páginas seleccionadas
               </button>
@@ -689,18 +802,21 @@ function SplitPDF() {
                     : ""
                 }`}
                 onClick={() =>
-                  setSplitMode("each")
+                  changeSplitMode("each")
                 }
+                disabled={isProcessing}
               >
-                📑 Dividir cada página
+                📑 Dividir cada página seleccionada
               </button>
 
             </div>
 
           </div>
 
-
+          {/* ================================================= */}
           {/* ENCABEZADO DE PÁGINAS */}
+          {/* ================================================= */}
+
           <div className="split-pages-header">
 
             <div>
@@ -730,14 +846,19 @@ function SplitPDF() {
 
             </div>
 
-
+            {/* ================================================= */}
             {/* ACCIONES */}
+            {/* ================================================= */}
+
             <div className="selection-actions">
 
               <button
                 className="select-all-button"
                 onClick={selectAllPages}
-                disabled={pages.length === 0}
+                disabled={
+                  pages.length === 0 ||
+                  isProcessing
+                }
               >
                 ☑ Seleccionar todas
               </button>
@@ -746,7 +867,8 @@ function SplitPDF() {
                 className="deselect-all-button"
                 onClick={deselectAllPages}
                 disabled={
-                  selectedPages.length === 0
+                  selectedPages.length === 0 ||
+                  isProcessing
                 }
               >
                 🧹 Limpiar selección
@@ -756,8 +878,10 @@ function SplitPDF() {
 
           </div>
 
-
+          {/* ================================================= */}
           {/* RANGO */}
+          {/* ================================================= */}
+
           <div className="page-range-selector">
 
             <label>
@@ -775,11 +899,13 @@ function SplitPDF() {
                   )
                 }
                 placeholder="Ej: 1, 5, 10-15, 20"
+                disabled={isProcessing}
               />
 
               <button
                 className="apply-range-button"
                 onClick={applyPageRange}
+                disabled={isProcessing}
               >
                 Aplicar
               </button>
@@ -793,7 +919,110 @@ function SplitPDF() {
           </div>
 
 
+          {/* ================================================= */}
+          {/* RESUMEN DE SELECCIÓN */}
+          {/* ================================================= */}
+
+          {selectedPages.length > 0 && (
+            <div className="split-selection-summary">
+
+              <div className="split-selection-summary-header">
+
+                <div className="split-selection-summary-icon">
+                  📋
+                </div>
+
+                <div>
+                  <h3>
+                    Resumen de selección
+                  </h3>
+
+                  <p>
+                    Revisa las páginas antes de procesar el PDF.
+                  </p>
+                </div>
+
+              </div>
+
+              <div className="split-selection-summary-grid">
+
+                <div className="summary-item">
+
+                  <span className="summary-label">
+                    📄 Documento
+                  </span>
+
+                  <strong
+                    className="summary-file-name"
+                    title={file?.name}
+                  >
+                    {file?.name}
+                  </strong>
+
+                </div>
+
+                <div className="summary-item">
+
+                  <span className="summary-label">
+                    📑 Total de páginas
+                  </span>
+
+                  <strong>
+                    {pageCount}
+                  </strong>
+
+                </div>
+
+                <div className="summary-item">
+
+                  <span className="summary-label">
+                    ✓ Seleccionadas
+                  </span>
+
+                  <strong className="summary-selected">
+                    {selectedPages.length}{" "}
+                    {selectedPages.length === 1
+                      ? "página"
+                      : "páginas"}
+                  </strong>
+
+                </div>
+
+                <div className="summary-item">
+
+                  <span className="summary-label">
+                    📌 Páginas
+                  </span>
+
+                  <strong className="summary-pages">
+                    {formatSelectedPages()}
+                  </strong>
+
+                </div>
+
+              </div>
+
+              <div className="split-selection-summary-mode">
+
+                <span>
+                  Modo:
+                </span>
+
+                <strong>
+                  {splitMode === "selected"
+                    ? "📄 Extraer páginas seleccionadas"
+                    : "📑 Dividir cada página seleccionada"}
+                </strong>
+
+              </div>
+
+            </div>
+          )}
+
+          {/* ================================================= */}
           {/* GRID DE PÁGINAS */}
+          {/* ================================================= */}
+
           <div className="split-pages-grid">
 
             {pages.map((page) => (
@@ -837,63 +1066,65 @@ function SplitPDF() {
 
           </div>
 
-
+          {/* ================================================= */}
           {/* CARGAR MÁS */}
+          {/* ================================================= */}
+
           {pages.length < pageCount && (
             <button
               className="load-more-button"
               onClick={loadPages}
+              disabled={isProcessing}
             >
               📄 Cargar más páginas
             </button>
           )}
 
-
+          {/* ================================================= */}
           {/* BARRA DE PROGRESO */}
-          {isProcessing &&
-            splitMode === "each" && (
-              <div className="processing-progress">
+          {/* ================================================= */}
 
-                <div className="processing-progress-header">
+          {isProcessing && (
+            <div className="processing-progress">
 
-                  <span>
-                    ⏳ Dividiendo PDF...
-                  </span>
+              <div className="processing-progress-header">
 
-                  <strong>
-                    {processingProgress}%
-                  </strong>
+                <span>
+                  ⏳ Procesando PDF...
+                </span>
 
-                </div>
-
-                <div className="processing-progress-bar">
-
-                  <div
-                    className="processing-progress-fill"
-                    style={{
-                      width: `${processingProgress}%`,
-                    }}
-                  />
-
-                </div>
-
-                <small>
-                  Procesando página{" "}
-                  {Math.max(
-                    1,
-                    Math.ceil(
-                      (processingProgress / 100) *
-                        pageCount
-                    )
-                  )}{" "}
-                  de {pageCount}
-                </small>
+                <strong>
+                  {processingProgress}%
+                </strong>
 
               </div>
-            )}
 
+              <div className="processing-progress-bar">
 
+                <div
+                  className="processing-progress-fill"
+                  style={{
+                    width: `${processingProgress}%`,
+                  }}
+                />
+
+              </div>
+
+              <small>
+                Procesando{" "}
+                {selectedPages.length}{" "}
+                {selectedPages.length === 1
+                  ? "página seleccionada"
+                  : "páginas seleccionadas"}
+              </small>
+
+            </div>
+          )}
+
+          {/* ================================================= */}
           {/* BOTÓN PRINCIPAL */}
+          {/* ================================================= */}
+
           <button
             className="split-pdf-button"
             onClick={
@@ -903,8 +1134,7 @@ function SplitPDF() {
             }
             disabled={
               isProcessing ||
-              (splitMode === "selected" &&
-                selectedPages.length === 0)
+              selectedPages.length === 0
             }
           >
 
@@ -912,13 +1142,15 @@ function SplitPDF() {
               ? "⏳ Procesando PDF..."
               : splitMode === "selected"
                 ? "✂️ Extraer páginas seleccionadas"
-                : "📑 Dividir cada página"}
+                : "📑 Dividir páginas seleccionadas"}
 
           </button>
 
-
+          {/* ================================================= */}
           {/* RESULTADO */}
-          {downloadUrl && (
+          {/* ================================================= */}
+
+          {downloadUrl && !isProcessing && (
             <div className="split-success">
 
               <div className="split-success-icon">
@@ -930,6 +1162,7 @@ function SplitPDF() {
               </h3>
 
               {splitMode === "selected" ? (
+
                 <>
 
                   <p>
@@ -950,12 +1183,25 @@ function SplitPDF() {
                   </a>
 
                 </>
+
               ) : (
+
                 <>
 
                   <p>
-                    Se crearon {pageCount} archivos
-                    PDF, uno por cada página.
+                    Se crearon{" "}
+                    <strong>
+                      {createdFilesCount}
+                    </strong>{" "}
+                    archivos PDF, uno por cada
+                    página seleccionada.
+                  </p>
+
+                  <p>
+                    Páginas procesadas:{" "}
+                    <strong>
+                      {formatSelectedPages()}
+                    </strong>
                   </p>
 
                   <a
@@ -967,6 +1213,7 @@ function SplitPDF() {
                   </a>
 
                 </>
+
               )}
 
             </div>

@@ -25,22 +25,12 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
 
-        <Route
-          path="/merge-pdf"
-          element={<MergePDF />}
-        />
+        <Route path="/merge-pdf" element={<MergePDF />} />
 
-        <Route
-          path="/split-pdf"
-          element={<SplitPDF />}
-        />
+        <Route path="/split-pdf" element={<SplitPDF />} />
 
-        <Route
-          path="/compress-pdf"
-          element={<CompressPDF />}
-        />
+        <Route path="/compress-pdf" element={<CompressPDF />} />
       </Routes>
-
     </BrowserRouter>
   );
 }

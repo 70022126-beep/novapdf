@@ -452,24 +452,8 @@ const sortAlphabetically = () => {
       setDownloadUrl(url);
 
 
-      const link =
-        document.createElement("a");
-
-      link.href = url;
-
-      link.download =
-        "NovaPDF-documento-unido.pdf";
-
-
-      document.body.appendChild(link);
-
-      link.click();
-
-      document.body.removeChild(link);
-
-
       setMessage(
-        "¡PDF unidos correctamente!"
+        "¡PDF unido correctamente! El archivo está listo para descargar."
       );
 
     } catch (error) {
@@ -738,7 +722,7 @@ const sortAlphabetically = () => {
               href={downloadUrl}
               download="NovaPDF-documento-unido.pdf"
             >
-              ⬇️ Descargar nuevamente
+              ⬇️ Descargar PDF
             </a>
 
           )}
