@@ -1,0 +1,30 @@
+.pdf-thumbnail {
+  width: 55px;
+  height: 70px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background: #f8fafc;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+
+  flex-shrink: 0;
+}
+
+.pdf-thumbnail img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+
+  display: block;
+}
+
+.thumbnail-loading {
+  font-size: 26px;
+}
