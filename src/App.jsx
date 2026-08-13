@@ -7,32 +7,52 @@ import Tools from "./components/Tools";
 import MergePDF from "./pages/MergePDF/MergePDF";
 import SplitPDF from "./pages/SplitPDF/SplitPDF";
 import CompressPDF from "./pages/CompressPDF/CompressPDF";
+import ConvertPDF from "./pages/ConvertPDF/ConvertPDF";
 
 function Home() {
-  return (
-    <>
-      <Hero />
-      <Tools />
-    </>
-  );
+    return (
+        <>
+            <Hero />
+            <Tools />
+        </>
+    );
 }
 
 function App() {
-  return (
-    <BrowserRouter>
-      <Header />
+    return (
+        <BrowserRouter>
+            <Header />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
+            <Routes>
 
-        <Route path="/merge-pdf" element={<MergePDF />} />
+                <Route
+                    path="/"
+                    element={<Home />}
+                />
 
-        <Route path="/split-pdf" element={<SplitPDF />} />
+                <Route
+                    path="/merge-pdf"
+                    element={<MergePDF />}
+                />
 
-        <Route path="/compress-pdf" element={<CompressPDF />} />
-      </Routes>
-    </BrowserRouter>
-  );
+                <Route
+                    path="/split-pdf"
+                    element={<SplitPDF />}
+                />
+
+                <Route
+                    path="/compress-pdf"
+                    element={<CompressPDF />}
+                />
+
+                <Route
+                    path="/convert-pdf"
+                    element={<ConvertPDF />}
+                />
+
+            </Routes>
+        </BrowserRouter>
+    );
 }
 
 export default App;

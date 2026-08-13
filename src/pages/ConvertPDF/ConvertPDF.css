@@ -1,0 +1,1350 @@
+/* ============================================
+   PÁGINA PRINCIPAL
+============================================ */
+
+.convert-page {
+    min-height: calc(100vh - 70px);
+
+    padding: 50px 20px 80px;
+
+    background: #f8fafc;
+
+    color: #0f172a;
+}
+
+
+/* ============================================
+   ENCABEZADO
+============================================ */
+
+.convert-header {
+    max-width: 900px;
+
+    margin: 0 auto 35px;
+
+    text-align: center;
+}
+
+.convert-badge {
+    display: inline-block;
+
+    padding: 8px 16px;
+
+    border: 1px solid #bfdbfe;
+
+    border-radius: 999px;
+
+    background: #eff6ff;
+
+    color: #2563eb;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+.convert-header h1 {
+    margin: 15px 0 10px;
+
+    font-size: 44px;
+
+    font-weight: 800;
+}
+
+.convert-header p {
+    margin: 0;
+
+    color: #64748b;
+
+    font-size: 16px;
+}
+
+
+/* ============================================
+   CONTENEDOR PRINCIPAL
+============================================ */
+
+.convert-container {
+    width: 100%;
+
+    max-width: 1100px;
+
+    margin: 0 auto;
+
+    padding: 30px;
+
+    box-sizing: border-box;
+
+    background: #ffffff;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 10px 30px
+        rgba(15, 23, 42, 0.06);
+}
+
+.convert-container h2 {
+    margin: 0 0 20px;
+
+    text-align: center;
+
+    font-size: 22px;
+}
+
+
+/* ============================================
+   OPCIONES PRINCIPALES
+============================================ */
+
+.convert-options {
+    width: 100%;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 18px;
+}
+
+.convert-option {
+    min-height: 190px;
+
+    padding: 25px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    border: 2px solid #e2e8f0;
+
+    border-radius: 14px;
+
+    background: #ffffff;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.convert-option:hover {
+    border-color: #2563eb;
+
+    background: #eff6ff;
+
+    transform: translateY(-2px);
+}
+
+.convert-icon {
+    font-size: 42px;
+}
+
+.convert-option strong {
+    color: #0f172a;
+
+    font-size: 18px;
+}
+
+.convert-option small {
+    max-width: 300px;
+
+    color: #64748b;
+
+    line-height: 1.5;
+
+    text-align: center;
+}
+
+
+/* ============================================
+   ENCABEZADO DE SECCIÓN
+============================================ */
+
+.convert-section-header {
+    position: relative;
+
+    margin-bottom: 25px;
+
+    text-align: center;
+}
+
+.convert-section-header h2 {
+    margin: 10px 0 8px;
+}
+
+.convert-section-header p {
+    margin: 0;
+
+    color: #64748b;
+}
+
+
+/* ============================================
+   BOTÓN VOLVER
+============================================ */
+
+.back-button {
+    position: absolute;
+
+    left: 0;
+
+    top: 0;
+
+    padding: 9px 14px;
+
+    border: 1px solid #cbd5e1;
+
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    color: #334155;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.back-button:hover {
+    border-color: #2563eb;
+
+    color: #2563eb;
+
+    background: #eff6ff;
+}
+
+
+/* ============================================
+   ZONA DE CARGA
+============================================ */
+
+.pdf-upload {
+    min-height: 280px;
+
+    padding: 35px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    border: 2px dashed #bfdbfe;
+
+    border-radius: 16px;
+
+    background: #f8fbff;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.pdf-upload.drag-active {
+    border-color: #2563eb;
+
+    background: #eff6ff;
+}
+
+.upload-icon {
+    margin-bottom: 10px;
+
+    font-size: 48px;
+}
+
+.pdf-upload h3 {
+    margin: 5px 0 8px;
+
+    font-size: 20px;
+}
+
+.pdf-upload p {
+    margin: 0 0 20px;
+
+    color: #64748b;
+}
+
+
+/* ============================================
+   BOTÓN SELECCIONAR
+============================================ */
+
+.upload-button {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 12px 22px;
+
+    border-radius: 9px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.upload-button:hover {
+    background: #1d4ed8;
+}
+
+.upload-help {
+    margin-top: 12px;
+
+    color: #94a3b8;
+
+    font-size: 12px;
+}
+
+
+/* ============================================
+   ERROR
+============================================ */
+
+.convert-error {
+    margin-top: 15px;
+
+    padding: 13px 16px;
+
+    border: 1px solid #fecaca;
+
+    border-radius: 10px;
+
+    background: #fef2f2;
+
+    color: #991b1b;
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+
+/* ============================================
+   ARCHIVO CARGADO
+============================================ */
+
+.pdf-file-card {
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    margin-top: 18px;
+
+    padding: 18px;
+
+    border: 1px solid #dbeafe;
+
+    border-radius: 13px;
+
+    background: #f8fbff;
+}
+
+.pdf-file-icon {
+    width: 52px;
+
+    height: 52px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: #eff6ff;
+
+    font-size: 30px;
+}
+
+.pdf-file-info {
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.pdf-file-info strong {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-size: 14px;
+}
+
+.pdf-file-info span {
+    color: #64748b;
+
+    font-size: 12px;
+}
+
+
+/* ============================================
+   ELIMINAR ARCHIVO
+============================================ */
+
+.remove-file-button {
+    width: 38px;
+
+    height: 38px;
+
+    flex-shrink: 0;
+
+    border: 1px solid #fecaca;
+
+    border-radius: 8px;
+
+    background: #fef2f2;
+
+    color: #dc2626;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.remove-file-button:hover {
+    background: #fee2e2;
+}
+
+
+/* ============================================
+   PDF LISTO
+============================================ */
+
+.pdf-ready {
+    margin-top: 18px;
+
+    padding: 16px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    border: 1px solid #bbf7d0;
+
+    border-radius: 11px;
+
+    background: #f0fdf4;
+}
+
+.ready-icon {
+    width: 36px;
+
+    height: 36px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+
+    color: #ffffff;
+
+    font-weight: 800;
+}
+
+.pdf-ready strong {
+    color: #166534;
+
+    font-size: 14px;
+}
+
+.pdf-ready p {
+    margin: 4px 0 0;
+
+    color: #15803d;
+
+    font-size: 12px;
+}
+
+
+/* ============================================
+   SECCIÓN DE PÁGINAS
+============================================ */
+
+.pages-section {
+    width: 100%;
+
+    margin-top: 25px;
+
+    padding-top: 20px;
+
+    box-sizing: border-box;
+
+    border-top: 1px solid #e2e8f0;
+}
+
+
+/* ============================================
+   ENCABEZADO DE PÁGINAS
+============================================ */
+
+.pages-header {
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 18px;
+}
+
+.pages-header h3 {
+    margin: 0 0 5px;
+
+    font-size: 18px;
+}
+
+.pages-header span {
+    color: #64748b;
+
+    font-size: 12px;
+}
+
+
+/* ============================================
+   GRID DE MINIATURAS
+============================================ */
+
+.pdf-pages-grid {
+    width: 100% !important;
+
+    min-width: 0;
+
+    display: grid !important;
+
+    grid-template-columns:
+        repeat(
+            4,
+            minmax(0, 1fr)
+        ) !important;
+
+    gap: 16px;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================
+   TARJETA MINIATURA
+============================================ */
+
+.pdf-thumbnail {
+    width: 100% !important;
+
+    min-width: 0;
+
+    box-sizing: border-box;
+
+    padding: 8px;
+
+    border: 1px solid #dbe3ef;
+
+    border-radius: 11px;
+
+    background: #ffffff;
+
+    overflow: hidden;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.pdf-thumbnail:hover {
+    border-color: #93c5fd;
+
+    box-shadow:
+        0 5px 15px
+        rgba(37, 99, 235, 0.10);
+
+    transform: translateY(-2px);
+}
+
+
+/* ============================================
+   TÍTULO MINIATURA
+============================================ */
+
+.thumbnail-title {
+    width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 5px 4px 8px;
+
+    color: #2563eb;
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    text-align: center;
+}
+
+
+/* ============================================
+   PREVISUALIZACIÓN
+============================================ */
+
+.thumbnail-preview {
+    width: 100%;
+
+    min-width: 0;
+
+    aspect-ratio: 0.707 / 1;
+
+    min-height: 220px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    overflow: hidden;
+
+    box-sizing: border-box;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 7px;
+
+    background: #f8fafc;
+}
+
+.thumbnail-preview img {
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: contain;
+
+    background: #ffffff;
+}
+
+
+/* ============================================
+   CARGANDO
+============================================ */
+
+.thumbnail-loading {
+    width: 100%;
+
+    height: 100%;
+
+    min-height: 220px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: #64748b;
+
+    font-size: 25px;
+}
+
+
+/* ============================================
+   ERROR MINIATURA
+============================================ */
+
+.thumbnail-error {
+    width: 100%;
+
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: #dc2626;
+
+    font-size: 25px;
+}
+
+
+/* ============================================
+   CARGAR MÁS
+============================================ */
+
+.load-more-button {
+    width: 100%;
+
+    margin-top: 18px;
+
+    padding: 12px;
+
+    border: 1px solid #2563eb;
+
+    border-radius: 9px;
+
+    background: #ffffff;
+
+    color: #2563eb;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.load-more-button:hover {
+    background: #eff6ff;
+}
+
+
+/* ============================================
+   PRÓXIMAMENTE
+============================================ */
+
+.coming-soon {
+    min-height: 240px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    border: 2px dashed #cbd5e1;
+
+    border-radius: 15px;
+
+    background: #f8fafc;
+}
+
+.coming-soon > div {
+    font-size: 50px;
+}
+
+.coming-soon h3 {
+    margin: 10px 0 5px;
+}
+
+.coming-soon p {
+    margin: 0;
+
+    color: #64748b;
+}
+
+
+/* ============================================
+   TABLET
+============================================ */
+
+@media (max-width: 850px) {
+
+    .pdf-pages-grid {
+        grid-template-columns:
+            repeat(
+                3,
+                minmax(0, 1fr)
+            ) !important;
+    }
+
+}
+
+
+/* ============================================
+   MÓVIL
+============================================ */
+
+@media (max-width: 600px) {
+
+    .convert-page {
+        padding: 35px 15px 60px;
+    }
+
+
+    .convert-header h1 {
+        font-size: 34px;
+    }
+
+
+    .convert-container {
+        padding: 20px;
+    }
+
+
+    .convert-options {
+        grid-template-columns: 1fr;
+    }
+
+
+    .back-button {
+        position: static;
+
+        margin-bottom: 15px;
+    }
+
+
+    .pdf-upload {
+        padding: 25px 15px;
+    }
+
+
+    .pdf-pages-grid {
+        grid-template-columns:
+            repeat(
+                2,
+                minmax(0, 1fr)
+            ) !important;
+
+        gap: 12px;
+    }
+
+
+    .thumbnail-preview {
+        min-height: 180px;
+    }
+
+}
+
+
+/* ============================================
+   MÓVIL PEQUEÑO
+============================================ */
+
+@media (max-width: 400px) {
+
+    .pdf-pages-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+}
+/* ============================================
+   CONTROLES DE SELECCIÓN
+============================================ */
+
+.selection-controls {
+    display: flex;
+
+    gap: 10px;
+
+    margin-bottom: 18px;
+}
+
+.selection-controls button {
+    flex: 1;
+
+    padding: 11px 15px;
+
+    border-radius: 9px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+
+/* ============================================
+   SELECCIONAR TODAS
+============================================ */
+
+.select-all-button {
+    border: 1px solid #2563eb;
+
+    background: #2563eb;
+
+    color: #ffffff;
+}
+
+.select-all-button:hover {
+    background: #1d4ed8;
+}
+
+
+/* ============================================
+   LIMPIAR
+============================================ */
+
+.clear-selection-button {
+    border: 1px solid #cbd5e1;
+
+    background: #ffffff;
+
+    color: #334155;
+}
+
+.clear-selection-button:hover {
+    border-color: #2563eb;
+
+    background: #eff6ff;
+
+    color: #2563eb;
+}
+
+
+/* ============================================
+   SELECTOR POR NÚMERO / RANGO
+============================================ */
+
+.page-range-selector {
+    margin-bottom: 20px;
+
+    padding: 16px;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 11px;
+
+    background: #f8fafc;
+}
+
+.page-range-selector label {
+    display: block;
+
+    margin-bottom: 9px;
+
+    color: #334155;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+.page-range-row {
+    display: flex;
+
+    gap: 10px;
+}
+
+.page-range-row input {
+    flex: 1;
+
+    min-width: 0;
+
+    padding: 11px 13px;
+
+    border: 1px solid #cbd5e1;
+
+    border-radius: 8px;
+
+    outline: none;
+
+    background: #ffffff;
+
+    color: #0f172a;
+
+    font-size: 13px;
+}
+
+.page-range-row input:focus {
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.10);
+}
+
+.page-range-row button {
+    padding: 11px 20px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+.page-range-row button:hover {
+    background: #1d4ed8;
+}
+
+.page-range-selector small {
+    display: block;
+
+    margin-top: 7px;
+
+    color: #64748b;
+
+    font-size: 11px;
+}
+
+
+/* ============================================
+   RESUMEN DE SELECCIÓN
+============================================ */
+
+.selection-summary {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+
+    padding: 14px 16px;
+
+    border: 1px solid #bfdbfe;
+
+    border-radius: 11px;
+
+    background: #eff6ff;
+}
+
+.selection-summary-icon {
+    width: 38px;
+
+    height: 38px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 9px;
+
+    background: #dbeafe;
+
+    font-size: 20px;
+}
+
+.selection-summary strong {
+    display: block;
+
+    color: #1e3a8a;
+
+    font-size: 14px;
+}
+
+.selection-summary p {
+    margin: 3px 0;
+
+    color: #2563eb;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+.selection-summary span {
+    color: #475569;
+
+    font-size: 12px;
+}
+
+
+/* ============================================
+   PÁGINA SELECCIONADA
+============================================ */
+
+.pdf-thumbnail {
+    position: relative;
+
+    cursor: pointer;
+}
+
+.pdf-thumbnail.selected {
+    border: 2px solid #2563eb;
+
+    background: #eff6ff;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(37, 99, 235, 0.10);
+}
+
+
+/* ============================================
+   INDICADOR DE SELECCIÓN
+============================================ */
+
+.selection-indicator {
+    position: absolute;
+
+    top: 13px;
+
+    right: 13px;
+
+    width: 23px;
+
+    height: 23px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border: 2px solid #cbd5e1;
+
+    border-radius: 50%;
+
+    background: #ffffff;
+
+    color: #ffffff;
+
+    font-size: 13px;
+
+    font-weight: 800;
+
+    z-index: 5;
+}
+
+.pdf-thumbnail.selected
+.selection-indicator {
+    border-color: #2563eb;
+
+    background: #2563eb;
+}
+@media (max-width: 600px) {
+
+    .selection-controls {
+        flex-direction: column;
+    }
+
+    .page-range-row {
+        flex-direction: column;
+    }
+
+    .page-range-row button {
+        width: 100%;
+    }
+
+}
+/* ========================================
+   CONFIGURACIÓN DE CONVERSIÓN
+======================================== */
+
+.conversion-settings {
+    margin-top: 24px;
+    padding: 22px;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.conversion-settings-header {
+    margin-bottom: 20px;
+}
+
+.conversion-settings-header h3 {
+    margin: 0 0 6px;
+    color: #0f172a;
+    font-size: 18px;
+}
+
+.conversion-settings-header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.conversion-setting {
+    margin-bottom: 20px;
+}
+
+.conversion-setting > label {
+    display: block;
+    margin-bottom: 9px;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.format-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.format-option {
+    padding: 13px;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.format-option:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+.format-option.active {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.setting-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 9px;
+}
+
+.setting-label-row label {
+    color: #334155;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.setting-label-row strong {
+    color: #2563eb;
+    font-size: 13px;
+}
+
+.conversion-setting input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+.conversion-setting select {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 13px;
+    outline: none;
+}
+
+.conversion-setting select:focus {
+    border-color: #2563eb;
+}
+
+.convert-images-button {
+    width: 100%;
+    padding: 13px 18px;
+    border: none;
+    border-radius: 9px;
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.convert-images-button:hover {
+    background: #1d4ed8;
+}
+
+.convert-images-button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.conversion-ready {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    background: #f0fdf4;
+}
+
+.conversion-ready strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #15803d;
+}
+
+.conversion-ready p {
+    margin: 3px 0;
+    color: #166534;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.conversion-ready span {
+    color: #475569;
+    font-size: 12px;
+}
+
+@media (max-width: 600px) {
+
+    .format-options {
+        grid-template-columns: 1fr;
+    }
+
+}
