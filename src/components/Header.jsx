@@ -1,13 +1,42 @@
 import "./Header.css";
 import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 function Header() {
     const navigate = useNavigate();
 
-    const irAHerramientas = () => {
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    const cerrarMenu = () => {
+        setMenuOpen(false);
+    };
+
+    const irAInicio = () => {
+        cerrarMenu();
+
         if (window.location.pathname !== "/") {
             navigate("/");
-            
+
+            setTimeout(() => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth",
+                });
+            }, 100);
+        } else {
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth",
+            });
+        }
+    };
+
+    const irAHerramientas = () => {
+        cerrarMenu();
+
+        if (window.location.pathname !== "/") {
+            navigate("/");
+
             setTimeout(() => {
                 document
                     .getElementById("herramientas")
@@ -27,9 +56,12 @@ function Header() {
     return (
         <header className="header">
 
+            {/* LOGO */}
+
             <Link
                 to="/"
                 className="logo"
+                onClick={cerrarMenu}
             >
                 <span className="logo-icon">
                     📄
@@ -40,31 +72,40 @@ function Header() {
                 </span>
             </Link>
 
-            <nav className="menu">
+
+            {/* BOTÓN MENÚ MÓVIL */}
+
+            <button
+                type="button"
+                className="mobile-menu-button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-label={
+                    menuOpen
+                        ? "Cerrar menú"
+                        : "Abrir menú"
+                }
+                aria-expanded={menuOpen}
+            >
+                {menuOpen ? "✕" : "☰"}
+            </button>
+
+
+            {/* MENÚ */}
+
+            <nav
+                className={`menu ${
+                    menuOpen ? "menu-open" : ""
+                }`}
+            >
 
                 <button
-    type="button"
-    onClick={() => {
-        if (window.location.pathname !== "/") {
-            navigate("/");
-            
-            setTimeout(() => {
-                window.scrollTo({
-                    top: 0,
-                    behavior: "smooth",
-                });
-            }, 100);
-        } else {
-            window.scrollTo({
-                top: 0,
-                behavior: "smooth",
-            });
-        }
-    }}
-    className="menu-link-button"
->
-    Inicio
-</button>
+                    type="button"
+                    onClick={irAInicio}
+                    className="menu-link-button"
+                >
+                    Inicio
+                </button>
+
 
                 <button
                     type="button"
@@ -74,17 +115,42 @@ function Header() {
                     Herramientas
                 </button>
 
-                <Link to="/">
+
+                <Link
+                    to="/"
+                    onClick={cerrarMenu}
+                >
                     Precios
                 </Link>
 
-                <Link to="/">
+
+                <Link
+                    to="/"
+                    onClick={cerrarMenu}
+                >
                     Contacto
                 </Link>
 
+
+                {/* LOGIN EN MENÚ MÓVIL */}
+
+                <button
+                    type="button"
+                    className="mobile-login-btn"
+                    onClick={cerrarMenu}
+                >
+                    Iniciar sesión
+                </button>
+
             </nav>
 
-            <button className="login-btn">
+
+            {/* LOGIN DESKTOP */}
+
+            <button
+                type="button"
+                className="login-btn"
+            >
                 Iniciar sesión
             </button>
 

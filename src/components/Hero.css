@@ -1,60 +1,342 @@
+/* ============================================
+   HERO PRINCIPAL
+   ============================================ */
+
 .hero {
-  min-height: calc(100vh - 75px);
+    width: 100%;
+    min-height: calc(100vh - 75px);
 
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+    display: flex;
+    flex-direction: column;
 
-  text-align: center;
-  padding: 40px;
+    justify-content: center;
+    align-items: center;
+
+    text-align: center;
+
+    padding: 40px 30px;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
 }
+
+
+/* ============================================
+   BADGE
+   ============================================ */
 
 .badge {
-  background: #dbeafe;
-  color: #1d4ed8;
+    display: inline-flex;
 
-  padding: 12px 20px;
-  border-radius: 40px;
+    align-items: center;
+    justify-content: center;
 
-  font-weight: bold;
-  margin-bottom: 30px;
+    max-width: 100%;
+
+    box-sizing: border-box;
+
+    background: #dbeafe;
+
+    color: #1d4ed8;
+
+    padding: 12px 20px;
+
+    border-radius: 40px;
+
+    font-size: 15px;
+
+    font-weight: 700;
+
+    margin-bottom: 30px;
 }
+
+
+/* ============================================
+   TÍTULO
+   ============================================ */
 
 .hero h1 {
-  font-size: 68px;
-  color: #0f172a;
+    width: 100%;
+    max-width: 1000px;
 
-  margin-bottom: 25px;
-  line-height: 1.1;
+    margin: 0 0 25px;
+
+    color: #0f172a;
+
+    font-size: 68px;
+
+    line-height: 1.1;
+
+    font-weight: 800;
+
+    letter-spacing: -1.5px;
+
+    box-sizing: border-box;
 }
+
+
+/* ============================================
+   DESCRIPCIÓN
+   ============================================ */
 
 .hero p {
-  max-width: 700px;
+    width: 100%;
 
-  font-size: 21px;
-  color: #64748b;
+    max-width: 700px;
 
-  line-height: 1.7;
-  margin-bottom: 45px;
+    margin: 0 0 45px;
+
+    color: #64748b;
+
+    font-size: 21px;
+
+    line-height: 1.7;
+
+    box-sizing: border-box;
 }
 
+
+/* ============================================
+   BOTÓN PRINCIPAL
+   ============================================ */
+
 .hero button {
-  padding: 18px 40px;
+    min-width: 170px;
 
-  border: none;
-  border-radius: 12px;
+    padding: 18px 40px;
 
-  background: #2563eb;
-  color: white;
+    border: none;
 
-  cursor: pointer;
-  font-size: 18px;
+    border-radius: 12px;
 
-  transition: 0.3s;
+    background: #2563eb;
+
+    color: white;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    transition:
+        transform 0.25s ease,
+        background 0.25s ease,
+        box-shadow 0.25s ease;
 }
 
 .hero button:hover {
-  transform: translateY(-3px);
-  background: #1d4ed8;
+    transform: translateY(-3px);
+
+    background: #1d4ed8;
+
+    box-shadow:
+        0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+.hero button:active {
+    transform: translateY(0);
+}
+
+
+/* ============================================
+   TABLET
+   ============================================ */
+
+@media screen and (max-width: 1000px) {
+
+    .hero {
+        min-height: calc(100vh - 68px);
+
+        padding: 50px 30px;
+    }
+
+    .badge {
+        font-size: 14px;
+
+        padding: 11px 18px;
+
+        margin-bottom: 25px;
+    }
+
+    .hero h1 {
+        max-width: 800px;
+
+        font-size: 54px;
+
+        letter-spacing: -1px;
+    }
+
+    .hero p {
+        max-width: 650px;
+
+        font-size: 19px;
+
+        line-height: 1.6;
+
+        margin-bottom: 38px;
+    }
+
+    .hero button {
+        padding: 16px 34px;
+
+        font-size: 17px;
+    }
+}
+
+
+/* ============================================
+   MÓVIL
+   ============================================ */
+
+@media screen and (max-width: 760px) {
+
+    .hero {
+        min-height: calc(100vh - 68px);
+
+        padding: 55px 20px 60px;
+
+        justify-content: center;
+    }
+
+
+    /* Badge */
+
+    .badge {
+        width: auto;
+        max-width: 100%;
+
+        padding: 10px 16px;
+
+        margin-bottom: 22px;
+
+        font-size: 13px;
+
+        line-height: 1.3;
+
+        text-align: center;
+    }
+
+
+    /* Título */
+
+    .hero h1 {
+        max-width: 600px;
+
+        margin-bottom: 20px;
+
+        font-size: 43px;
+
+        line-height: 1.12;
+
+        letter-spacing: -0.8px;
+    }
+
+
+    /* Descripción */
+
+    .hero p {
+        max-width: 500px;
+
+        margin-bottom: 32px;
+
+        font-size: 17px;
+
+        line-height: 1.6;
+    }
+
+
+    /* Botón */
+
+    .hero button {
+        width: min(100%, 280px);
+
+        padding: 15px 25px;
+
+        font-size: 16px;
+
+        border-radius: 10px;
+    }
+}
+
+
+/* ============================================
+   MÓVIL PEQUEÑO
+   ============================================ */
+
+@media screen and (max-width: 480px) {
+
+    .hero {
+        min-height: calc(100vh - 68px);
+
+        padding: 45px 16px 50px;
+    }
+
+
+    .badge {
+        padding: 9px 14px;
+
+        font-size: 12px;
+
+        margin-bottom: 20px;
+    }
+
+
+    .hero h1 {
+        font-size: 36px;
+
+        line-height: 1.12;
+
+        letter-spacing: -0.5px;
+
+        margin-bottom: 18px;
+    }
+
+
+    .hero p {
+        font-size: 15px;
+
+        line-height: 1.55;
+
+        margin-bottom: 28px;
+    }
+
+
+    .hero button {
+        width: 100%;
+
+        max-width: 260px;
+
+        padding: 14px 22px;
+
+        font-size: 15px;
+    }
+}
+
+
+/* ============================================
+   MÓVIL MUY PEQUEÑO
+   ============================================ */
+
+@media screen and (max-width: 360px) {
+
+    .hero {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .hero h1 {
+        font-size: 32px;
+    }
+
+    .hero p {
+        font-size: 14px;
+    }
+
+    .badge {
+        font-size: 11px;
+    }
 }
