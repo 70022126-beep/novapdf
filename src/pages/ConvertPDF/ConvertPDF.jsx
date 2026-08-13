@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import JSZip from "jszip";
+import { PDFDocument } from "pdf-lib";
 import "./ConvertPDF.css";
 
 
@@ -180,6 +181,23 @@ const [conversionDownloadName, setConversionDownloadName] = useState("");
 
     const [dragActive, setDragActive] = useState(false);
 
+    // ========================================
+    // ESTADOS IMAGEN → PDF
+    // ========================================
+
+    const [imageItems, setImageItems] = useState([]);
+    const [imageDragActive, setImageDragActive] = useState(false);
+    const [draggedImageId, setDraggedImageId] = useState(null);
+    const [imagePageSize, setImagePageSize] = useState("a4");
+    const [imageOrientation, setImageOrientation] = useState("auto");
+    const [imageFit, setImageFit] = useState("contain");
+    const [imageMargin, setImageMargin] = useState(10);
+    const [isGeneratingImagePdf, setIsGeneratingImagePdf] = useState(false);
+    const [imagePdfResult, setImagePdfResult] = useState(null);
+    const [imagePdfDownloadUrl, setImagePdfDownloadUrl] = useState("");
+    const [imagePdfDownloadName, setImagePdfDownloadName] = useState("");
+    const [imagePdfError, setImagePdfError] = useState("");
+
 
     // ========================================
     // CAMBIAR MODO
@@ -202,6 +220,13 @@ const [conversionDownloadName, setConversionDownloadName] = useState("");
         setPageInput("");
 
         setError("");
+        setImagePdfError("");
+        setImagePdfResult(null);
+
+        if (imagePdfDownloadUrl) {
+            URL.revokeObjectURL(imagePdfDownloadUrl);
+            setImagePdfDownloadUrl("");
+        }
 
     };
 
@@ -650,73 +675,28 @@ const handleDpiChange = (event) => {
 };
 
 
+// ========================================
+// CONVERTIR PDF → IMAGEN
+// ========================================
+
 const handleConvertToImage = async () => {
-
     if (!pdf) {
-
-        setError(
-            "Primero selecciona un PDF."
-        );
-
+        setError("Primero selecciona un PDF.");
         return;
     }
-
 
     if (selectedPages.length === 0) {
-
-        setError(
-            "Selecciona al menos una página para convertir."
-        );
-
+        setError("Selecciona al menos una página para convertir.");
         return;
     }
-
-
-    setError("");
-
-    setIsConverting(true);
-
-    setConversionResult(null);
-
-
-    // PRUEBA TEMPORAL
-    // La conversión real la conectaremos
-    // en el siguiente paso.
-
-    const handleConvertToImage = async () => {
-
-    if (!pdf) {
-
-        setError(
-            "Primero selecciona un PDF."
-        );
-
-        return;
-    }
-
-
-    if (selectedPages.length === 0) {
-
-        setError(
-            "Selecciona al menos una página para convertir."
-        );
-
-        return;
-    }
-
 
     try {
-
         setError("");
-
         setIsConverting(true);
 
         setConversionResult(null);
-
         setConversionDownloadUrl("");
-
         setConversionDownloadName("");
-
 
         const mimeTypes = {
             jpg: "image/jpeg",
@@ -724,245 +704,494 @@ const handleConvertToImage = async () => {
             webp: "image/webp",
         };
 
-
-        const mimeType =
-            mimeTypes[imageFormat];
-
-
-        const quality =
-            imageQuality / 100;
-
+        const mimeType = mimeTypes[imageFormat];
+        const quality = imageQuality / 100;
 
         const zip = new JSZip();
 
+        for (let index = 0; index < selectedPages.length; index++) {
+            const pageNumber = selectedPages[index];
 
-        for (
-            let index = 0;
-            index < selectedPages.length;
-            index++
-        ) {
+            const page = await pdf.getPage(pageNumber);
 
-            const pageNumber =
-                selectedPages[index];
+            // PDF trabaja con 72 DPI
+            const scale = imageDpi / 72;
 
+            const viewport = page.getViewport({
+                scale,
+            });
 
-            const page =
-                await pdf.getPage(pageNumber);
+            const canvas = document.createElement("canvas");
 
+            const context = canvas.getContext("2d");
 
-            /*
-             * PDF utiliza 72 puntos por pulgada.
-             * Por eso calculamos el factor
-             * según el DPI seleccionado.
-             */
-
-            const scale =
-                imageDpi / 72;
-
-
-            const viewport =
-                page.getViewport({
-                    scale,
-                });
-
-
-            const canvas =
-                document.createElement(
-                    "canvas"
-                );
-
-
-            const context =
-                canvas.getContext("2d");
-
-
-            canvas.width =
-                Math.ceil(
-                    viewport.width
-                );
-
-
-            canvas.height =
-                Math.ceil(
-                    viewport.height
-                );
-
+            canvas.width = Math.ceil(viewport.width);
+            canvas.height = Math.ceil(viewport.height);
 
             await page.render({
                 canvasContext: context,
                 viewport,
             }).promise;
 
-
-            const blob =
-                await new Promise(
-                    (resolve, reject) => {
-
-                        canvas.toBlob(
-                            (result) => {
-
-                                if (result) {
-                                    resolve(result);
-                                } else {
-                                    reject(
-                                        new Error(
-                                            "No se pudo generar la imagen."
-                                        )
-                                    );
-                                }
-
-                            },
-                            mimeType,
-                            quality
-                        );
-
-                    }
+            const blob = await new Promise((resolve, reject) => {
+                canvas.toBlob(
+                    (result) => {
+                        if (result) {
+                            resolve(result);
+                        } else {
+                            reject(
+                                new Error(
+                                    "No se pudo generar la imagen."
+                                )
+                            );
+                        }
+                    },
+                    mimeType,
+                    quality
                 );
-
+            });
 
             const extension =
                 imageFormat === "jpg"
                     ? "jpg"
                     : imageFormat;
 
-
             const fileName =
                 `NovaPDF-pagina-${pageNumber}.${extension}`;
 
+            // UNA SOLA PÁGINA
+            if (selectedPages.length === 1) {
+                const url = URL.createObjectURL(blob);
 
-            /*
-             * Si solo hay una página,
-             * guardamos directamente la imagen.
-             */
-
-            if (
-                selectedPages.length === 1
-            ) {
-
-                const url =
-                    URL.createObjectURL(
-                        blob
-                    );
-
-
-                setConversionDownloadUrl(
-                    url
-                );
-
-
-                setConversionDownloadName(
-                    fileName
-                );
-
-            } else {
-
-                /*
-                 * Si hay varias páginas,
-                 * las agregamos al ZIP.
-                 */
-
-                zip.file(
-                    fileName,
-                    blob
-                );
-
+                setConversionDownloadUrl(url);
+                setConversionDownloadName(fileName);
             }
 
+            // VARIAS PÁGINAS
+            else {
+                zip.file(fileName, blob);
+            }
 
-            /*
-             * Actualizamos el resultado
-             * mientras procesamos.
-             */
-
+            // Actualizar progreso
             setConversionResult({
                 pages: index + 1,
-                totalPages:
-                    selectedPages.length,
+                totalPages: selectedPages.length,
                 format: imageFormat,
                 dpi: imageDpi,
             });
-
         }
 
+        // Crear ZIP si hay varias páginas
+        if (selectedPages.length > 1) {
+            const zipBlob = await zip.generateAsync({
+                type: "blob",
+            });
 
-        /*
-         * Si hay varias páginas,
-         * generamos el ZIP.
-         */
+            const zipUrl = URL.createObjectURL(zipBlob);
 
-        if (
-            selectedPages.length > 1
-        ) {
-
-            const zipBlob =
-                await zip.generateAsync({
-                    type: "blob",
-                });
-
-
-            const zipUrl =
-                URL.createObjectURL(
-                    zipBlob
-                );
-
-
-            setConversionDownloadUrl(
-                zipUrl
-            );
-
-
+            setConversionDownloadUrl(zipUrl);
             setConversionDownloadName(
                 "NovaPDF-imagenes.zip"
             );
-
         }
 
-
-        /*
-         * Resultado final.
-         */
-
+        // Resultado final
         setConversionResult({
-
-            pages:
-                selectedPages.length,
-
-            totalPages:
-                selectedPages.length,
-
-            format:
-                imageFormat,
-
-            dpi:
-                imageDpi,
-
+            pages: selectedPages.length,
+            totalPages: selectedPages.length,
+            format: imageFormat,
+            dpi: imageDpi,
         });
 
-
     } catch (error) {
-
         console.error(
             "Error al convertir PDF:",
             error
         );
 
-
         setError(
             "Ocurrió un error al convertir las páginas del PDF."
         );
 
-
         setConversionResult(null);
 
     } finally {
-
         setIsConverting(false);
-
     }
-
 };
+    // ========================================
+    // IMAGEN → PDF
+    // ========================================
 
-};
+    const addImageFiles = (fileList) => {
+        const incomingFiles = Array.from(fileList || []);
+
+        if (incomingFiles.length === 0) {
+            return;
+        }
+
+        const validFiles = incomingFiles.filter((item) =>
+            item.type.startsWith("image/")
+        );
+
+        if (validFiles.length !== incomingFiles.length) {
+            setImagePdfError(
+                "Algunos archivos fueron ignorados porque no son imágenes."
+            );
+        } else {
+            setImagePdfError("");
+        }
+
+        const newItems = validFiles.map((imageFile) => ({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            file: imageFile,
+            url: URL.createObjectURL(imageFile),
+        }));
+
+        setImageItems((current) => [...current, ...newItems]);
+        setImagePdfResult(null);
+
+        if (imagePdfDownloadUrl) {
+            URL.revokeObjectURL(imagePdfDownloadUrl);
+            setImagePdfDownloadUrl("");
+            setImagePdfDownloadName("");
+        }
+    };
+
+    const handleImageFileChange = (event) => {
+        addImageFiles(event.target.files);
+        event.target.value = "";
+    };
+
+    const handleImageDrop = (event) => {
+        event.preventDefault();
+        setImageDragActive(false);
+        addImageFiles(event.dataTransfer.files);
+    };
+
+    const removeImageItem = (id) => {
+        setImageItems((current) => {
+            const item = current.find((image) => image.id === id);
+
+            if (item) {
+                URL.revokeObjectURL(item.url);
+            }
+
+            return current.filter((image) => image.id !== id);
+        });
+
+        setImagePdfResult(null);
+    };
+
+    const clearImageItems = () => {
+        imageItems.forEach((item) => {
+            URL.revokeObjectURL(item.url);
+        });
+
+        setImageItems([]);
+        setDraggedImageId(null);
+        setImagePdfResult(null);
+        setImagePdfError("");
+
+        if (imagePdfDownloadUrl) {
+            URL.revokeObjectURL(imagePdfDownloadUrl);
+            setImagePdfDownloadUrl("");
+            setImagePdfDownloadName("");
+        }
+    };
+
+    const moveImageItem = (id, direction) => {
+        setImageItems((current) => {
+            const index = current.findIndex((item) => item.id === id);
+
+            if (index === -1) {
+                return current;
+            }
+
+            const newIndex = index + direction;
+
+            if (newIndex < 0 || newIndex >= current.length) {
+                return current;
+            }
+
+            const updated = [...current];
+            const [moved] = updated.splice(index, 1);
+            updated.splice(newIndex, 0, moved);
+
+            return updated;
+        });
+
+        setImagePdfResult(null);
+    };
+
+    const handleImageDragStart = (event, id) => {
+        setDraggedImageId(id);
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", id);
+    };
+
+    const handleImageDragOver = (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+    };
+
+    const handleImageReorderDrop = (event, targetId) => {
+        event.preventDefault();
+
+        const sourceId = draggedImageId || event.dataTransfer.getData("text/plain");
+
+        if (!sourceId || sourceId === targetId) {
+            setDraggedImageId(null);
+            return;
+        }
+
+        setImageItems((current) => {
+            const sourceIndex = current.findIndex((item) => item.id === sourceId);
+            const targetIndex = current.findIndex((item) => item.id === targetId);
+
+            if (sourceIndex === -1 || targetIndex === -1) {
+                return current;
+            }
+
+            const updated = [...current];
+            const [moved] = updated.splice(sourceIndex, 1);
+            updated.splice(targetIndex, 0, moved);
+
+            return updated;
+        });
+
+        setDraggedImageId(null);
+        setImagePdfResult(null);
+    };
+
+    const getImageDimensions = (imageFile) => {
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+            const objectUrl = URL.createObjectURL(imageFile);
+
+            image.onload = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve({
+                    width: image.naturalWidth,
+                    height: image.naturalHeight,
+                });
+            };
+
+            image.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                reject(new Error(`No se pudo leer ${imageFile.name}.`));
+            };
+
+            image.src = objectUrl;
+        });
+    };
+
+    const convertImageToPngBytes = (imageFile) => {
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+            const objectUrl = URL.createObjectURL(imageFile);
+
+            image.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = image.naturalWidth;
+                canvas.height = image.naturalHeight;
+
+                const context = canvas.getContext("2d");
+                context.fillStyle = "#ffffff";
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.drawImage(image, 0, 0);
+
+                canvas.toBlob(async (blob) => {
+                    URL.revokeObjectURL(objectUrl);
+
+                    if (!blob) {
+                        reject(new Error(`No se pudo procesar ${imageFile.name}.`));
+                        return;
+                    }
+
+                    resolve(await blob.arrayBuffer());
+                }, "image/png");
+            };
+
+            image.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                reject(new Error(`No se pudo leer ${imageFile.name}.`));
+            };
+
+            image.src = objectUrl;
+        });
+    };
+
+    const getPageSize = (size, orientation, imageWidth, imageHeight) => {
+        const sizes = {
+            a4: [595.28, 841.89],
+            carta: [612, 792],
+            oficio: [612, 1008],
+        };
+
+        if (size === "original") {
+            if (orientation === "landscape" && imageHeight > imageWidth) {
+                return [imageHeight, imageWidth];
+            }
+
+            if (orientation === "portrait" && imageWidth > imageHeight) {
+                return [imageHeight, imageWidth];
+            }
+
+            return [imageWidth, imageHeight];
+        }
+
+        let [width, height] = sizes[size] || sizes.a4;
+
+        if (orientation === "landscape") {
+            [width, height] = [height, width];
+        } else if (orientation === "auto") {
+            if (imageWidth > imageHeight && height > width) {
+                [width, height] = [height, width];
+            }
+
+            if (imageHeight > imageWidth && width > height) {
+                [width, height] = [height, width];
+            }
+        }
+
+        return [width, height];
+    };
+
+    const handleCreateImagePdf = async () => {
+        if (imageItems.length === 0) {
+            setImagePdfError("Selecciona al menos una imagen.");
+            return;
+        }
+
+        try {
+            setImagePdfError("");
+            setIsGeneratingImagePdf(true);
+            setImagePdfResult(null);
+
+            if (imagePdfDownloadUrl) {
+                URL.revokeObjectURL(imagePdfDownloadUrl);
+                setImagePdfDownloadUrl("");
+                setImagePdfDownloadName("");
+            }
+
+            const pdfDocument = await PDFDocument.create();
+            const margin = Number(imageMargin) * 2.83465;
+
+            for (const item of imageItems) {
+                const dimensions = await getImageDimensions(item.file);
+                const [pageWidth, pageHeight] = getPageSize(
+                    imagePageSize,
+                    imageOrientation,
+                    dimensions.width,
+                    dimensions.height
+                );
+
+                const page = pdfDocument.addPage([
+                    pageWidth,
+                    pageHeight,
+                ]);
+
+                const extension = item.file.type === "image/jpeg" || item.file.type === "image/jpg"
+                    ? "jpg"
+                    : item.file.type === "image/png"
+                        ? "png"
+                        : "other";
+
+                let embeddedImage;
+
+                if (extension === "jpg") {
+                    embeddedImage = await pdfDocument.embedJpg(
+                        await item.file.arrayBuffer()
+                    );
+                } else if (extension === "png") {
+                    embeddedImage = await pdfDocument.embedPng(
+                        await item.file.arrayBuffer()
+                    );
+                } else {
+                    embeddedImage = await pdfDocument.embedPng(
+                        await convertImageToPngBytes(item.file)
+                    );
+                }
+
+                const imageWidth = embeddedImage.width;
+                const imageHeight = embeddedImage.height;
+
+                const availableWidth = Math.max(
+                    1,
+                    pageWidth - margin * 2
+                );
+
+                const availableHeight = Math.max(
+                    1,
+                    pageHeight - margin * 2
+                );
+
+                let drawWidth = imageWidth;
+                let drawHeight = imageHeight;
+
+                if (imageFit === "contain") {
+                    const scale = Math.min(
+                        availableWidth / imageWidth,
+                        availableHeight / imageHeight
+                    );
+
+                    drawWidth = imageWidth * scale;
+                    drawHeight = imageHeight * scale;
+                } else if (imageFit === "fill") {
+                    const scale = Math.max(
+                        availableWidth / imageWidth,
+                        availableHeight / imageHeight
+                    );
+
+                    drawWidth = imageWidth * scale;
+                    drawHeight = imageHeight * scale;
+                }
+
+                const x =
+                    (pageWidth - drawWidth) / 2;
+
+                const y =
+                    (pageHeight - drawHeight) / 2;
+
+                page.drawImage(embeddedImage, {
+                    x,
+                    y,
+                    width: drawWidth,
+                    height: drawHeight,
+                });
+            }
+
+            const pdfBytes = await pdfDocument.save();
+            const pdfBlob = new Blob(
+                [pdfBytes],
+                { type: "application/pdf" }
+            );
+
+            const url = URL.createObjectURL(pdfBlob);
+
+            setImagePdfDownloadUrl(url);
+            setImagePdfDownloadName("NovaPDF-imagenes.pdf");
+            setImagePdfResult({
+                count: imageItems.length,
+                size: pdfBlob.size,
+            });
+
+        } catch (conversionError) {
+            console.error(
+                "Error al crear PDF desde imágenes:",
+                conversionError
+            );
+
+            setImagePdfError(
+                "No se pudo crear el PDF. Verifica que las imágenes sean válidas."
+            );
+
+        } finally {
+            setIsGeneratingImagePdf(false);
+        }
+    };
+
     // ========================================
     // RENDER
     // ========================================
@@ -1639,45 +1868,46 @@ const handleConvertToImage = async () => {
 
     {/* RESULTADO */}
 
-    {conversionResult && (
+{/* RESULTADO */}
 
-        <div className="conversion-ready">
+{conversionResult && (
 
-            <strong>
-                ✅ Configuración lista
-            </strong>
+    <div className="conversion-ready">
 
+        <strong className="conversion-success-title">
+            ✅ Conversión completada
+        </strong>
 
-            <p>
-                {conversionResult.pages}{" "}
-                {conversionResult.pages === 1
-                    ? "página seleccionada"
-                    : "páginas seleccionadas"}
-            </p>
+        <p>
+            {conversionResult.pages}{" "}
+            {conversionResult.pages === 1
+                ? "página convertida"
+                : "páginas convertidas"}
+        </p>
 
+        {conversionDownloadUrl && (
 
-            <span>
-              {conversionDownloadUrl && (
+            <a
+                href={conversionDownloadUrl}
+                download={conversionDownloadName}
+                className="conversion-download-button"
+            >
+                📥 Descargar{" "}
+                {selectedPages.length > 1
+                    ? "ZIP"
+                    : "imagen"}
+            </a>
 
-    <a
-        href={conversionDownloadUrl}
-        download={conversionDownloadName}
-        className="conversion-download-button"
-    >
-        📥 Descargar{" "}
-        {selectedPages.length > 1
-            ? "ZIP"
-            : "imagen"}
-    </a>
+        )}
 
-)}
-                Formato:{" "}
-                {conversionResult.format.toUpperCase()}
-                {" · "}
-                {conversionResult.dpi} DPI
-            </span>
+        <span className="format-info">
+            Formato:{" "}
+            {conversionResult.format.toUpperCase()}
+            {" · "}
+            {conversionResult.dpi} DPI
+        </span>
 
-        </div>
+    </div>
 
     )}
 
@@ -1701,7 +1931,6 @@ const handleConvertToImage = async () => {
 
                 <div className="convert-container">
 
-
                     <div className="convert-section-header">
 
                         <button
@@ -1714,40 +1943,314 @@ const handleConvertToImage = async () => {
                             ← Volver
                         </button>
 
-
                         <h2>
                             🖼️ Imagen → PDF
                         </h2>
 
-
                         <p>
-                            Próximamente podrás
-                            convertir tus imágenes
-                            en PDF.
+                            Convierte una o varias imágenes en un archivo PDF.
                         </p>
 
                     </div>
 
+                    {imagePdfError && (
+                        <div className="convert-error">
+                            ⚠️ {imagePdfError}
+                        </div>
+                    )}
 
-                    <div className="coming-soon">
-
-                        <div>
+                    <div
+                        className={`image-upload ${
+                            imageDragActive ? "drag-active" : ""
+                        }`}
+                        onDragOver={(event) => {
+                            event.preventDefault();
+                            setImageDragActive(true);
+                        }}
+                        onDragLeave={() => {
+                            setImageDragActive(false);
+                        }}
+                        onDrop={handleImageDrop}
+                    >
+                        <div className="upload-icon">
                             🖼️
                         </div>
 
-
                         <h3>
-                            Imagen → PDF
+                            Arrastra tus imágenes aquí
                         </h3>
 
-
                         <p>
-                            Esta función la construiremos
-                            en la siguiente etapa.
+                            Puedes seleccionar varias imágenes a la vez.
                         </p>
 
+                        <label className="upload-button">
+                            📂 Seleccionar imágenes
+
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                multiple
+                                onChange={handleImageFileChange}
+                                hidden
+                            />
+                        </label>
+
+                        <span className="upload-help">
+                            JPG, PNG o WebP
+                        </span>
                     </div>
 
+                    {imageItems.length > 0 && (
+
+                        <div className="image-pdf-workspace">
+
+                            <div className="image-pdf-list-header">
+                                <div>
+                                    <h3>
+                                        Imágenes seleccionadas
+                                    </h3>
+
+                                    <span>
+                                        {imageItems.length} {imageItems.length === 1 ? "imagen" : "imágenes"}
+                                    </span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    className="clear-image-button"
+                                    onClick={clearImageItems}
+                                >
+                                    🗑️ Limpiar todo
+                                </button>
+                            </div>
+
+                            <p className="image-order-help">
+                                ↕️ Arrastra las tarjetas para cambiar el orden o usa los botones ↑ ↓.
+                            </p>
+
+                            <div className="image-pdf-grid">
+
+                                {imageItems.map((item, index) => (
+
+                                    <div
+                                        key={item.id}
+                                        className={`image-pdf-card ${
+                                            draggedImageId === item.id
+                                                ? "dragging"
+                                                : ""
+                                        }`}
+                                        draggable
+                                        onDragStart={(event) =>
+                                            handleImageDragStart(event, item.id)
+                                        }
+                                        onDragEnd={() =>
+                                            setDraggedImageId(null)
+                                        }
+                                        onDragOver={handleImageDragOver}
+                                        onDrop={(event) =>
+                                            handleImageReorderDrop(event, item.id)
+                                        }
+                                    >
+
+                                        <div className="image-card-number">
+                                            Página {index + 1}
+                                        </div>
+
+                                        <div className="image-preview-wrapper">
+                                            <img
+                                                src={item.url}
+                                                alt={item.file.name}
+                                                className="image-pdf-preview"
+                                            />
+                                        </div>
+
+                                        <div className="image-card-name">
+                                            {item.file.name}
+                                        </div>
+
+                                        <div className="image-card-actions">
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    moveImageItem(item.id, -1)
+                                                }
+                                                disabled={index === 0}
+                                                title="Mover arriba"
+                                            >
+                                                ↑
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    moveImageItem(item.id, 1)
+                                                }
+                                                disabled={index === imageItems.length - 1}
+                                                title="Mover abajo"
+                                            >
+                                                ↓
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                className="remove-image-button"
+                                                onClick={() =>
+                                                    removeImageItem(item.id)
+                                                }
+                                                title="Eliminar imagen"
+                                            >
+                                                ✕
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                ))}
+
+                            </div>
+
+                            <div className="image-pdf-settings">
+
+                                <div className="conversion-settings-header">
+                                    <h3>
+                                        ⚙️ Configuración del PDF
+                                    </h3>
+
+                                    <p>
+                                        Define cómo quieres organizar las imágenes en el documento.
+                                    </p>
+                                </div>
+
+                                <div className="image-pdf-settings-grid">
+
+                                    <div className="conversion-setting">
+                                        <label htmlFor="image-page-size">
+                                            Tamaño de página
+                                        </label>
+
+                                        <select
+                                            id="image-page-size"
+                                            value={imagePageSize}
+                                            onChange={(event) => {
+                                                setImagePageSize(event.target.value);
+                                                setImagePdfResult(null);
+                                            }}
+                                        >
+                                            <option value="a4">A4</option>
+                                            <option value="carta">Carta</option>
+                                            <option value="oficio">Oficio</option>
+                                            <option value="original">Original</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="conversion-setting">
+                                        <label htmlFor="image-orientation">
+                                            Orientación
+                                        </label>
+
+                                        <select
+                                            id="image-orientation"
+                                            value={imageOrientation}
+                                            onChange={(event) => {
+                                                setImageOrientation(event.target.value);
+                                                setImagePdfResult(null);
+                                            }}
+                                        >
+                                            <option value="auto">Automática</option>
+                                            <option value="portrait">Vertical</option>
+                                            <option value="landscape">Horizontal</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="conversion-setting">
+                                        <label htmlFor="image-fit">
+                                            Ajuste de imagen
+                                        </label>
+
+                                        <select
+                                            id="image-fit"
+                                            value={imageFit}
+                                            onChange={(event) => {
+                                                setImageFit(event.target.value);
+                                                setImagePdfResult(null);
+                                            }}
+                                        >
+                                            <option value="contain">Contener — sin recortar</option>
+                                            <option value="fill">Rellenar — puede recortar</option>
+                                            <option value="original">Tamaño original</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="conversion-setting">
+                                        <label htmlFor="image-margin">
+                                            Margen
+                                        </label>
+
+                                        <select
+                                            id="image-margin"
+                                            value={imageMargin}
+                                            onChange={(event) => {
+                                                setImageMargin(Number(event.target.value));
+                                                setImagePdfResult(null);
+                                            }}
+                                        >
+                                            <option value="0">0 mm</option>
+                                            <option value="5">5 mm</option>
+                                            <option value="10">10 mm</option>
+                                            <option value="15">15 mm</option>
+                                            <option value="20">20 mm</option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <button
+                                type="button"
+                                className="convert-images-button image-pdf-create-button"
+                                onClick={handleCreateImagePdf}
+                                disabled={isGeneratingImagePdf}
+                            >
+                                {isGeneratingImagePdf
+                                    ? "⏳ Creando PDF..."
+                                    : "📄 Crear PDF"}
+                            </button>
+
+                            {imagePdfResult && imagePdfDownloadUrl && (
+
+                                <div className="conversion-ready image-pdf-result">
+
+                                    <strong className="conversion-success-title">
+                                        ✅ PDF creado correctamente
+                                    </strong>
+
+                                    <p>
+                                        {imagePdfResult.count} {imagePdfResult.count === 1 ? "imagen incluida" : "imágenes incluidas"}
+                                    </p>
+
+                                    <a
+                                        href={imagePdfDownloadUrl}
+                                        download={imagePdfDownloadName}
+                                        className="conversion-download-button"
+                                    >
+                                        📥 Descargar PDF
+                                    </a>
+
+                                    <span className="format-info">
+                                        PDF · {imagePageSize.toUpperCase()} · {imageOrientation === "auto" ? "Automática" : imageOrientation === "portrait" ? "Vertical" : "Horizontal"}
+                                    </span>
+
+                                </div>
+
+                            )}
+
+                        </div>
+
+                    )}
 
                 </div>
 

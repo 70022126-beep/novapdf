@@ -62,3 +62,17 @@
 .login-btn:hover{
     background:#1d4ed8;
 }
+.menu-link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+
+    color: #475569;
+    font: inherit;
+    cursor: pointer;
+}
+
+.menu-link-button:hover {
+    color: #2563eb;
+}
