@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
 import Tools from "./components/Tools";
+import Footer from "./components/Footer/Footer";
 
 import MergePDF from "./pages/MergePDF/MergePDF";
 import SplitPDF from "./pages/SplitPDF/SplitPDF";
@@ -14,6 +15,7 @@ function Home() {
         <>
             <Hero />
             <Tools />
+            <Footer />
         </>
     );
 }

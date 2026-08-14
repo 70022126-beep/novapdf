@@ -1,57 +1,379 @@
+/* ============================================
+   TOOL CARD
+============================================ */
+
 .tool-card {
-  background: white;
+    position: relative;
 
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
+    display: flex;
 
-  padding: 30px;
+    flex-direction: column;
 
-  text-align: center;
+    align-items: center;
 
-  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.06);
+    min-height: 285px;
 
-  transition: 0.3s;
+    padding: 32px 28px 28px;
+
+    box-sizing: border-box;
+
+    background: #ffffff;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 18px;
+
+    text-align: center;
+
+    box-shadow:
+        0 8px 25px rgba(15, 23, 42, 0.06);
+
+    overflow: hidden;
+
+    transition:
+        transform 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
 }
+
+
+/* ============================================
+   LÍNEA SUPERIOR
+============================================ */
+
+.tool-card::before {
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 3px;
+
+    background: #2563eb;
+
+    transform: scaleX(0);
+
+    transform-origin: center;
+
+    transition:
+        transform 0.25s ease;
+}
+
+
+/* ============================================
+   HOVER
+============================================ */
 
 .tool-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.1);
+    transform: translateY(-7px);
+
+    border-color: #bfdbfe;
+
+    box-shadow:
+        0 18px 38px rgba(15, 23, 42, 0.10);
 }
+
+.tool-card:hover::before {
+    transform: scaleX(1);
+}
+
+
+/* ============================================
+   ICONO
+============================================ */
 
 .tool-icon {
-  font-size: 42px;
-  margin-bottom: 15px;
+    width: 72px;
+    height: 72px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 20px;
+
+    border-radius: 18px;
+
+    background: #eff6ff;
+
+    font-size: 40px;
+
+    line-height: 1;
+
+    box-shadow:
+        0 5px 14px rgba(37, 99, 235, 0.08);
+
+    transition:
+        transform 0.25s ease,
+        background 0.25s ease;
 }
+
+.tool-card:hover .tool-icon {
+    transform:
+        translateY(-3px)
+        scale(1.05);
+
+    background: #dbeafe;
+}
+
+
+/* ============================================
+   TÍTULO
+============================================ */
 
 .tool-card h3 {
-  font-size: 22px;
-  color: #0f172a;
-  margin-bottom: 10px;
+    margin: 0 0 10px;
+
+    color: #0f172a;
+
+    font-size: 21px;
+
+    line-height: 1.25;
+
+    font-weight: 800;
+
+    letter-spacing: -0.2px;
 }
+
+
+/* ============================================
+   DESCRIPCIÓN
+============================================ */
 
 .tool-card p {
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 20px;
+    max-width: 290px;
+
+    margin: 0 0 22px;
+
+    color: #64748b;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+
+    flex: 1;
 }
 
+
+/* ============================================
+   BOTÓN
+============================================ */
+
 .tool-card button {
-  border: none;
+    display: inline-flex;
 
-  background: #2563eb;
-  color: white;
+    align-items: center;
 
-  padding: 11px 25px;
+    justify-content: center;
 
-  border-radius: 8px;
+    gap: 8px;
 
-  cursor: pointer;
+    min-width: 145px;
 
-  font-size: 15px;
+    padding: 11px 20px;
 
-  transition: 0.3s;
+    border: none;
+
+    border-radius: 9px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
+    cursor: pointer;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    box-shadow:
+        0 5px 14px rgba(37, 99, 235, 0.16);
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.tool-card button::after {
+    content: "→";
+
+    font-size: 17px;
+
+    line-height: 1;
+
+    transition:
+        transform 0.2s ease;
 }
 
 .tool-card button:hover {
-  background: #1d4ed8;
+    background: #1d4ed8;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 8px 18px rgba(37, 99, 235, 0.23);
+}
+
+.tool-card button:hover::after {
+    transform: translateX(3px);
+}
+
+.tool-card button:active {
+    transform: translateY(0);
+}
+
+
+/* ============================================
+   FOCUS - ACCESIBILIDAD
+============================================ */
+
+.tool-card button:focus-visible {
+    outline: 3px solid #bfdbfe;
+
+    outline-offset: 3px;
+}
+
+
+/* ============================================
+   TABLET
+============================================ */
+
+@media screen and (max-width: 1000px) {
+
+    .tool-card {
+        min-height: 275px;
+
+        padding: 28px 24px 25px;
+    }
+
+    .tool-icon {
+        width: 66px;
+        height: 66px;
+
+        font-size: 36px;
+    }
+
+    .tool-card h3 {
+        font-size: 20px;
+    }
+
+}
+
+
+/* ============================================
+   MÓVIL
+============================================ */
+
+@media screen and (max-width: 760px) {
+
+    .tool-card {
+        width: 100%;
+
+        min-height: 0;
+
+        padding: 28px 22px 25px;
+
+        border-radius: 16px;
+    }
+
+    .tool-icon {
+        width: 64px;
+        height: 64px;
+
+        margin-bottom: 17px;
+
+        font-size: 35px;
+    }
+
+    .tool-card h3 {
+        font-size: 20px;
+    }
+
+    .tool-card p {
+        max-width: 400px;
+
+        font-size: 14px;
+    }
+
+    .tool-card button {
+        min-width: 155px;
+
+        padding: 12px 20px;
+    }
+
+}
+
+
+/* ============================================
+   MÓVIL PEQUEÑO
+============================================ */
+
+@media screen and (max-width: 480px) {
+
+    .tool-card {
+        padding: 25px 18px 22px;
+    }
+
+    .tool-icon {
+        width: 60px;
+        height: 60px;
+
+        font-size: 33px;
+
+        border-radius: 15px;
+    }
+
+    .tool-card h3 {
+        font-size: 19px;
+    }
+
+    .tool-card p {
+        font-size: 13px;
+
+        line-height: 1.55;
+
+        margin-bottom: 19px;
+    }
+
+    .tool-card button {
+        width: 100%;
+
+        max-width: 220px;
+    }
+
+}
+
+
+/* ============================================
+   MÓVIL MUY PEQUEÑO
+============================================ */
+
+@media screen and (max-width: 360px) {
+
+    .tool-card {
+        padding: 23px 15px 20px;
+    }
+
+    .tool-icon {
+        width: 56px;
+        height: 56px;
+
+        font-size: 30px;
+    }
+
+    .tool-card h3 {
+        font-size: 18px;
+    }
+
+    .tool-card p {
+        font-size: 12.5px;
+    }
+
 }

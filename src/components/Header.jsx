@@ -7,14 +7,24 @@ function Header() {
 
     const [menuOpen, setMenuOpen] = useState(false);
 
+    // ============================================
+    // CERRAR MENÚ
+    // ============================================
+
     const cerrarMenu = () => {
         setMenuOpen(false);
     };
+
+
+    // ============================================
+    // IR A INICIO
+    // ============================================
 
     const irAInicio = () => {
         cerrarMenu();
 
         if (window.location.pathname !== "/") {
+
             navigate("/");
 
             setTimeout(() => {
@@ -23,18 +33,27 @@ function Header() {
                     behavior: "smooth",
                 });
             }, 100);
+
         } else {
+
             window.scrollTo({
                 top: 0,
                 behavior: "smooth",
             });
+
         }
     };
+
+
+    // ============================================
+    // IR A HERRAMIENTAS
+    // ============================================
 
     const irAHerramientas = () => {
         cerrarMenu();
 
         if (window.location.pathname !== "/") {
+
             navigate("/");
 
             setTimeout(() => {
@@ -44,24 +63,42 @@ function Header() {
                         behavior: "smooth",
                     });
             }, 100);
+
         } else {
+
             document
                 .getElementById("herramientas")
                 ?.scrollIntoView({
                     behavior: "smooth",
                 });
+
         }
     };
+
+
+    // ============================================
+    // IR A UNA HERRAMIENTA
+    // ============================================
+
+    const irAHerramienta = (ruta) => {
+        cerrarMenu();
+
+        navigate(ruta);
+    };
+
 
     return (
         <header className="header">
 
-            {/* LOGO */}
+            {/* ====================================
+                LOGO
+            ==================================== */}
 
             <Link
                 to="/"
                 className="logo"
                 onClick={cerrarMenu}
+                aria-label="NovaPDF - Inicio"
             >
                 <span className="logo-icon">
                     📄
@@ -73,30 +110,41 @@ function Header() {
             </Link>
 
 
-            {/* BOTÓN MENÚ MÓVIL */}
+            {/* ====================================
+                BOTÓN MENÚ MÓVIL
+            ==================================== */}
 
             <button
                 type="button"
                 className="mobile-menu-button"
-                onClick={() => setMenuOpen(!menuOpen)}
+                onClick={() =>
+                    setMenuOpen((estadoActual) => !estadoActual)
+                }
                 aria-label={
                     menuOpen
                         ? "Cerrar menú"
                         : "Abrir menú"
                 }
                 aria-expanded={menuOpen}
+                aria-controls="menu-principal"
             >
                 {menuOpen ? "✕" : "☰"}
             </button>
 
 
-            {/* MENÚ */}
+            {/* ====================================
+                MENÚ
+            ==================================== */}
 
             <nav
+                id="menu-principal"
                 className={`menu ${
                     menuOpen ? "menu-open" : ""
                 }`}
+                aria-label="Navegación principal"
             >
+
+                {/* INICIO */}
 
                 <button
                     type="button"
@@ -107,6 +155,8 @@ function Header() {
                 </button>
 
 
+                {/* HERRAMIENTAS */}
+
                 <button
                     type="button"
                     onClick={irAHerramientas}
@@ -116,6 +166,8 @@ function Header() {
                 </button>
 
 
+                {/* PRECIOS */}
+
                 <Link
                     to="/"
                     onClick={cerrarMenu}
@@ -123,6 +175,8 @@ function Header() {
                     Precios
                 </Link>
 
+
+                {/* CONTACTO */}
 
                 <Link
                     to="/"
@@ -132,7 +186,9 @@ function Header() {
                 </Link>
 
 
-                {/* LOGIN EN MENÚ MÓVIL */}
+                {/* =================================
+                    LOGIN MÓVIL
+                ================================= */}
 
                 <button
                     type="button"
@@ -145,7 +201,9 @@ function Header() {
             </nav>
 
 
-            {/* LOGIN DESKTOP */}
+            {/* ====================================
+                LOGIN DESKTOP
+            ==================================== */}
 
             <button
                 type="button"

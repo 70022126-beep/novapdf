@@ -1,15 +1,22 @@
 /* ============================================
    SECCIÓN DE HERRAMIENTAS
-   ============================================ */
+============================================ */
 
 .tools {
+    position: relative;
+
     width: 100%;
 
-    padding: 90px 60px;
+    padding: 90px 60px 100px;
 
     text-align: center;
 
-    background: #f8fafc;
+    background:
+        linear-gradient(
+            180deg,
+            #f8fafc 0%,
+            #f1f5f9 100%
+        );
 
     box-sizing: border-box;
 
@@ -18,34 +25,94 @@
 
 
 /* ============================================
+   EFECTOS DE FONDO
+============================================ */
+
+.tools::before {
+    content: "";
+
+    position: absolute;
+
+    width: 360px;
+    height: 360px;
+
+    top: -210px;
+    right: -150px;
+
+    border-radius: 50%;
+
+    background: rgba(219, 234, 254, 0.45);
+
+    filter: blur(25px);
+
+    pointer-events: none;
+}
+
+.tools::after {
+    content: "";
+
+    position: absolute;
+
+    width: 300px;
+    height: 300px;
+
+    bottom: -190px;
+    left: -140px;
+
+    border-radius: 50%;
+
+    background: rgba(239, 246, 255, 0.8);
+
+    filter: blur(25px);
+
+    pointer-events: none;
+}
+
+
+/* ============================================
+   CONTENIDO
+============================================ */
+
+.tools > * {
+    position: relative;
+
+    z-index: 1;
+}
+
+
+/* ============================================
    TÍTULO
-   ============================================ */
+============================================ */
 
 .tools h2 {
-    margin: 0 0 12px;
+    max-width: 800px;
+
+    margin: 0 auto 12px;
 
     color: #0f172a;
 
-    font-size: 36px;
+    font-size: 38px;
 
     line-height: 1.2;
 
-    font-weight: 800;
+    font-weight: 850;
 
-    letter-spacing: -0.5px;
+    letter-spacing: -0.8px;
 }
 
 
 /* ============================================
    DESCRIPCIÓN
-   ============================================ */
+============================================ */
 
 .tools > p {
-    margin: 0 0 45px;
+    max-width: 600px;
+
+    margin: 0 auto 48px;
 
     color: #64748b;
 
-    font-size: 18px;
+    font-size: 17px;
 
     line-height: 1.6;
 }
@@ -53,68 +120,128 @@
 
 /* ============================================
    GRID
-   ============================================ */
+============================================ */
 
 .tools-grid {
     width: 100%;
 
-    max-width: 1100px;
+    max-width: 1120px;
 
     margin: 0 auto;
 
     display: grid;
 
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
 
-    gap: 25px;
+    gap: 22px;
 
     box-sizing: border-box;
 }
 
 
 /* ============================================
-   TABLET
-   ============================================ */
+   ANIMACIÓN DE ENTRADA
+============================================ */
 
-@media screen and (max-width: 1000px) {
+.tools-grid > * {
+    animation:
+        toolsCardAppear 0.55s ease both;
+}
 
-    .tools {
-        padding: 75px 35px;
+.tools-grid > *:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.tools-grid > *:nth-child(2) {
+    animation-delay: 0.10s;
+}
+
+.tools-grid > *:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.tools-grid > *:nth-child(4) {
+    animation-delay: 0.20s;
+}
+
+@keyframes toolsCardAppear {
+
+    from {
+        opacity: 0;
+
+        transform: translateY(18px);
     }
 
-    .tools h2 {
-        font-size: 32px;
+    to {
+        opacity: 1;
+
+        transform: translateY(0);
     }
 
-    .tools > p {
-        font-size: 17px;
-
-        margin-bottom: 35px;
-    }
-
-    .tools-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-
-        gap: 20px;
-    }
 }
 
 
 /* ============================================
-   MÓVIL
-   ============================================ */
+   TABLET
+============================================ */
+
+@media screen and (max-width: 1100px) {
+
+    .tools {
+        padding: 80px 40px 90px;
+    }
+
+    .tools h2 {
+        font-size: 35px;
+    }
+
+    .tools > p {
+        margin-bottom: 42px;
+
+        font-size: 17px;
+    }
+
+    .tools-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 22px;
+
+        max-width: 850px;
+    }
+
+}
+
+
+/* ============================================
+   TABLET PEQUEÑA
+============================================ */
 
 @media screen and (max-width: 760px) {
 
     .tools {
-        padding: 65px 20px;
+        padding: 65px 20px 75px;
+    }
+
+    .tools::before {
+        width: 270px;
+        height: 270px;
+
+        top: -150px;
+        right: -140px;
+    }
+
+    .tools::after {
+        width: 240px;
+        height: 240px;
+
+        bottom: -150px;
+        left: -130px;
     }
 
     .tools h2 {
-        max-width: 500px;
-
-        margin-left: auto;
-        margin-right: auto;
+        max-width: 600px;
 
         font-size: 30px;
 
@@ -122,16 +249,13 @@
     }
 
     .tools > p {
-        max-width: 400px;
+        max-width: 450px;
 
-        margin-left: auto;
-        margin-right: auto;
-
-        margin-bottom: 30px;
+        margin-bottom: 32px;
 
         font-size: 16px;
 
-        line-height: 1.5;
+        line-height: 1.55;
     }
 
     .tools-grid {
@@ -141,45 +265,48 @@
 
         max-width: 450px;
     }
+
 }
 
 
 /* ============================================
    MÓVIL PEQUEÑO
-   ============================================ */
+============================================ */
 
 @media screen and (max-width: 480px) {
 
     .tools {
-        padding: 55px 15px;
+        padding: 55px 15px 65px;
     }
 
     .tools h2 {
         font-size: 27px;
 
-        line-height: 1.2;
+        letter-spacing: -0.4px;
     }
 
     .tools > p {
-        font-size: 15px;
+        margin-bottom: 27px;
 
-        margin-bottom: 25px;
+        font-size: 15px;
     }
 
     .tools-grid {
         gap: 15px;
     }
+
 }
 
 
 /* ============================================
    MÓVIL MUY PEQUEÑO
-   ============================================ */
+============================================ */
 
 @media screen and (max-width: 360px) {
 
     .tools {
         padding-left: 12px;
+
         padding-right: 12px;
     }
 
@@ -190,4 +317,18 @@
     .tools > p {
         font-size: 14px;
     }
+
+}
+
+
+/* ============================================
+   REDUCIR ANIMACIONES
+============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .tools-grid > * {
+        animation: none !important;
+    }
+
 }
