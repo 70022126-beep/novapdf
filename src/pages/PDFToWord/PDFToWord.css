@@ -1,0 +1,412 @@
+/* ============================================
+   PDF → WORD
+============================================ */
+
+.pdf-word-page {
+    min-height: calc(100vh - 75px);
+
+    padding: 60px 30px 90px;
+
+    background: #f8fafc;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================
+   CABECERA
+============================================ */
+
+.pdf-word-header {
+    max-width: 850px;
+
+    margin: 0 auto 45px;
+
+    text-align: center;
+}
+
+.pdf-word-badge {
+    display: inline-block;
+
+    margin-bottom: 18px;
+
+    padding: 8px 16px;
+
+    border-radius: 30px;
+
+    background: #dbeafe;
+
+    color: #1d4ed8;
+
+    font-size: 14px;
+
+    font-weight: 600;
+}
+
+.pdf-word-header h1 {
+    margin: 0 0 15px;
+
+    color: #0f172a;
+
+    font-size: 48px;
+
+    line-height: 1.1;
+}
+
+.pdf-word-header p {
+    margin: 0;
+
+    color: #64748b;
+
+    font-size: 18px;
+
+    line-height: 1.6;
+}
+
+
+/* ============================================
+   CARGA
+============================================ */
+
+.pdf-word-upload {
+    max-width: 800px;
+
+    margin: 0 auto;
+
+    padding: 55px 30px;
+
+    background: white;
+
+    border: 2px dashed #bfdbfe;
+
+    border-radius: 20px;
+
+    text-align: center;
+
+    box-shadow:
+        0 10px 30px rgba(
+            15,
+            23,
+            42,
+            0.06
+        );
+
+    transition: 0.2s ease;
+}
+
+.pdf-word-upload:hover {
+    border-color: #93c5fd;
+
+    background: #f8fbff;
+}
+
+.pdf-word-upload-icon {
+    margin-bottom: 15px;
+
+    font-size: 55px;
+}
+
+.pdf-word-upload h2 {
+    margin: 0 0 10px;
+
+    color: #0f172a;
+}
+
+.pdf-word-upload p {
+    margin: 0 0 25px;
+
+    color: #64748b;
+}
+
+.pdf-word-upload-button {
+    display: inline-block;
+
+    padding: 14px 26px;
+
+    background: #2563eb;
+
+    color: white;
+
+    border-radius: 10px;
+
+    cursor: pointer;
+
+    font-weight: 600;
+
+    transition: 0.3s;
+}
+
+.pdf-word-upload-button:hover {
+    background: #1d4ed8;
+
+    transform: translateY(-2px);
+}
+
+.pdf-word-upload-button input {
+    display: none;
+}
+
+.pdf-word-upload small {
+    display: block;
+
+    margin-top: 15px;
+
+    color: #94a3b8;
+}
+
+
+/* ============================================
+   ARCHIVO
+============================================ */
+
+.pdf-word-file {
+    max-width: 800px;
+
+    margin: 25px auto 0;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 16px;
+
+    background: white;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 12px;
+}
+
+.pdf-word-file-icon {
+    font-size: 30px;
+}
+
+.pdf-word-file-info {
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.pdf-word-file-info strong {
+    overflow: hidden;
+
+    color: #0f172a;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+.pdf-word-file-info small {
+    color: #64748b;
+}
+
+.pdf-word-clear {
+    width: 38px;
+
+    height: 38px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #fee2e2;
+
+    color: #dc2626;
+
+    cursor: pointer;
+}
+
+.pdf-word-clear:hover {
+    background: #fecaca;
+}
+
+
+/* ============================================
+   PROGRESO
+============================================ */
+
+.pdf-word-progress {
+    max-width: 800px;
+
+    margin: 20px auto 0;
+
+    padding: 18px;
+
+    background: #eff6ff;
+
+    border-radius: 12px;
+}
+
+.pdf-word-progress-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-bottom: 10px;
+
+    color: #1e40af;
+}
+
+.pdf-word-progress-bar {
+    width: 100%;
+
+    height: 9px;
+
+    overflow: hidden;
+
+    background: #dbeafe;
+
+    border-radius: 20px;
+}
+
+.pdf-word-progress-fill {
+    height: 100%;
+
+    background: #2563eb;
+
+    border-radius: 20px;
+
+    transition: width 0.3s;
+}
+
+
+/* ============================================
+   MENSAJES
+============================================ */
+
+.pdf-word-success,
+.pdf-word-error {
+    max-width: 800px;
+
+    margin: 20px auto 0;
+
+    padding: 14px 18px;
+
+    border-radius: 10px;
+
+    font-weight: 500;
+}
+
+.pdf-word-success {
+    background: #dcfce7;
+
+    color: #166534;
+}
+
+.pdf-word-error {
+    background: #fee2e2;
+
+    color: #991b1b;
+}
+
+
+/* ============================================
+   BOTÓN CONVERTIR
+============================================ */
+
+.pdf-word-convert-button {
+    display: block;
+
+    width: min(100%, 800px);
+
+    margin: 25px auto 0;
+
+    padding: 16px 25px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: #2563eb;
+
+    color: white;
+
+    font-size: 17px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+.pdf-word-convert-button:hover:not(:disabled) {
+    background: #1d4ed8;
+
+    transform: translateY(-2px);
+}
+
+.pdf-word-convert-button:disabled {
+    opacity: 0.7;
+
+    cursor: not-allowed;
+}
+
+
+/* ============================================
+   DESCARGAR
+============================================ */
+
+.pdf-word-download {
+    display: block;
+
+    width: min(100%, 800px);
+
+    margin: 12px auto 0;
+
+    padding: 14px;
+
+    border: 1px solid #2563eb;
+
+    border-radius: 10px;
+
+    background: white;
+
+    color: #2563eb;
+
+    text-align: center;
+
+    text-decoration: none;
+
+    font-weight: 600;
+
+    box-sizing: border-box;
+}
+
+.pdf-word-download:hover {
+    background: #eff6ff;
+}
+
+
+/* ============================================
+   MÓVIL
+============================================ */
+
+@media screen and (max-width: 700px) {
+
+    .pdf-word-page {
+        padding: 40px 18px 70px;
+    }
+
+    .pdf-word-header h1 {
+        font-size: 36px;
+    }
+
+    .pdf-word-upload {
+        padding: 40px 20px;
+    }
+
+    .pdf-word-file {
+        align-items: flex-start;
+    }
+
+}

@@ -34,7 +34,12 @@ const CompressPDF = lazy(() =>
 const ConvertPDF = lazy(() =>
     import("./pages/ConvertPDF/ConvertPDF")
 );
-
+const PDFToWord = lazy(() =>
+    import("./pages/PDFToWord/PDFToWord")
+);
+const PDFEngineInspector = lazy(() =>
+    import("./pages/PDFEngineInspector/PDFEngineInspector")
+);
 
 // ============================================
 // PANTALLA DE CARGA
@@ -136,7 +141,14 @@ function App() {
                         path="/convert-pdf"
                         element={<ConvertPDF />}
                     />
-
+                    <Route
+                        path="/pdf-to-word"
+                        element={<PDFToWord />}
+                    />
+                    <Route
+                        path="/pdf-engine-inspector"
+                        element={<PDFEngineInspector />}
+                    />
                 </Routes>
 
             </Suspense>

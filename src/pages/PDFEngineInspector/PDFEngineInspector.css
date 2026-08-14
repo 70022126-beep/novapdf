@@ -1,0 +1,738 @@
+/* ============================================
+   NOVAPDF ENGINE INSPECTOR
+============================================ */
+
+.engine-inspector {
+    min-height: calc(100vh - 75px);
+
+    padding: 55px 30px 80px;
+
+    background: #f8fafc;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================
+   CABECERA
+============================================ */
+
+.engine-inspector-header {
+    max-width: 900px;
+
+    margin: 0 auto 40px;
+
+    text-align: center;
+}
+
+.engine-badge {
+    display: inline-block;
+
+    margin-bottom: 15px;
+
+    padding: 8px 16px;
+
+    border-radius: 30px;
+
+    background: #ede9fe;
+
+    color: #6d28d9;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+.engine-inspector-header h1 {
+    margin: 0 0 12px;
+
+    color: #0f172a;
+
+    font-size: 42px;
+}
+
+.engine-inspector-header p {
+    margin: 0;
+
+    color: #64748b;
+
+    font-size: 17px;
+}
+
+
+/* ============================================
+   CARGA
+============================================ */
+
+.engine-upload {
+    max-width: 900px;
+
+    margin: 0 auto 30px;
+
+    padding: 25px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    flex-wrap: wrap;
+
+    background: white;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(15, 23, 42, 0.05);
+}
+
+.engine-file-button {
+    padding: 11px 18px;
+
+    border-radius: 9px;
+
+    background: #2563eb;
+
+    color: white;
+
+    cursor: pointer;
+
+    font-weight: 600;
+}
+
+.engine-file-button input {
+    display: none;
+}
+
+.engine-selected-file {
+    flex: 1;
+
+    min-width: 220px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    overflow: hidden;
+
+    color: #475569;
+}
+
+.engine-selected-file strong {
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    color: #0f172a;
+}
+
+.engine-selected-file span {
+    white-space: nowrap;
+
+    color: #94a3b8;
+
+    font-size: 12px;
+}
+
+.engine-analyze-button {
+    padding: 11px 18px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #0f172a;
+
+    color: white;
+
+    cursor: pointer;
+
+    font-weight: 600;
+}
+
+.engine-analyze-button:hover:not(:disabled) {
+    background: #1e293b;
+}
+
+.engine-analyze-button:disabled {
+    opacity: 0.45;
+
+    cursor: not-allowed;
+}
+
+
+/* ============================================
+   ERROR
+============================================ */
+
+.engine-error {
+    max-width: 900px;
+
+    margin: 0 auto 25px;
+
+    padding: 14px 18px;
+
+    border-radius: 10px;
+
+    background: #fee2e2;
+
+    color: #991b1b;
+}
+
+
+/* ============================================
+   ESTADÍSTICAS
+============================================ */
+
+.engine-summary {
+    max-width: 900px;
+
+    margin: 0 auto 25px;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 14px;
+}
+
+.engine-stat {
+    padding: 20px;
+
+    background: white;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 12px;
+
+    text-align: center;
+}
+
+.engine-stat strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #2563eb;
+
+    font-size: 28px;
+}
+
+.engine-stat span {
+    color: #64748b;
+
+    font-size: 13px;
+}
+
+
+/* ============================================
+   PÁGINAS
+============================================ */
+
+.engine-pages {
+    max-width: 900px;
+
+    margin: 0 auto 25px;
+
+    padding: 20px;
+
+    background: white;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 12px;
+}
+
+.engine-pages-title {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 15px;
+}
+
+.engine-pages-title h2 {
+    margin: 0;
+
+    color: #0f172a;
+
+    font-size: 18px;
+}
+
+.engine-pages-title span {
+    color: #64748b;
+
+    font-size: 12px;
+}
+
+.engine-page-buttons {
+    display: flex;
+
+    gap: 8px;
+
+    flex-wrap: wrap;
+}
+
+.engine-page-buttons button {
+    padding: 8px 12px;
+
+    border: 1px solid #cbd5e1;
+
+    border-radius: 8px;
+
+    background: white;
+
+    color: #475569;
+
+    cursor: pointer;
+
+    font-size: 12px;
+}
+
+.engine-page-buttons button:hover {
+    border-color: #93c5fd;
+
+    background: #eff6ff;
+}
+
+.engine-page-buttons button.active {
+    border-color: #2563eb;
+
+    background: #2563eb;
+
+    color: white;
+}
+
+
+/* ============================================
+   ANÁLISIS
+============================================ */
+
+.engine-page-analysis {
+    max-width: 900px;
+
+    margin: 0 auto;
+}
+
+.engine-page-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 20px;
+
+    margin-bottom: 20px;
+
+    padding: 20px;
+
+    background: #0f172a;
+
+    border-radius: 12px;
+
+    color: white;
+}
+
+.engine-page-header h2 {
+    margin: 0 0 5px;
+
+    font-size: 20px;
+}
+
+.engine-page-header p {
+    margin: 0;
+
+    color: #94a3b8;
+
+    font-size: 12px;
+}
+
+.engine-page-counts {
+    display: flex;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+
+    justify-content: flex-end;
+
+    font-size: 12px;
+}
+
+
+/* ============================================
+   SECCIONES
+============================================ */
+
+.engine-section {
+    margin-bottom: 25px;
+
+    padding: 20px;
+
+    background: white;
+
+    border: 1px solid #e2e8f0;
+
+    border-radius: 12px;
+}
+
+.engine-section h3 {
+    margin: 0 0 15px;
+
+    color: #0f172a;
+
+    font-size: 17px;
+}
+
+
+/* ============================================
+   LÍNEAS
+============================================ */
+
+.engine-lines {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 7px;
+}
+
+.engine-line {
+    display: grid;
+
+    grid-template-columns:
+        35px 1fr auto;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 10px;
+
+    border: 1px solid #eef2f7;
+
+    border-radius: 8px;
+
+    background: #f8fafc;
+}
+
+.engine-line-number {
+    color: #2563eb;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    text-align: center;
+}
+
+.engine-line-text {
+    min-width: 0;
+
+    overflow: hidden;
+
+    color: #0f172a;
+
+    font-size: 13px;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+}
+
+.engine-line-position {
+    color: #94a3b8;
+
+    font-size: 10px;
+
+    white-space: nowrap;
+}
+
+
+/* ============================================
+   BLOQUES
+============================================ */
+
+.engine-blocks {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+.engine-block {
+    padding: 15px;
+
+    border: 1px solid #dbeafe;
+
+    border-radius: 10px;
+
+    background: #f8fbff;
+}
+
+.engine-block-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-bottom: 8px;
+}
+
+.engine-block-header strong {
+    color: #2563eb;
+
+    font-size: 12px;
+}
+
+.engine-block-header span {
+    color: #94a3b8;
+
+    font-size: 11px;
+}
+
+.engine-block-text {
+    color: #334155;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+}
+
+.engine-block-position {
+    margin-top: 8px;
+
+    color: #94a3b8;
+
+    font-size: 10px;
+}
+
+
+/* ============================================
+   RAW
+============================================ */
+
+.engine-section details summary {
+    cursor: pointer;
+
+    color: #334155;
+
+    font-weight: 600;
+
+    font-size: 13px;
+}
+
+.engine-raw-list {
+    max-height: 500px;
+
+    margin-top: 15px;
+
+    overflow: auto;
+
+    border-top: 1px solid #e2e8f0;
+}
+
+.engine-raw-item {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding: 8px 0;
+
+    border-bottom: 1px solid #f1f5f9;
+
+    font-size: 11px;
+}
+
+.engine-raw-item strong {
+    color: #334155;
+}
+
+.engine-raw-item span {
+    color: #94a3b8;
+
+    white-space: nowrap;
+}
+
+
+/* ============================================
+   MÓVIL
+============================================ */
+
+@media screen and (max-width: 700px) {
+
+    .engine-inspector {
+        padding:
+            40px 15px 60px;
+    }
+
+    .engine-inspector-header h1 {
+        font-size: 32px;
+    }
+
+    .engine-summary {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+    .engine-page-header {
+        flex-direction: column;
+
+        align-items: flex-start;
+    }
+
+    .engine-page-counts {
+        justify-content: flex-start;
+    }
+
+    .engine-line {
+        grid-template-columns:
+            30px 1fr;
+    }
+
+    .engine-line-position {
+        grid-column: 2;
+
+        white-space: normal;
+    }
+
+    .engine-raw-item {
+        flex-direction: column;
+
+        gap: 4px;
+    }
+
+}
+/* ============================================
+   TIPO DE PÁGINA
+============================================ */
+
+.page-type-badge {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 5px 9px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+}
+
+
+.page-type-badge.digital {
+
+    background: #dcfce7;
+
+    color: #166534;
+}
+
+
+.page-type-badge.scanned {
+
+    background: #fef3c7;
+
+    color: #92400e;
+}
+
+
+.page-type-badge.hybrid {
+
+    background: #e0e7ff;
+
+    color: #3730a3;
+}
+
+
+.page-type-badge.empty {
+
+    background: #f1f5f9;
+
+    color: #475569;
+}
+
+
+/* ============================================
+   INFORMACIÓN DEL DETECTOR
+============================================ */
+
+.engine-detection-info {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+
+    padding: 16px;
+
+    border: 1px solid #dbeafe;
+
+    border-radius: 10px;
+
+    background: #eff6ff;
+
+    color: #334155;
+
+    font-size: 12px;
+}
+
+
+.engine-detection-info strong {
+
+    color: #0f172a;
+}
+
+
+.engine-detection-reason {
+
+    grid-column: 1 / -1;
+
+    padding-top: 10px;
+
+    border-top: 1px solid #dbeafe;
+
+    color: #64748b;
+
+    line-height: 1.5;
+}
+
+
+/* ============================================
+   MÓVIL
+============================================ */
+
+@media screen and (max-width: 700px) {
+
+    .engine-detection-info {
+
+        grid-template-columns:
+            1fr 1fr;
+    }
+
+    .engine-detection-reason {
+
+        grid-column: 1 / -1;
+    }
+
+}
