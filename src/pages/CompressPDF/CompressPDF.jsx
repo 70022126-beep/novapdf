@@ -1,12 +1,35 @@
 import { useState } from "react";
-import * as pdfjsLib from "pdfjs-dist";
 import { PDFDocument } from "pdf-lib";
 import "./CompressPDF.css";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+
+// ============================================
+// CARGA DIFERIDA DE PDF.JS
+// ============================================
+
+let pdfjsLibPromise = null;
+
+const getPdfjsLib = async () => {
+
+  if (!pdfjsLibPromise) {
+
+    pdfjsLibPromise = import("pdfjs-dist")
+      .then((pdfjsLib) => {
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          new URL(
+            "pdfjs-dist/build/pdf.worker.min.mjs",
+            import.meta.url
+          ).toString();
+
+        return pdfjsLib;
+
+      });
+
+  }
+
+  return pdfjsLibPromise;
+};
 
 function CompressPDF() {
   const [file, setFile] = useState(null);
@@ -122,6 +145,8 @@ function CompressPDF() {
 
       const arrayBuffer =
         await selectedFile.arrayBuffer();
+
+      const pdfjsLib = await getPdfjsLib();
 
       const pdf =
         await pdfjsLib.getDocument({
@@ -244,6 +269,8 @@ function CompressPDF() {
 
       const arrayBuffer =
         await file.arrayBuffer();
+
+      const pdfjsLib = await getPdfjsLib();
 
       const originalPdf =
         await pdfjsLib.getDocument({

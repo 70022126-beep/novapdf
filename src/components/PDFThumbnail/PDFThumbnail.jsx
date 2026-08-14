@@ -1,79 +1,166 @@
 import { useEffect, useState } from "react";
-import {
-  getDocument,
-  GlobalWorkerOptions,
-} from "pdfjs-dist";
-
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
 import "./PDFThumbnail.css";
 
-GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 function PDFThumbnail({ file }) {
+
   const [thumbnail, setThumbnail] = useState(null);
 
+
   useEffect(() => {
+
     let cancelled = false;
 
+
     const generateThumbnail = async () => {
+
       try {
-        const arrayBuffer = await file.arrayBuffer();
 
-        const pdf = await getDocument({
-          data: arrayBuffer,
-        }).promise;
+        // ============================================
+        // CARGAR PDF.JS SOLO CUANDO SE NECESITA
+        // ============================================
 
-        const page = await pdf.getPage(1);
+        const pdfjsLib = await import("pdfjs-dist");
 
-        const viewport = page.getViewport({
-          scale: 0.5,
-        });
 
-        const canvas = document.createElement("canvas");
+        // ============================================
+        // CARGAR WORKER SOLO CUANDO SE NECESITA
+        // ============================================
 
-        const context = canvas.getContext("2d");
+        const pdfjsWorker = await import(
+          "pdfjs-dist/build/pdf.worker.mjs?url"
+        );
 
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          pdfjsWorker.default;
+
+
+        // ============================================
+        // LEER ARCHIVO
+        // ============================================
+
+        const arrayBuffer =
+          await file.arrayBuffer();
+
+
+        // ============================================
+        // CARGAR PDF
+        // ============================================
+
+        const pdf =
+          await pdfjsLib
+            .getDocument({
+              data: arrayBuffer,
+            })
+            .promise;
+
+
+        // ============================================
+        // OBTENER PRIMERA PÁGINA
+        // ============================================
+
+        const page =
+          await pdf.getPage(1);
+
+
+        const viewport =
+          page.getViewport({
+            scale: 0.5,
+          });
+
+
+        // ============================================
+        // CREAR CANVAS
+        // ============================================
+
+        const canvas =
+          document.createElement("canvas");
+
+
+        const context =
+          canvas.getContext("2d");
+
+
+        canvas.width =
+          viewport.width;
+
+        canvas.height =
+          viewport.height;
+
+
+        // ============================================
+        // RENDERIZAR
+        // ============================================
 
         await page.render({
           canvasContext: context,
           viewport: viewport,
         }).promise;
 
+
+        // ============================================
+        // GUARDAR MINIATURA
+        // ============================================
+
         if (!cancelled) {
-          setThumbnail(canvas.toDataURL("image/png"));
+
+          setThumbnail(
+            canvas.toDataURL("image/png")
+          );
+
         }
+
+
       } catch (error) {
+
         console.error(
           "Error generando miniatura:",
           error
         );
+
       }
+
     };
+
 
     generateThumbnail();
 
+
     return () => {
+
       cancelled = true;
+
     };
+
   }, [file]);
 
+
   return (
+
     <div className="pdf-thumbnail">
+
       {thumbnail ? (
+
         <img
           src={thumbnail}
           alt={`Vista previa de ${file.name}`}
         />
+
       ) : (
+
         <div className="thumbnail-loading">
           📄
         </div>
+
       )}
+
     </div>
+
   );
+
 }
+
 
 export default PDFThumbnail;

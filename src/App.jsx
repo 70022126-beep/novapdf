@@ -1,60 +1,149 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+    BrowserRouter,
+    Routes,
+    Route,
+} from "react-router-dom";
+
+import {
+    lazy,
+    Suspense,
+} from "react";
 
 import Header from "./components/Header";
 import Hero from "./components/Hero";
 import Tools from "./components/Tools";
 import Footer from "./components/Footer/Footer";
 
-import MergePDF from "./pages/MergePDF/MergePDF";
-import SplitPDF from "./pages/SplitPDF/SplitPDF";
-import CompressPDF from "./pages/CompressPDF/CompressPDF";
-import ConvertPDF from "./pages/ConvertPDF/ConvertPDF";
+
+// ============================================
+// CARGA DIFERIDA DE HERRAMIENTAS PDF
+// ============================================
+
+const MergePDF = lazy(() =>
+    import("./pages/MergePDF/MergePDF")
+);
+
+const SplitPDF = lazy(() =>
+    import("./pages/SplitPDF/SplitPDF")
+);
+
+const CompressPDF = lazy(() =>
+    import("./pages/CompressPDF/CompressPDF")
+);
+
+const ConvertPDF = lazy(() =>
+    import("./pages/ConvertPDF/ConvertPDF")
+);
+
+
+// ============================================
+// PANTALLA DE CARGA
+// ============================================
+
+function LoadingPage() {
+    return (
+        <div className="app-loading">
+
+            <div className="app-loading-icon">
+                📄
+            </div>
+
+            <p>
+                Cargando herramienta...
+            </p>
+
+        </div>
+    );
+}
+
+
+// ============================================
+// PÁGINA PRINCIPAL
+// ============================================
 
 function Home() {
     return (
         <>
             <Hero />
+
             <Tools />
+
             <Footer />
         </>
     );
 }
 
+
+// ============================================
+// APP PRINCIPAL
+// ============================================
+
 function App() {
     return (
         <BrowserRouter>
+
             <Header />
 
-            <Routes>
+            <Suspense fallback={<LoadingPage />}>
 
-                <Route
-                    path="/"
-                    element={<Home />}
-                />
+                <Routes>
 
-                <Route
-                    path="/merge-pdf"
-                    element={<MergePDF />}
-                />
+                    {/* =========================
+                        INICIO
+                    ========================= */}
 
-                <Route
-                    path="/split-pdf"
-                    element={<SplitPDF />}
-                />
+                    <Route
+                        path="/"
+                        element={<Home />}
+                    />
 
-                <Route
-                    path="/compress-pdf"
-                    element={<CompressPDF />}
-                />
 
-                <Route
-                    path="/convert-pdf"
-                    element={<ConvertPDF />}
-                />
+                    {/* =========================
+                        UNIR PDF
+                    ========================= */}
 
-            </Routes>
+                    <Route
+                        path="/merge-pdf"
+                        element={<MergePDF />}
+                    />
+
+
+                    {/* =========================
+                        DIVIDIR PDF
+                    ========================= */}
+
+                    <Route
+                        path="/split-pdf"
+                        element={<SplitPDF />}
+                    />
+
+
+                    {/* =========================
+                        COMPRIMIR PDF
+                    ========================= */}
+
+                    <Route
+                        path="/compress-pdf"
+                        element={<CompressPDF />}
+                    />
+
+
+                    {/* =========================
+                        CONVERTIR PDF
+                    ========================= */}
+
+                    <Route
+                        path="/convert-pdf"
+                        element={<ConvertPDF />}
+                    />
+
+                </Routes>
+
+            </Suspense>
+
         </BrowserRouter>
     );
 }
+
 
 export default App;

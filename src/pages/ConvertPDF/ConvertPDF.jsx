@@ -1,18 +1,36 @@
 import { useState, useEffect } from "react";
-import * as pdfjsLib from "pdfjs-dist";
 import JSZip from "jszip";
 import { PDFDocument } from "pdf-lib";
 import "./ConvertPDF.css";
 
 
 // ============================================
-// CONFIGURACIÓN DEL WORKER DE PDF.JS
+// CARGA DIFERIDA DE PDF.JS
 // ============================================
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url
-).toString();
+let pdfjsLibPromise = null;
+
+const getPdfjsLib = async () => {
+
+    if (!pdfjsLibPromise) {
+
+        pdfjsLibPromise = import("pdfjs-dist")
+            .then((pdfjsLib) => {
+
+                pdfjsLib.GlobalWorkerOptions.workerSrc =
+                    new URL(
+                        "pdfjs-dist/build/pdf.worker.min.mjs",
+                        import.meta.url
+                    ).toString();
+
+                return pdfjsLib;
+
+            });
+
+    }
+
+    return pdfjsLibPromise;
+};
 
 
 // ============================================
@@ -266,6 +284,8 @@ const [conversionDownloadName, setConversionDownloadName] = useState("");
             const arrayBuffer =
                 await selectedFile.arrayBuffer();
 
+
+            const pdfjsLib = await getPdfjsLib();
 
             const loadedPdf =
                 await pdfjsLib

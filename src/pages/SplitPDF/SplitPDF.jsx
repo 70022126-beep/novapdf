@@ -1,13 +1,36 @@
 import { useState } from "react";
-import * as pdfjsLib from "pdfjs-dist";
 import "./SplitPDF.css";
 import { PDFDocument } from "pdf-lib";
 import JSZip from "jszip";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+
+// ============================================
+// CARGA DIFERIDA DE PDF.JS
+// ============================================
+
+let pdfjsLibPromise = null;
+
+const getPdfjsLib = async () => {
+
+  if (!pdfjsLibPromise) {
+
+    pdfjsLibPromise = import("pdfjs-dist")
+      .then((pdfjsLib) => {
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          new URL(
+            "pdfjs-dist/build/pdf.worker.min.mjs",
+            import.meta.url
+          ).toString();
+
+        return pdfjsLib;
+
+      });
+
+  }
+
+  return pdfjsLibPromise;
+};
 
 function SplitPDF() {
   const [file, setFile] = useState(null);
@@ -55,9 +78,11 @@ function SplitPDF() {
 
       const arrayBuffer = await selectedFile.arrayBuffer();
 
-      const pdf = await pdfjsLib.getDocument({
-        data: arrayBuffer,
-      }).promise;
+      const pdfjsLib = await getPdfjsLib();
+
+const pdf = await pdfjsLib.getDocument({
+  data: arrayBuffer,
+}).promise;
 
       setFile(selectedFile);
       setPageCount(pdf.numPages);
@@ -310,6 +335,8 @@ function SplitPDF() {
 
       const arrayBuffer =
         await file.arrayBuffer();
+
+      const pdfjsLib = await getPdfjsLib();
 
       const pdf =
         await pdfjsLib.getDocument({
