@@ -1,9 +1,21 @@
 // ============================================
 // NOVAPDF PDF ANALYZER
 // ============================================
+//
+// Analiza la estructura básica de un PDF
+// y determina automáticamente el tipo de cada
+// página:
+//
+// digital  → texto PDF real
+// scanned  → probablemente escaneada
+// hybrid   → contenido intermedio
+//
+// ============================================
+
 import {
     detectPageType,
 } from "./PageTypeDetector";
+
 
 let pdfjsLibPromise = null;
 
@@ -29,6 +41,7 @@ async function getPdfjsLib() {
                         ).toString();
 
                     return pdfjsLib;
+
                 });
     }
 
@@ -37,13 +50,17 @@ async function getPdfjsLib() {
 
 
 // ============================================
-// ABRIR PDF
+// ABRIR Y ANALIZAR PDF
 // ============================================
 
 export async function analyzePDF(
     file,
     onProgress
 ) {
+
+    // ========================================
+    // VALIDAR ARCHIVO
+    // ========================================
 
     if (!file) {
 
@@ -53,13 +70,25 @@ export async function analyzePDF(
     }
 
 
+    // ========================================
+    // CARGAR PDF.JS
+    // ========================================
+
     const pdfjsLib =
         await getPdfjsLib();
 
 
+    // ========================================
+    // LEER ARCHIVO
+    // ========================================
+
     const arrayBuffer =
         await file.arrayBuffer();
 
+
+    // ========================================
+    // ABRIR DOCUMENTO PDF
+    // ========================================
 
     const pdf =
         await pdfjsLib
@@ -82,11 +111,19 @@ export async function analyzePDF(
         pageNumber++
     ) {
 
+        // ------------------------------------
+        // OBTENER PÁGINA
+        // ------------------------------------
+
         const page =
             await pdf.getPage(
                 pageNumber
             );
 
+
+        // ------------------------------------
+        // VIEWPORT
+        // ------------------------------------
 
         const viewport =
             page.getViewport({
@@ -94,11 +131,41 @@ export async function analyzePDF(
             });
 
 
+        // ------------------------------------
+        // EXTRAER TEXTO
+        // ------------------------------------
+
         const textContent =
             await page.getTextContent();
 
 
-        pages.push({
+        const textItems =
+            textContent.items;
+
+
+        // ====================================
+        // DETECTAR TIPO DE PÁGINA
+        // ====================================
+
+        const pageType =
+            detectPageType({
+
+                textItems,
+
+                width:
+                    viewport.width,
+
+                height:
+                    viewport.height,
+
+            });
+
+
+        // ====================================
+        // CREAR DATOS DE PÁGINA
+        // ====================================
+
+        const pageData = {
 
             pageNumber,
 
@@ -108,15 +175,30 @@ export async function analyzePDF(
             height:
                 viewport.height,
 
-            textItems:
-                textContent.items,
+            textItems,
 
-        });
+            pageType,
 
+        };
+
+
+        // ====================================
+        // GUARDAR PÁGINA
+        // ====================================
+
+        pages.push(
+            pageData
+        );
+
+
+        // ====================================
+        // PROGRESO
+        // ====================================
 
         if (onProgress) {
 
             onProgress({
+
                 current:
                     pageNumber,
 
@@ -130,10 +212,15 @@ export async function analyzePDF(
                             pdf.numPages
                         ) * 100
                     ),
+
             });
         }
     }
 
+
+    // ========================================
+    // RESULTADO FINAL
+    // ========================================
 
     return {
 

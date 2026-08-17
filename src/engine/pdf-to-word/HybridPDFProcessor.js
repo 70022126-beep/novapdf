@@ -1,0 +1,1237 @@
+import { analyzePage } from "../layout/PageAnalyzer";
+import { analyzePageRegions } from "../layout/RegionIntelligence";
+import { analyzeDocumentStructure } from "../layout/DocumentStructureAnalyzer";
+import {
+    detectFormFields,
+    enhancePageTables,
+} from "../layout/ProfessionalTableAnalyzer";
+import { recognizeAdaptive } from "../ocr/AdaptiveOCR";
+import { detectPageType } from "./PageTypeDetector";
+import {
+    countCharacters,
+    buildLinesFromWords,
+    mergeNativeAndOCR,
+    normalizeNativeContent,
+    normalizeOCRContent,
+} from "./PageContentNormalizer";
+import {
+    cropPageImageRegions,
+    inspectPageImages,
+} from "./PDFImageExtractor";
+import {
+    createPageCacheKey,
+    getCachedPage,
+    getConversionCacheStats,
+    setCachedPage,
+} from "./ConversionCache";
+import { normalizePageRange } from "./PageRange";
+import { analyzePageWithVision } from "../vision/NeuralVisionProvider";
+import { createEditableBackground } from "../vision/EditableBackground";
+import { mergeVisionLayoutWithAnalysis } from "../layout/NeuralLayoutFusion";
+import {
+    fuseNeuralTextWithOCR,
+    getNeuralFallbackRegions,
+    neuralVisionToContent,
+} from "../vision/NeuralTextFusion";
+import {
+    extractVectorTables,
+    mergeVectorTablesWithAnalysis,
+} from "./PDFVectorTableExtractor";
+import {
+    extractNativeDocumentStructure,
+    normalizeStructuredNativePage,
+    selectBestNativeContent,
+} from "./NativeDocumentProvider";
+
+export { normalizePageRange } from "./PageRange";
+
+let pdfjsPromise = null;
+
+async function getPdfjs() {
+    if (!pdfjsPromise) {
+        pdfjsPromise = import("pdfjs-dist").then((pdfjsLib) => {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+                "pdfjs-dist/build/pdf.worker.min.mjs",
+                import.meta.url
+            ).toString();
+            return pdfjsLib;
+        });
+    }
+
+    return pdfjsPromise;
+}
+
+function now() {
+    return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+
+function getHeapSize() {
+    const size = globalThis.performance?.memory?.usedJSHeapSize;
+    return Number.isFinite(size) ? size : null;
+}
+
+function clamp(value, minimum, maximum) {
+    return Math.min(maximum, Math.max(minimum, value));
+}
+
+function boxOverlapRatio(first = {}, second = {}) {
+    const left = Math.max(Number(first.x) || 0, Number(second.x) || 0);
+    const top = Math.max(Number(first.y) || 0, Number(second.y) || 0);
+    const right = Math.min(
+        (Number(first.x) || 0) + (Number(first.width) || 0),
+        (Number(second.x) || 0) + (Number(second.width) || 0)
+    );
+    const bottom = Math.min(
+        (Number(first.y) || 0) + (Number(first.height) || 0),
+        (Number(second.y) || 0) + (Number(second.height) || 0)
+    );
+    const intersection = Math.max(0, right - left) * Math.max(0, bottom - top);
+    const minimumArea = Math.max(
+        1,
+        Math.min(
+            (Number(first.width) || 0) * (Number(first.height) || 0),
+            (Number(second.width) || 0) * (Number(second.height) || 0)
+        )
+    );
+    return intersection / minimumArea;
+}
+
+function selectRecoverableVisualRegions(vision, embeddedRegions, dimensions) {
+    const pageArea = Math.max(1, dimensions.width * dimensions.height);
+    const recoverableTypes = new Set([
+        "photo",
+        "graphic",
+        "signature",
+        "stamp",
+        "scribble",
+        "stain",
+    ]);
+    const regions = (embeddedRegions || []).map((region, index) => ({
+        ...region,
+        id: region.id || `embedded-image-${index + 1}`,
+        regionType: region.type || "photo",
+        source: region.source || "pdf-image",
+    }));
+
+    (vision?.routing?.protectedRegions || []).forEach((region) => {
+        const area = Number(region.bbox?.width || 0) * Number(region.bbox?.height || 0);
+        if (
+            !recoverableTypes.has(region.type) ||
+            area < 240 ||
+            area / pageArea > 0.42 ||
+            regions.some((candidate) => boxOverlapRatio(candidate, region.bbox) >= 0.72)
+        ) {
+            return;
+        }
+        regions.push({
+            ...region.bbox,
+            id: region.id,
+            regionType: region.type,
+            source: region.source,
+            confidence: region.confidence,
+        });
+    });
+    return regions;
+}
+
+function selectCleanPlateProtectedRegions(regions, dimensions) {
+    const protectedTypes = new Set(["signature", "stamp", "scribble", "stain"]);
+    const pageArea = Math.max(1, dimensions.width * dimensions.height);
+    return (regions || []).filter((region) => {
+        const regionArea =
+            Number(region.bbox?.width || 0) * Number(region.bbox?.height || 0);
+        return protectedTypes.has(region.type) && regionArea / pageArea <= 0.12;
+    });
+}
+
+function calculateRenderScale(viewport, preferredScale, maximumMegapixels = 20) {
+    const longestSide = Math.max(viewport.width, viewport.height);
+    const pixelLimit = 4600;
+    const scaleForLimit = longestSide > 0 ? pixelLimit / longestSide : preferredScale;
+    const scaleForMemory = Math.sqrt(
+        (Math.max(2, maximumMegapixels) * 1_000_000) /
+            Math.max(1, viewport.width * viewport.height)
+    );
+    return clamp(
+        Math.min(preferredScale, scaleForLimit, scaleForMemory),
+        1.1,
+        preferredScale
+    );
+}
+
+async function renderPage(page, scale) {
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d", {
+        alpha: false,
+        willReadFrequently: false,
+    });
+
+    if (!context) {
+        throw new Error("El navegador no pudo crear el lienzo de conversión.");
+    }
+
+    canvas.width = Math.max(1, Math.ceil(viewport.width));
+    canvas.height = Math.max(1, Math.ceil(viewport.height));
+    context.save();
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.restore();
+
+    await page.render({ canvasContext: context, canvas, viewport }).promise;
+
+    return { canvas, viewport };
+}
+
+async function canvasToPng(canvas) {
+    const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((result) => {
+            if (result) {
+                resolve(result);
+            } else {
+                reject(new Error("No se pudo codificar la página como imagen PNG."));
+            }
+        }, "image/png");
+    });
+
+    return new Uint8Array(await blob.arrayBuffer());
+}
+
+function releaseCanvas(canvas) {
+    if (!canvas) {
+        return;
+    }
+
+    canvas.width = 1;
+    canvas.height = 1;
+    canvas.remove();
+}
+
+function throwIfCancelled(isCancelled, signal) {
+    if (isCancelled?.() || signal?.aborted) {
+        throw new DOMException("Conversión cancelada.", "AbortError");
+    }
+}
+
+function cropCanvas(sourceCanvas, region, renderedScale) {
+    const sourceX = Math.max(0, Math.floor(region.x * renderedScale));
+    const sourceY = Math.max(0, Math.floor(region.y * renderedScale));
+    const sourceWidth = Math.min(
+        sourceCanvas.width - sourceX,
+        Math.max(1, Math.ceil(region.width * renderedScale))
+    );
+    const sourceHeight = Math.min(
+        sourceCanvas.height - sourceY,
+        Math.max(1, Math.ceil(region.height * renderedScale))
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, sourceWidth);
+    canvas.height = Math.max(1, sourceHeight);
+    const context = canvas.getContext("2d", { alpha: false });
+    context?.drawImage(
+        sourceCanvas,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        sourceWidth,
+        sourceHeight
+    );
+    return canvas;
+}
+
+function offsetOCRContent(content, region) {
+    const words = content.words.map((word) => ({
+        ...word,
+        x: word.x + region.x,
+        y: word.y + region.y,
+    }));
+    return { ...content, words, lines: buildLinesFromWords(words) };
+}
+
+async function recognizeHybridRegions({
+    canvas,
+    regions,
+    renderedScale,
+    dpi,
+    reportProgress,
+    signal,
+    dictionary,
+    waitIfPaused,
+    experimentalHandwriting,
+}) {
+    const results = [];
+    const metadata = [];
+    const usableRegions = regions.filter(
+        (region) => region.width * region.height >= 1_200
+    );
+
+    for (let index = 0; index < usableRegions.length; index += 1) {
+        await waitIfPaused?.();
+        throwIfCancelled(null, signal);
+        const region = usableRegions[index];
+        const regionCanvas = cropCanvas(canvas, region, renderedScale);
+        try {
+            const result = await recognizeAdaptive(regionCanvas, {
+                dpi,
+                signal,
+                dictionary,
+                regionType: region.strategy === "handwriting-ocr"
+                    ? "handwriting"
+                    : region.width > region.height * 3
+                      ? "sparse-text"
+                      : "text",
+                experimentalHandwriting:
+                    experimentalHandwriting || region.strategy === "handwriting-ocr",
+                onProgress: (message) => {
+                    const fraction = (index + (Number(message.progress) || 0)) /
+                        Math.max(1, usableRegions.length);
+                    reportProgress(
+                        0.25 + fraction * 0.5,
+                        "region-ocr",
+                        `OCR selectivo: región ${index + 1} de ${usableRegions.length}…`
+                    );
+                },
+            });
+            results.push(offsetOCRContent(normalizeOCRContent(result, renderedScale), region));
+            metadata.push({
+                language: result.language,
+                attempts: result.attempts || [],
+                correctionCount: result.correctionCount || 0,
+                selectedVariant: result.selectedVariant,
+            });
+        } finally {
+            releaseCanvas(regionCanvas);
+        }
+    }
+
+    const words = results.flatMap((result) => result.words);
+    return {
+        text: words.map((word) => word.text).join(" "),
+        words,
+        lines: buildLinesFromWords(words),
+        blocks: [],
+        paragraphs: [],
+        confidence: results.length
+            ? results.reduce((sum, result) => sum + Number(result.confidence || 0), 0) /
+                results.length
+            : 0,
+        source: "ocr-regions",
+        regionCount: results.length,
+        language: metadata.find((entry) => entry.language !== "unknown")?.language ||
+            "unknown",
+        attempts: metadata.flatMap((entry) => entry.attempts),
+        correctionCount: metadata.reduce(
+            (total, entry) => total + entry.correctionCount,
+            0
+        ),
+        selectedVariants: metadata.map((entry) => entry.selectedVariant).filter(Boolean),
+    };
+}
+
+function refinePageType(detectedType, imageCount) {
+    const imageDominantWithLimitedText =
+        imageCount > 0 &&
+        detectedType.type === "digital" &&
+        detectedType.characterCount < 250 &&
+        detectedType.textDensity < 0.012;
+
+    if (!imageDominantWithLimitedText) {
+        return detectedType;
+    }
+
+    return {
+        ...detectedType,
+        type: "hybrid",
+        confidence: Math.max(0.7, Math.min(0.92, detectedType.confidence)),
+        reason:
+            "La página combina una imagen dominante con una capa de texto nativo limitada.",
+    };
+}
+
+function calculateQualityScore({ pageType, analysis, content }) {
+    if (!content.words.length) {
+        return 0;
+    }
+
+    if (pageType.type === "digital") {
+        const textSignal = Math.min(1, pageType.characterCount / 500);
+        return Math.round((0.88 + textSignal * 0.11) * 100);
+    }
+
+    const confidence = Math.max(0, Math.min(100, analysis.statistics.averageConfidence));
+    const densitySignal = Math.min(1, analysis.statistics.textDensity / 8);
+    return Math.round(confidence * 0.85 + densitySignal * 15);
+}
+
+function createProgressReporter(onProgress, pageIndex, pageCount, pageNumber, startedAt) {
+    const start = 8;
+    const available = 82;
+    const pageSpan = available / Math.max(1, pageCount);
+
+    return (fraction, stage, detail = "") => {
+        const completedPages = pageIndex + clamp(fraction, 0, 1);
+        const elapsed = now() - startedAt;
+        const etaMs = completedPages > 0
+            ? Math.max(0, (elapsed / completedPages) * (pageCount - completedPages))
+            : null;
+        onProgress?.({
+            percent: Math.round(
+                start + pageIndex * pageSpan + clamp(fraction, 0, 1) * pageSpan
+            ),
+            stage,
+            detail,
+            pageNumber,
+            pageCount,
+            etaMs: etaMs === null ? null : Math.round(etaMs),
+        });
+    };
+}
+
+function summarizeDocument(pages, startedAt, initialHeap, peakCanvasPixels, mode) {
+    const durationMs = Math.max(1, now() - startedAt);
+    const counts = { digital: 0, scanned: 0, hybrid: 0 };
+    let nativeCharacters = 0;
+    let ocrCharacters = 0;
+    let wordCount = 0;
+    let imageCount = 0;
+    let embeddedImageCount = 0;
+    let tableCount = 0;
+    let regionCount = 0;
+    let formFieldCount = 0;
+    let lowConfidenceRegions = 0;
+    let rotatedTextRegions = 0;
+    let visualRegionCount = 0;
+    let protectedVisualRegions = 0;
+    let cleanedBackgroundWords = 0;
+    let neuralVisionPages = 0;
+    let neuralFallbackPages = 0;
+    let neuralFormulaRegions = 0;
+    let neuralTableRegions = 0;
+    let handwritingRegions = 0;
+    let secondaryNativePages = 0;
+    let secondaryNativeTables = 0;
+    let cacheHits = 0;
+    let qualityTotal = 0;
+
+    pages.forEach((page) => {
+        counts[page.pageType.type] += 1;
+        nativeCharacters += page.metrics.nativeCharacters;
+        ocrCharacters += page.metrics.ocrCharacters;
+        wordCount += page.metrics.wordCount;
+        imageCount += page.metrics.imageCount;
+        embeddedImageCount += page.metrics.embeddedImageCount;
+        tableCount += page.metrics.tableCount;
+        regionCount += page.metrics.regionCount || 0;
+        formFieldCount += page.metrics.formFieldCount || 0;
+        lowConfidenceRegions += page.metrics.lowConfidenceRegions || 0;
+        rotatedTextRegions += page.regionAnalysis?.rotatedTextRegions || 0;
+        visualRegionCount += page.vision?.regions?.length || 0;
+        protectedVisualRegions += page.vision?.routing?.protectedRegions?.length || 0;
+        cleanedBackgroundWords += page.editableBackground?.removedWordCount || 0;
+        neuralVisionPages += page.vision?.neural?.status === "connected" ? 1 : 0;
+        neuralFallbackPages += page.vision?.neural?.status === "fallback" ? 1 : 0;
+        neuralFormulaRegions += page.analysis?.visionLayout?.formulaCount || 0;
+        neuralTableRegions += page.analysis?.visionLayout?.tableCount || 0;
+        handwritingRegions += page.analysis?.visionLayout?.handwritingCount || 0;
+        secondaryNativePages += page.metrics.nativeExtractor === "pdfplumber" ? 1 : 0;
+        secondaryNativeTables += page.metrics.secondaryNativeTableCount || 0;
+        cacheHits += page.metrics.cacheHit ? 1 : 0;
+        qualityTotal += page.metrics.qualityScore;
+    });
+
+    const finalHeap = getHeapSize();
+
+    return {
+        mode,
+        pageCount: pages.length,
+        pageTypes: counts,
+        durationMs: Math.round(durationMs),
+        pagesPerMinute: Number(((pages.length * 60000) / durationMs).toFixed(2)),
+        nativeCharacters,
+        ocrCharacters,
+        wordCount,
+        imageCount,
+        embeddedImageCount,
+        tableCount,
+        regionCount,
+        formFieldCount,
+        lowConfidenceRegions,
+        rotatedTextRegions,
+        visualRegionCount,
+        protectedVisualRegions,
+        cleanedBackgroundWords,
+        neuralVisionPages,
+        neuralFallbackPages,
+        neuralFormulaRegions,
+        neuralTableRegions,
+        handwritingRegions,
+        secondaryNativePages,
+        secondaryNativeTables,
+        cacheHits,
+        cache: getConversionCacheStats(),
+        estimatedQuality: pages.length
+            ? Math.round(qualityTotal / pages.length)
+            : 0,
+        peakCanvasMegapixels: Number((peakCanvasPixels / 1_000_000).toFixed(2)),
+        memoryDeltaMB:
+            initialHeap !== null && finalHeap !== null
+                ? Number(((finalHeap - initialHeap) / 1024 / 1024).toFixed(2))
+                : null,
+    };
+}
+
+function zoneSignature(zone) {
+    return (zone?.lines || [])
+        .map((line) => String(line.text || ""))
+        .join(" ")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\d+/g, "#")
+        .replace(/[^a-z0-9#]+/gi, " ")
+        .trim()
+        .toLowerCase();
+}
+
+function stabilizeHeaderAndFooterZones(pages) {
+    const frequencies = { header: new Map(), footer: new Map() };
+
+    pages.forEach((page) => {
+        ["header", "footer"].forEach((type) => {
+            const zone = page.analysis.zones.find((candidate) => candidate.type === type);
+            const signature = zoneSignature(zone);
+            if (signature) {
+                frequencies[type].set(
+                    signature,
+                    (frequencies[type].get(signature) || 0) + 1
+                );
+            }
+        });
+    });
+
+    const repetitionThreshold = Math.max(2, Math.ceil(pages.length * 0.3));
+
+    pages.forEach((page) => {
+        const acceptedZones = [];
+
+        ["header", "footer"].forEach((type) => {
+            const zone = page.analysis.zones.find((candidate) => candidate.type === type);
+            if (!zone) {
+                return;
+            }
+
+            const signature = zoneSignature(zone);
+            const repeated =
+                pages.length > 1 &&
+                signature &&
+                (frequencies[type].get(signature) || 0) >= repetitionThreshold;
+            const boxTop = Number(zone.bbox?.y) || 0;
+            const boxBottom = boxTop + (Number(zone.bbox?.height) || 0);
+            const extremeMargin =
+                type === "header"
+                    ? boxTop <= page.dimensions.height * 0.035
+                    : boxBottom >= page.dimensions.height * 0.965;
+
+            if (repeated || extremeMargin) {
+                acceptedZones.push(zone);
+            }
+        });
+
+        const reservedLines = new Set(
+            acceptedZones.flatMap((zone) => zone.lines || [])
+        );
+        const bodyLines = page.analysis.lines.filter((line) => !reservedLines.has(line));
+        const bodyZone = bodyLines.length
+            ? {
+                type: "body",
+                lines: bodyLines,
+                bbox: page.analysis.spatial.textBox,
+            }
+            : null;
+
+        page.analysis.zones = [...acceptedZones, ...(bodyZone ? [bodyZone] : [])];
+        page.analysis.layout.hasHeader = acceptedZones.some(
+            (zone) => zone.type === "header"
+        );
+        page.analysis.layout.hasFooter = acceptedZones.some(
+            (zone) => zone.type === "footer"
+        );
+    });
+}
+
+function clonePage(page) {
+    return typeof structuredClone === "function" ? structuredClone(page) : page;
+}
+
+export async function processPDFForWord(
+    file,
+    {
+        mode = "editable",
+        onProgress,
+        isCancelled,
+        signal,
+        pageRange = "all",
+        excludeImages = false,
+        maximumCanvasMegapixels = 20,
+        ocrDictionary = [],
+        useCache = true,
+        cacheMemoryMB = 96,
+        waitIfPaused,
+        experimentalHandwriting = false,
+        advancedVision = true,
+        cleanEditableBackground = true,
+        visionProvider = "auto",
+        visionEndpoint = "http://127.0.0.1:8765/v1/layout",
+        visionTimeoutMs = 120_000,
+    } = {}
+) {
+    if (!file) {
+        throw new Error("Selecciona un archivo PDF primero.");
+    }
+
+    const startedAt = now();
+    const initialHeap = getHeapSize();
+    const pdfjsLib = await getPdfjs();
+    onProgress?.({ percent: 3, stage: "loading", detail: "Abriendo el PDF…" });
+
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+    const selectedPages = normalizePageRange(pageRange, pdf.numPages);
+    if (!selectedPages.length) {
+        await loadingTask.destroy();
+        throw new Error("El rango de páginas seleccionado no contiene páginas válidas.");
+    }
+    const pages = [];
+    let peakCanvasPixels = 0;
+    let secondaryNativeDocument = null;
+
+    if (advancedVision && visionProvider !== "local") {
+        onProgress?.({
+            percent: 5,
+            stage: "native-structure",
+            detail: "Verificando fuentes, vectores y tablas con el segundo extractor…",
+        });
+        secondaryNativeDocument = await extractNativeDocumentStructure(file, {
+            pages: selectedPages,
+            endpoint: visionEndpoint,
+            signal,
+            timeoutMs: Math.min(visionTimeoutMs, 45_000),
+        });
+    }
+
+    try {
+        for (let pageIndex = 0; pageIndex < selectedPages.length; pageIndex += 1) {
+            await waitIfPaused?.();
+            throwIfCancelled(isCancelled, signal);
+            const pageNumber = selectedPages[pageIndex];
+            const reportProgress = createProgressReporter(
+                onProgress,
+                pageIndex,
+                selectedPages.length,
+                pageNumber,
+                startedAt
+            );
+            const cacheKey = createPageCacheKey(file, pageNumber, {
+                mode,
+                extractImages: !excludeImages,
+                advancedVision,
+                cleanEditableBackground,
+                visionProvider,
+                visionEndpoint,
+                visionVersion: "3.3.0-native-dual",
+            });
+            const cachedPage = useCache ? getCachedPage(cacheKey) : null;
+
+            if (cachedPage) {
+                const reusedPage = clonePage(cachedPage);
+                reusedPage.metrics = {
+                    ...reusedPage.metrics,
+                    durationMs: 0,
+                    cacheHit: true,
+                };
+                pages.push(reusedPage);
+                reportProgress(
+                    1,
+                    "cache",
+                    `Página ${pageNumber} recuperada de la caché.`
+                );
+                continue;
+            }
+
+            const pageStartedAt = now();
+            const page = await pdf.getPage(pageNumber);
+
+            try {
+                const viewport = page.getViewport({ scale: 1 });
+                reportProgress(0.05, "analyzing", "Detectando regiones y tipo de página…");
+                throwIfCancelled(isCancelled, signal);
+
+                const textContent = await page.getTextContent({
+                    includeMarkedContent: true,
+                    disableNormalization: false,
+                });
+                const detectedPageType = detectPageType({
+                    textItems: textContent.items,
+                    width: viewport.width,
+                    height: viewport.height,
+                });
+                const primaryNativeContent = normalizeNativeContent(textContent, viewport);
+                const secondaryNativePageRaw = secondaryNativeDocument?.pages?.get(pageNumber);
+                const secondaryNativePage = secondaryNativePageRaw
+                    ? normalizeStructuredNativePage(secondaryNativePageRaw, {
+                        width: viewport.width,
+                        height: viewport.height,
+                    })
+                    : null;
+                const nativeContent = selectBestNativeContent(
+                    primaryNativeContent,
+                    secondaryNativePage?.content
+                );
+                const imageInspection = await inspectPageImages(page, pdfjsLib, viewport);
+                const imageCount = imageInspection.count;
+                const pageType = refinePageType(detectedPageType, imageCount);
+                const vectorTables = pageType.type === "scanned"
+                    ? []
+                    : await extractVectorTables(
+                        page,
+                        pdfjsLib,
+                        viewport,
+                        nativeContent.words
+                    );
+                const nativeTables = pageType.type === "scanned"
+                    ? []
+                    : [
+                        ...(secondaryNativePage?.tables || []),
+                        ...vectorTables,
+                    ];
+                let pageContent = nativeContent;
+                let renderedPage = null;
+                let extractedImages = [];
+                let extractionMethod = nativeContent.source === "native-secondary"
+                    ? "native-cross-validated"
+                    : "native";
+                let ocrCharacters = 0;
+                let visionAnalysis = null;
+                let editableBackground = null;
+                let ocrMetadata = {
+                    language: "unknown",
+                    attempts: [],
+                    correctionCount: 0,
+                    selectedVariants: [],
+                };
+
+                if (mode === "visual") {
+                    const renderScale = calculateRenderScale(
+                        viewport,
+                        2,
+                        maximumCanvasMegapixels
+                    );
+                    reportProgress(0.24, "rendering", "Capturando la página visual exacta…");
+                    const rendered = await renderPage(page, renderScale);
+                    try {
+                        peakCanvasPixels = Math.max(
+                            peakCanvasPixels,
+                            rendered.canvas.width * rendered.canvas.height
+                        );
+                        renderedPage = {
+                            data: await canvasToPng(rendered.canvas),
+                            type: "png",
+                            width: viewport.width,
+                            height: viewport.height,
+                            pixelWidth: rendered.canvas.width,
+                            pixelHeight: rendered.canvas.height,
+                        };
+                    } finally {
+                        releaseCanvas(rendered.canvas);
+                    }
+                    extractionMethod = "visual-snapshot";
+                } else if (pageType.type !== "digital") {
+                    const renderScale = calculateRenderScale(
+                        viewport,
+                        3,
+                        maximumCanvasMegapixels
+                    );
+                    reportProgress(0.18, "rendering", "Preparando regiones para OCR adaptativo…");
+                    const rendered = await renderPage(page, renderScale);
+                    try {
+                        peakCanvasPixels = Math.max(
+                            peakCanvasPixels,
+                            rendered.canvas.width * rendered.canvas.height
+                        );
+                        const dpi = Math.round(renderScale * 72);
+                        let normalizedOCR;
+
+                        if (advancedVision) {
+                            reportProgress(
+                                0.22,
+                                "vision",
+                                "Separando texto, firmas, sellos, manchas y elementos visuales…"
+                            );
+                            visionAnalysis = await analyzePageWithVision(rendered.canvas, {
+                                provider: visionProvider,
+                                endpoint: visionEndpoint,
+                                pageWidth: viewport.width,
+                                pageHeight: viewport.height,
+                                signal,
+                                timeoutMs: visionTimeoutMs,
+                            });
+
+                            if (pageType.type === "scanned") {
+                                const neuralContent = neuralVisionToContent(visionAnalysis);
+                                if (neuralContent.words.length >= 4) {
+                                    normalizedOCR = neuralContent;
+                                    extractionMethod = "neural-layout-ocr";
+                                    ocrMetadata = {
+                                        language: "auto",
+                                        attempts: [],
+                                        correctionCount: 0,
+                                        selectedVariants: [
+                                            visionAnalysis.model || visionAnalysis.provider,
+                                        ].filter(Boolean),
+                                    };
+                                }
+                            }
+                        }
+
+                        if (pageType.type === "hybrid" && imageInspection.regions.length) {
+                            normalizedOCR = await recognizeHybridRegions({
+                                canvas: rendered.canvas,
+                                regions: imageInspection.regions,
+                                renderedScale: renderScale,
+                                dpi,
+                                reportProgress,
+                                signal,
+                                dictionary: ocrDictionary,
+                                waitIfPaused,
+                                experimentalHandwriting,
+                            });
+                            ocrMetadata = {
+                                language: normalizedOCR.language,
+                                attempts: normalizedOCR.attempts,
+                                correctionCount: normalizedOCR.correctionCount,
+                                selectedVariants: normalizedOCR.selectedVariants,
+                            };
+                        }
+
+                        if (
+                            pageType.type === "scanned" &&
+                            visionAnalysis?.routing.strategy === "regional"
+                        ) {
+                            const visualOCRRegions = getNeuralFallbackRegions(visionAnalysis).map(
+                                (region) => ({
+                                    ...region.bbox,
+                                    visualRegionId: region.id,
+                                    strategy: region.strategy,
+                                    type: region.type,
+                                })
+                            );
+                            if (visualOCRRegions.length) {
+                                const regionalOCR = await recognizeHybridRegions({
+                                    canvas: rendered.canvas,
+                                    regions: visualOCRRegions,
+                                    renderedScale: renderScale,
+                                    dpi,
+                                    reportProgress,
+                                    signal,
+                                    dictionary: ocrDictionary,
+                                    waitIfPaused,
+                                    experimentalHandwriting,
+                                });
+                                if (
+                                    regionalOCR.words.length >= 4 &&
+                                    Number(regionalOCR.confidence) >= 45
+                                ) {
+                                    normalizedOCR = fuseNeuralTextWithOCR(
+                                        regionalOCR,
+                                        visionAnalysis
+                                    );
+                                    extractionMethod = normalizedOCR.neuralWordCount
+                                        ? "neural-layout+region-ocr"
+                                        : "vision-region-ocr";
+                                    ocrMetadata = {
+                                        language: regionalOCR.language,
+                                        attempts: regionalOCR.attempts,
+                                        correctionCount: regionalOCR.correctionCount,
+                                        selectedVariants: regionalOCR.selectedVariants,
+                                    };
+                                }
+                            }
+                        }
+
+                        if (!normalizedOCR || normalizedOCR.words.length < 4) {
+                            await waitIfPaused?.();
+                            const adaptiveResult = await recognizeAdaptive(rendered.canvas, {
+                                dpi,
+                                signal,
+                                dictionary: ocrDictionary,
+                                onProgress: (ocrProgress) => {
+                                    const fraction = Number(ocrProgress?.progress);
+                                    reportProgress(
+                                        0.25 +
+                                            (Number.isFinite(fraction) ? fraction : 0) *
+                                                0.55,
+                                        "ocr",
+                                        pageType.type === "scanned"
+                                            ? "Reconociendo texto escaneado…"
+                                            : "Completando regiones híbridas…"
+                                    );
+                                },
+                                experimentalHandwriting,
+                            });
+                            normalizedOCR = normalizeOCRContent(
+                                adaptiveResult,
+                                renderScale
+                            );
+                            ocrMetadata = {
+                                language: adaptiveResult.language,
+                                attempts: adaptiveResult.attempts || [],
+                                correctionCount: adaptiveResult.correctionCount || 0,
+                                selectedVariants: [adaptiveResult.selectedVariant].filter(Boolean),
+                            };
+                        }
+
+                        normalizedOCR = fuseNeuralTextWithOCR(
+                            normalizedOCR,
+                            visionAnalysis
+                        );
+
+                        ocrCharacters = countCharacters(normalizedOCR);
+
+                        const recoverableImageRegions = selectRecoverableVisualRegions(
+                            visionAnalysis,
+                            imageInspection.regions,
+                            { width: viewport.width, height: viewport.height }
+                        );
+                        if (!excludeImages && recoverableImageRegions.length) {
+                            extractedImages = await cropPageImageRegions(
+                                rendered.canvas,
+                                recoverableImageRegions,
+                                renderScale
+                            );
+                        }
+
+                        if (
+                            mode === "fidelity" &&
+                            pageType.type === "scanned" &&
+                            !excludeImages &&
+                            cleanEditableBackground &&
+                            normalizedOCR?.words?.length
+                        ) {
+                            const cleaned = createEditableBackground(
+                                rendered.canvas,
+                                normalizedOCR.words,
+                                selectCleanPlateProtectedRegions(
+                                    visionAnalysis?.routing?.protectedRegions,
+                                    { width: viewport.width, height: viewport.height }
+                                ),
+                                {
+                                    renderedScale: renderScale,
+                                    pageWidth: viewport.width,
+                                    pageHeight: viewport.height,
+                                }
+                            );
+                            try {
+                                renderedPage = {
+                                    data: await canvasToPng(cleaned.canvas),
+                                    type: "png",
+                                    width: viewport.width,
+                                    height: viewport.height,
+                                    pixelWidth: cleaned.canvas.width,
+                                    pixelHeight: cleaned.canvas.height,
+                                    role: "clean-editable-background",
+                                };
+                                editableBackground = cleaned.metadata;
+                            } finally {
+                                releaseCanvas(cleaned.canvas);
+                            }
+                        }
+
+                        if (
+                            mode === "fidelity" &&
+                            pageType.type === "scanned" &&
+                            !excludeImages
+                        ) {
+                            renderedPage = renderedPage || {
+                                data: await canvasToPng(rendered.canvas),
+                                type: "png",
+                                width: viewport.width,
+                                height: viewport.height,
+                                pixelWidth: rendered.canvas.width,
+                                pixelHeight: rendered.canvas.height,
+                                role: "editable-background",
+                            };
+                        }
+
+                        if (pageType.type === "hybrid") {
+                            pageContent = mergeNativeAndOCR(nativeContent, normalizedOCR);
+                            extractionMethod = normalizedOCR.neuralWordCount
+                                ? "native+neural-layout"
+                                : "native+region-ocr";
+                        } else {
+                            pageContent = normalizedOCR;
+                            extractionMethod = extractionMethod === "vision-region-ocr"
+                                ? extractionMethod
+                                : "adaptive-ocr";
+                        }
+
+                        if (
+                            mode === "fidelity" &&
+                            pageType.type === "hybrid" &&
+                            !excludeImages &&
+                            cleanEditableBackground &&
+                            pageContent.words.length
+                        ) {
+                            const cleaned = createEditableBackground(
+                                rendered.canvas,
+                                pageContent.words,
+                                selectCleanPlateProtectedRegions(
+                                    visionAnalysis?.routing?.protectedRegions,
+                                    { width: viewport.width, height: viewport.height }
+                                ),
+                                {
+                                    renderedScale: renderScale,
+                                    pageWidth: viewport.width,
+                                    pageHeight: viewport.height,
+                                }
+                            );
+                            try {
+                                renderedPage = {
+                                    data: await canvasToPng(cleaned.canvas),
+                                    type: "png",
+                                    width: viewport.width,
+                                    height: viewport.height,
+                                    pixelWidth: cleaned.canvas.width,
+                                    pixelHeight: cleaned.canvas.height,
+                                    role: "clean-editable-background",
+                                };
+                                editableBackground = cleaned.metadata;
+                            } finally {
+                                releaseCanvas(cleaned.canvas);
+                            }
+                        }
+                    } finally {
+                        releaseCanvas(rendered.canvas);
+                    }
+                } else if (
+                    !excludeImages &&
+                    (imageInspection.regions.length || mode === "fidelity")
+                ) {
+                    const renderScale = calculateRenderScale(
+                        viewport,
+                        2,
+                        maximumCanvasMegapixels
+                    );
+                    reportProgress(0.68, "images", "Clasificando y recuperando imágenes…");
+                    const rendered = await renderPage(page, renderScale);
+                    try {
+                        peakCanvasPixels = Math.max(
+                            peakCanvasPixels,
+                            rendered.canvas.width * rendered.canvas.height
+                        );
+                        if (imageInspection.regions.length) {
+                            extractedImages = await cropPageImageRegions(
+                                rendered.canvas,
+                                imageInspection.regions,
+                                renderScale
+                            );
+                        }
+                        if (
+                            mode === "fidelity" &&
+                            cleanEditableBackground &&
+                            nativeContent.words.length
+                        ) {
+                            const cleaned = createEditableBackground(
+                                rendered.canvas,
+                                nativeContent.words,
+                                [],
+                                {
+                                    renderedScale: renderScale,
+                                    pageWidth: viewport.width,
+                                    pageHeight: viewport.height,
+                                }
+                            );
+                            try {
+                                renderedPage = {
+                                    data: await canvasToPng(cleaned.canvas),
+                                    type: "png",
+                                    width: viewport.width,
+                                    height: viewport.height,
+                                    pixelWidth: cleaned.canvas.width,
+                                    pixelHeight: cleaned.canvas.height,
+                                    role: "clean-editable-background",
+                                };
+                                editableBackground = cleaned.metadata;
+                            } finally {
+                                releaseCanvas(cleaned.canvas);
+                            }
+                        }
+                    } finally {
+                        releaseCanvas(rendered.canvas);
+                    }
+                }
+
+                throwIfCancelled(isCancelled, signal);
+                reportProgress(0.86, "layout", "Reconstruyendo regiones, tablas y lectura…");
+                const baseAnalysis = analyzePage({
+                        pageNumber,
+                        width: viewport.width,
+                        height: viewport.height,
+                        words: pageContent.words,
+                        lines: pageContent.lines,
+                        blocks: pageContent.blocks,
+                        paragraphs: pageContent.paragraphs,
+                    });
+                const analysis = enhancePageTables(
+                    mergeVectorTablesWithAnalysis(
+                        mergeVisionLayoutWithAnalysis(baseAnalysis, visionAnalysis),
+                        nativeTables
+                    )
+                );
+                const formFields = detectFormFields(analysis.lines);
+                const regionAnalysis = analyzePageRegions({
+                    pageNumber,
+                    dimensions: { width: viewport.width, height: viewport.height },
+                    analysis,
+                    images: extractedImages,
+                    pageType,
+                    visualRegions: visionAnalysis?.routing?.protectedRegions || [],
+                });
+                const nativeCharacters = countCharacters(nativeContent);
+                const qualityScore =
+                    mode === "visual"
+                        ? 100
+                        : calculateQualityScore({
+                            pageType,
+                            analysis,
+                            content: pageContent,
+                        });
+                const pageResult = {
+                    pageNumber,
+                    dimensions: { width: viewport.width, height: viewport.height },
+                    pageType,
+                    extractionMethod,
+                    content: pageContent,
+                    analysis,
+                    regionAnalysis,
+                    formFields,
+                    images: extractedImages,
+                    renderedPage,
+                    vision: visionAnalysis,
+                    editableBackground,
+                    ocr: ocrMetadata,
+                    review: {
+                        strategy: "automatic",
+                        excludeHeader: false,
+                        excludeFooter: false,
+                        excludeImages,
+                        correctedText: "",
+                    },
+                    metrics: {
+                        durationMs: Math.round(now() - pageStartedAt),
+                        nativeCharacters,
+                        ocrCharacters,
+                        wordCount: pageContent.words.length,
+                        imageCount,
+                        embeddedImageCount:
+                            extractedImages.length + (renderedPage ? 1 : 0),
+                        tableCount: analysis.tables.length,
+                        vectorTableCount: vectorTables.length,
+                        secondaryNativeTableCount:
+                            secondaryNativePage?.tables?.length || 0,
+                        secondaryNativeWordCount:
+                            secondaryNativePage?.content?.words?.length || 0,
+                        nativeExtractor:
+                            nativeContent.source === "native-secondary"
+                                ? "pdfplumber"
+                                : "pdfjs",
+                        nativeExtractorStatus:
+                            secondaryNativeDocument?.error
+                                ? "fallback"
+                                : secondaryNativePage
+                                  ? "cross-validated"
+                                  : "unavailable",
+                        columnCount: regionAnalysis.columnCount,
+                        regionCount: regionAnalysis.regions.length,
+                        formFieldCount: formFields.length,
+                        lowConfidenceRegions: regionAnalysis.lowConfidenceRegions,
+                        averageConfidence: analysis.statistics.averageConfidence,
+                        qualityScore,
+                        cacheHit: false,
+                        ocrAttemptCount: ocrMetadata.attempts.length,
+                        visualRegionCount: visionAnalysis?.regions?.length || 0,
+                        protectedVisualRegionCount:
+                            visionAnalysis?.routing?.protectedRegions?.length || 0,
+                        cleanedBackgroundWords:
+                            editableBackground?.removedWordCount || 0,
+                        visionProvider: visionAnalysis?.provider || "none",
+                        neuralVisionStatus: visionAnalysis?.neural?.status || "local",
+                        neuralFormulaRegions:
+                            analysis.visionLayout?.formulaCount || 0,
+                        neuralTableRegions:
+                            analysis.visionLayout?.tableCount || 0,
+                        handwritingRegions:
+                            analysis.visionLayout?.handwritingCount || 0,
+                    },
+                };
+
+                pages.push(pageResult);
+                if (useCache) {
+                    setCachedPage(
+                        cacheKey,
+                        clonePage(pageResult),
+                        Math.max(16, cacheMemoryMB) * 1024 * 1024
+                    );
+                }
+                reportProgress(1, "page-complete", `Página ${pageNumber} completada.`);
+            } finally {
+                page.cleanup();
+            }
+        }
+    } finally {
+        await loadingTask.destroy();
+    }
+
+    stabilizeHeaderAndFooterZones(pages);
+
+    const documentStructure = analyzeDocumentStructure(pages);
+
+    const report = summarizeDocument(
+        pages,
+        startedAt,
+        initialHeap,
+        peakCanvasPixels,
+        mode
+    );
+    onProgress?.({
+        percent: 92,
+        stage: "document",
+        detail: "Construyendo el documento Word…",
+        pageCount: pages.length,
+    });
+
+    return {
+        title: file.name.replace(/\.pdf$/i, ""),
+        sourceName: file.name,
+        mode,
+        pages,
+        report,
+        documentStructure,
+        selectedPages,
+        options: {
+            pageRange,
+            excludeImages,
+            maximumCanvasMegapixels,
+            cacheMemoryMB,
+            experimentalHandwriting,
+            advancedVision,
+            cleanEditableBackground,
+            visionProvider,
+            visionEndpoint,
+            visionTimeoutMs,
+            visionVersion: "3.2.0",
+        },
+    };
+}

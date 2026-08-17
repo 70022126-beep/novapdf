@@ -7,6 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test",
+    "benchmark:pdf": "node scripts/benchmark-pdf-classification.mjs",
+    "benchmark:native": "node scripts/benchmark-native-extraction.mjs",
+    "vision:start": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File services/vision/start.ps1",
+    "vision:check": "node scripts/check-neural-vision.mjs",
+    "vision:warmup": "node scripts/warm-neural-vision.mjs",
+    "vision:runtime": "services\\vision\\.venv\\Scripts\\python.exe services/vision/check_runtime.py",
+    "vision:test": "services\\vision\\.venv\\Scripts\\python.exe -m unittest services.vision.test_app",
     "preview": "vite preview"
   },
   "dependencies": {

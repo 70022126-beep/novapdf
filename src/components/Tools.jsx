@@ -27,7 +27,7 @@ function Tools() {
         {
             icon: "🔄",
             title: "Convertir PDF",
-            description: "Convierte PDF a imágenes y otros formatos.",
+            description: "Convierte PDF a Word, imágenes y otros formatos.",
             route: "/convert-pdf",
         },
     ];

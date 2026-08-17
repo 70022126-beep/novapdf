@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import JSZip from "jszip";
 import { PDFDocument } from "pdf-lib";
 import "./ConvertPDF.css";
@@ -171,6 +172,9 @@ function PDFThumbnail({
 // ============================================
 
 function ConvertPDF() {
+
+    const navigate =
+        useNavigate();
 
     const [mode, setMode] = useState(null);
 
@@ -1259,6 +1263,57 @@ const handleConvertToImage = async () => {
 
 
                     <div className="convert-options">
+
+
+                        {/* PDF → WORD */}
+
+                        <button
+                            type="button"
+                            className="convert-option convert-option-featured"
+                            onClick={() =>
+                                navigate(
+                                    "/pdf-to-word"
+                                )
+                            }
+                        >
+
+                            <span
+                                className="convert-icon pdf-word-convert-icon"
+                                aria-hidden="true"
+                            >
+
+                                <span className="pdf-format-badge">
+                                    PDF
+                                </span>
+
+                                <span className="format-arrow">
+                                    →
+                                </span>
+
+                                <span className="word-format-badge">
+                                    W
+                                </span>
+
+                            </span>
+
+
+                            <strong>
+                                PDF → Word
+                            </strong>
+
+
+                            <small>
+                                Convierte PDFs digitales
+                                o escaneados en documentos
+                                Word editables.
+                            </small>
+
+
+                            <span className="convert-option-tag">
+                                OCR inteligente
+                            </span>
+
+                        </button>
 
 
                         {/* PDF → IMAGEN */}

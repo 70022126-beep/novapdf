@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+.runtime/
+services/vision/.venv/
+services/vision/.models/
+.novapdf-*
 
 # Editor directories and files
 .vscode/*

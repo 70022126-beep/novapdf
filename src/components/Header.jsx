@@ -75,18 +75,6 @@ function Header() {
         }
     };
 
-
-    // ============================================
-    // IR A UNA HERRAMIENTA
-    // ============================================
-
-    const irAHerramienta = (ruta) => {
-        cerrarMenu();
-
-        navigate(ruta);
-    };
-
-
     return (
         <header className="header">
 

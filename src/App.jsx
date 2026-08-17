@@ -40,6 +40,9 @@ const PDFToWord = lazy(() =>
 const PDFEngineInspector = lazy(() =>
     import("./pages/PDFEngineInspector/PDFEngineInspector")
 );
+const OCRTest = lazy(() =>
+    import("./pages/OCRTest/OCRTest")
+);
 
 // ============================================
 // PANTALLA DE CARGA
@@ -85,7 +88,12 @@ function Home() {
 
 function App() {
     return (
-        <BrowserRouter>
+        <BrowserRouter
+            future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+            }}
+        >
 
             <Header />
 
@@ -148,6 +156,10 @@ function App() {
                     <Route
                         path="/pdf-engine-inspector"
                         element={<PDFEngineInspector />}
+                    />
+                    <Route
+                        path="/ocr-test"
+                        element={<OCRTest />}
                     />
                 </Routes>
 

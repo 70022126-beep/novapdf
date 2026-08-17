@@ -105,12 +105,14 @@
     display: grid;
 
     grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+        repeat(3, minmax(0, 1fr));
 
     gap: 18px;
 }
 
 .convert-option {
+    position: relative;
+
     min-height: 190px;
 
     padding: 25px;
@@ -131,6 +133,12 @@
 
     background: #ffffff;
 
+    color: inherit;
+
+    font-family: inherit;
+
+    text-decoration: none;
+
     cursor: pointer;
 
     transition:
@@ -149,6 +157,105 @@
 
 .convert-icon {
     font-size: 42px;
+}
+
+.convert-option-featured {
+    border-color: #bfdbfe;
+
+    background:
+        linear-gradient(
+            145deg,
+            #ffffff,
+            #f5f9ff
+        );
+}
+
+.pdf-word-convert-icon {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    min-height: 50px;
+
+    font-size: initial;
+}
+
+.pdf-format-badge,
+.word-format-badge {
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    box-sizing: border-box;
+
+    box-shadow:
+        0 5px 12px rgba(15, 23, 42, 0.14);
+}
+
+.pdf-format-badge {
+    width: 45px;
+
+    height: 50px;
+
+    border-radius: 7px 7px 10px 7px;
+
+    background: #dc2626;
+
+    color: #ffffff;
+
+    font-size: 11px;
+
+    font-weight: 900;
+
+    letter-spacing: 0.03em;
+}
+
+.word-format-badge {
+    width: 50px;
+
+    height: 50px;
+
+    border-radius: 10px;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 29px;
+
+    font-weight: 800;
+}
+
+.format-arrow {
+    color: #64748b;
+
+    font-size: 23px;
+
+    font-weight: 800;
+}
+
+.convert-option-tag {
+    padding: 5px 9px;
+
+    border-radius: 999px;
+
+    background: #dbeafe;
+
+    color: #1d4ed8;
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.02em;
 }
 
 .convert-option strong {
@@ -800,6 +907,15 @@
 ============================================ */
 
 @media (max-width: 850px) {
+
+    .convert-options {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .convert-option-featured {
+        grid-column: 1 / -1;
+    }
 
     .pdf-pages-grid {
         grid-template-columns:
@@ -2497,4 +2613,10 @@
     .image-pdf-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.convert-option:focus-visible {
+    outline: 3px solid #bfdbfe;
+
+    outline-offset: 3px;
 }
