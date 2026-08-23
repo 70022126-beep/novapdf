@@ -1,4 +1,4 @@
-//Hola//
+//Hola// /hola/ 
 function normalizeText(value) {
     return String(value ?? "")
         .normalize("NFC")
