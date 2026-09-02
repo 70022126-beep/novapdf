@@ -334,7 +334,22 @@ export function mergeVectorTablesWithAnalysis(analysis, vectorTables = []) {
             (candidate) => overlapRatio(candidate.bbox, table.bbox) >= 0.7
         );
         if (duplicateIndex >= 0) {
-            if (tableQuality(tables[duplicateIndex]) < tableQuality(table)) {
+            const incumbent = tables[duplicateIndex];
+            const candidateIsStructuredNative =
+                String(table.source || "").startsWith("pdfplumber-lines") &&
+                table.structure?.raw?.length;
+            const incumbentIsStructuredNative =
+                String(incumbent.source || "").startsWith("pdfplumber-lines") &&
+                incumbent.structure?.raw?.length;
+            const candidateIsHeuristicVector =
+                String(table.source || "").includes("vector") &&
+                !String(table.source || "").startsWith("pdfplumber");
+            if (candidateIsStructuredNative) {
+                tables[duplicateIndex] = table;
+            } else if (
+                !(incumbentIsStructuredNative && candidateIsHeuristicVector) &&
+                tableQuality(incumbent) < tableQuality(table)
+            ) {
                 tables[duplicateIndex] = table;
             }
         } else {

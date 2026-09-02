@@ -153,52 +153,7 @@ function Header() {
                     Herramientas
                 </button>
 
-
-                {/* PRECIOS */}
-
-                <Link
-                    to="/"
-                    onClick={cerrarMenu}
-                >
-                    Precios
-                </Link>
-
-
-                {/* CONTACTO */}
-
-                <Link
-                    to="/"
-                    onClick={cerrarMenu}
-                >
-                    Contacto
-                </Link>
-
-
-                {/* =================================
-                    LOGIN MÓVIL
-                ================================= */}
-
-                <button
-                    type="button"
-                    className="mobile-login-btn"
-                    onClick={cerrarMenu}
-                >
-                    Iniciar sesión
-                </button>
-
             </nav>
-
-
-            {/* ====================================
-                LOGIN DESKTOP
-            ==================================== */}
-
-            <button
-                type="button"
-                className="login-btn"
-            >
-                Iniciar sesión
-            </button>
 
         </header>
     );

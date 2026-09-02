@@ -84,7 +84,7 @@
 .footer-brand p {
     margin: 0;
 
-    color: #94a3b8;
+    color: #64748b;
 
     font-size: 14px;
 
@@ -114,8 +114,7 @@
     font-weight: 800;
 }
 
-.footer-column button,
-.footer-column a {
+.footer-column button {
     padding: 0;
 
     margin: 0 0 12px;
@@ -124,7 +123,7 @@
 
     background: transparent;
 
-    color: #94a3b8;
+    color: #64748b;
 
     text-decoration: none;
 
@@ -141,8 +140,7 @@
         transform 0.2s ease;
 }
 
-.footer-column button:hover,
-.footer-column a:hover {
+.footer-column button:hover {
     color: #60a5fa;
 
     transform: translateX(3px);

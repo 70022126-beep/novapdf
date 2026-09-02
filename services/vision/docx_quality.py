@@ -205,6 +205,7 @@ def compare_page_images(
     edge_similarity = _safe_ratio(
         2 * edge_precision * edge_recall,
         edge_precision + edge_recall,
+        empty_value=0.0,
     )
 
     shift_points_x = shift_x * 72.0 / dpi

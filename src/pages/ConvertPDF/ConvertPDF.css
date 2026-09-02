@@ -1655,6 +1655,9 @@
 
     box-shadow:
         0 4px 12px rgba(22, 101, 52, 0.04);
+
+    animation:
+        conversionResultAppear 0.3s ease;
 }
 
 .conversion-ready strong {
@@ -1781,36 +1784,6 @@
    RESULTADO DE CONVERSIÓN
 ======================================== */
 
-.conversion-result {
-    margin-top: 24px;
-
-    padding: 25px;
-
-    border: 1px solid #bbf7d0;
-
-    border-radius: 17px;
-
-    background:
-        linear-gradient(
-            135deg,
-            #f0fdf4,
-            #ecfdf5
-        );
-
-    text-align: center;
-
-    box-shadow:
-        0 8px 24px rgba(22, 101, 52, 0.06);
-
-    animation:
-        conversionResultAppear 0.3s ease;
-}
-
-
-/* ========================================
-   ANIMACIÓN
-======================================== */
-
 @keyframes conversionResultAppear {
 
     from {
@@ -1828,50 +1801,10 @@
 
 
 /* ========================================
-   TÍTULO
-======================================== */
-
-.conversion-result h3 {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 8px;
-
-    margin: 0 0 10px;
-
-    color: #15803d;
-
-    font-size: 21px;
-
-    font-weight: 800;
-}
-
-
-/* ========================================
-   INFORMACIÓN
-======================================== */
-
-.conversion-result p {
-    margin: 0 0 16px;
-
-    color: #166534;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-    line-height: 1.5;
-}
-
-
-/* ========================================
    BOTÓN DESCARGA
 ======================================== */
 
-.conversion-result .download-link {
+.conversion-ready .download-link {
     display: inline-flex;
 
     align-items: center;
@@ -1907,7 +1840,7 @@
         box-shadow 0.2s ease;
 }
 
-.conversion-result .download-link:hover {
+.conversion-ready .download-link:hover {
     background: #15803d;
 
     transform: translateY(-2px);
@@ -1921,7 +1854,7 @@
    FORMATO Y DPI
 ======================================== */
 
-.conversion-result .format-info {
+.conversion-ready .format-info {
     display: block;
 
     margin-top: 13px;
@@ -1942,21 +1875,7 @@
 
 @media (max-width: 600px) {
 
-    .conversion-result {
-        padding: 21px 16px;
-
-        border-radius: 14px;
-    }
-
-    .conversion-result h3 {
-        font-size: 18px;
-    }
-
-    .conversion-result p {
-        font-size: 13px;
-    }
-
-    .conversion-result .download-link {
+    .conversion-ready .download-link {
         width: 100%;
 
         min-width: 0;
@@ -1966,7 +1885,7 @@
         padding: 13px 18px;
     }
 
-    .conversion-result .format-info {
+    .conversion-ready .format-info {
         font-size: 11px;
     }
 

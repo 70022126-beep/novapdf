@@ -18,19 +18,23 @@ import numpy as np
 import cv2
 import pypdfium2 as pdfium
 import truststore
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, UnidentifiedImageError
 
 try:
     from .docx_quality import soffice_status, validate_docx_visual_quality
+    from .native_background import render_clean_background
+    from .native_docx import convert_native_pdf_to_docx, native_docx_status
     from .native_pdf import extract_native_document, parse_page_selection
 except ImportError:  # uvicorn iniciado desde services/vision
     from docx_quality import soffice_status, validate_docx_visual_quality
+    from native_background import render_clean_background
+    from native_docx import convert_native_pdf_to_docx, native_docx_status
     from native_pdf import extract_native_document, parse_page_selection
 
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.10.0"
 MAX_IMAGE_PIXELS = int(os.getenv("NOVAPDF_VISION_MAX_PIXELS", "50000000"))
 MAX_PDF_BYTES = int(os.getenv("NOVAPDF_VISION_MAX_PDF_BYTES", str(256 * 1024 * 1024)))
 MAX_DOCX_BYTES = int(os.getenv("NOVAPDF_QUALITY_MAX_DOCX_BYTES", str(256 * 1024 * 1024)))
@@ -366,6 +370,7 @@ def health(load: bool = False) -> dict[str, Any]:
         except Exception:
             pass
     document_renderer = soffice_status()
+    native_docx_converter = native_docx_status()
     return {
         "status": (
             "ready" if _pipeline is not None else "loading" if _pipeline_loading else "idle"
@@ -376,6 +381,8 @@ def health(load: bool = False) -> dict[str, Any]:
         "model_loaded": _pipeline is not None,
         "model_loading": _pipeline_loading,
         "native_pdf_extractor": "pdfplumber",
+        "native_clean_background": "pymupdf-object-redaction",
+        "native_docx_converter": native_docx_converter,
         "docx_visual_validator": (
             "ready" if document_renderer["available"] else "unavailable"
         ),
@@ -384,11 +391,56 @@ def health(load: bool = False) -> dict[str, Any]:
     }
 
 
+@app.post("/v1/convert/native-docx")
+def native_docx(
+    pdf: UploadFile = File(...),
+    pages: str = Form("all"),
+) -> Response:
+    content = pdf.file.read(MAX_PDF_BYTES + 1)
+    if not content or len(content) > MAX_PDF_BYTES:
+        raise HTTPException(status_code=413, detail="El PDF supera el limite permitido.")
+    if not content.startswith(b"%PDF-"):
+        raise HTTPException(status_code=400, detail="Archivo PDF no valido.")
+    if not native_docx_status()["available"]:
+        raise HTTPException(status_code=503, detail="El candidato DOCX nativo no esta instalado.")
+
+    try:
+        document = pdfium.PdfDocument(content)
+        page_total = len(document)
+        document.close()
+    except Exception as error:
+        raise HTTPException(status_code=400, detail="No se pudo abrir el PDF de origen.") from error
+
+    page_indices = parse_page_selection(pages, page_total, MAX_NATIVE_PAGES)
+    if not page_indices:
+        raise HTTPException(status_code=400, detail="El rango de paginas esta vacio.")
+    try:
+        result, metadata = convert_native_pdf_to_docx(content, page_indices)
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except Exception as error:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No se pudo generar el candidato DOCX: {type(error).__name__}",
+        ) from error
+
+    return Response(
+        content=result,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "X-NovaPDF-Converter": str(metadata.get("converter") or "pdf2docx"),
+            "X-NovaPDF-Converter-Version": str(metadata.get("version") or "unknown"),
+            "X-NovaPDF-Duration-Ms": str(metadata.get("duration_ms") or 0),
+        },
+    )
+
+
 @app.post("/v1/native-document")
 def native_document(
     pdf: UploadFile = File(...),
     pages: str = Form("all"),
     include_tables: bool = Form(True),
+    include_fonts: bool = Form(True),
 ) -> dict[str, Any]:
     content = pdf.file.read(MAX_PDF_BYTES + 1)
     if not content or len(content) > MAX_PDF_BYTES:
@@ -400,6 +452,7 @@ def native_document(
             content,
             pages=pages,
             include_tables=include_tables,
+            include_fonts=include_fonts,
             maximum_pages=MAX_NATIVE_PAGES,
         )
         return {**result, "version": APP_VERSION}
@@ -408,6 +461,57 @@ def native_document(
             status_code=422,
             detail=f"No se pudo analizar la estructura PDF: {type(error).__name__}",
         ) from error
+
+
+@app.post("/v1/native-background")
+def native_background(
+    pdf: UploadFile = File(...),
+    page: int = Form(...),
+    dpi: int = Form(144),
+    padding_points: float = Form(1.25),
+) -> Response:
+    content = pdf.file.read(MAX_PDF_BYTES + 1)
+    if not content or len(content) > MAX_PDF_BYTES:
+        raise HTTPException(status_code=413, detail="El PDF supera el limite permitido.")
+    if not content.startswith(b"%PDF-"):
+        raise HTTPException(status_code=400, detail="Archivo PDF no valido.")
+    if page < 1:
+        raise HTTPException(status_code=400, detail="La pagina debe ser mayor que cero.")
+    if dpi < 96 or dpi > 180:
+        raise HTTPException(status_code=400, detail="El DPI debe estar entre 96 y 180.")
+    if padding_points < 0 or padding_points > 4:
+        raise HTTPException(status_code=400, detail="El margen de limpieza no es valido.")
+    try:
+        result, metadata = render_clean_background(
+            content,
+            page - 1,
+            dpi=dpi,
+            padding_points=padding_points,
+        )
+    except IndexError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except Exception as error:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No se pudo crear el fondo editable: {type(error).__name__}",
+        ) from error
+
+    return Response(
+        content=result,
+        media_type="image/png",
+        headers={
+            "X-NovaPDF-Version": APP_VERSION,
+            "X-NovaPDF-Page-Width": str(metadata["page_width"]),
+            "X-NovaPDF-Page-Height": str(metadata["page_height"]),
+            "X-NovaPDF-Pixel-Width": str(metadata["pixel_width"]),
+            "X-NovaPDF-Pixel-Height": str(metadata["pixel_height"]),
+            "X-NovaPDF-Removed-Words": str(metadata["removed_word_count"]),
+            "X-NovaPDF-Masked-Ratio": str(metadata["masked_pixel_ratio"]),
+            "X-NovaPDF-Background-Strategy": str(metadata["strategy"]),
+        },
+    )
 
 
 @app.post("/v1/quality/docx")

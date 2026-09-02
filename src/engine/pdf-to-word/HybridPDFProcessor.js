@@ -6,6 +6,11 @@ import {
     enhancePageTables,
 } from "../layout/ProfessionalTableAnalyzer";
 import { recognizeAdaptive } from "../ocr/AdaptiveOCR";
+import { OCR_MODES, resolveOCRPolicy } from "./OCRPolicy.js";
+import {
+    needsCleanPositionedBackground,
+} from "./TableRenderingPolicy.js";
+import { extractNativeDocumentInBatches } from "./NativeDocumentBatcher.js";
 import { detectPageType } from "./PageTypeDetector";
 import {
     countCharacters,
@@ -27,6 +32,7 @@ import {
 import { normalizePageRange } from "./PageRange";
 import { analyzePageWithVision } from "../vision/NeuralVisionProvider";
 import { createEditableBackground } from "../vision/EditableBackground";
+import { fetchNativeCleanBackground } from "./NativeBackgroundProvider.js";
 import { mergeVisionLayoutWithAnalysis } from "../layout/NeuralLayoutFusion";
 import {
     fuseNeuralTextWithOCR,
@@ -40,8 +46,10 @@ import {
 import {
     extractNativeDocumentStructure,
     normalizeStructuredNativePage,
+    repairNativeTableText,
     selectBestNativeContent,
 } from "./NativeDocumentProvider";
+import { chooseEditableLayout } from "./EditableLayoutPolicy";
 
 export { normalizePageRange } from "./PageRange";
 
@@ -96,7 +104,7 @@ function boxOverlapRatio(first = {}, second = {}) {
     return intersection / minimumArea;
 }
 
-function selectRecoverableVisualRegions(vision, embeddedRegions, dimensions) {
+export function selectRecoverableVisualRegions(vision, embeddedRegions, dimensions) {
     const pageArea = Math.max(1, dimensions.width * dimensions.height);
     const recoverableTypes = new Set([
         "photo",
@@ -331,9 +339,35 @@ async function recognizeHybridRegions({
     };
 }
 
-function refinePageType(detectedType, imageCount) {
+function refinePageType(
+    detectedType,
+    {
+        imageCount = 0,
+        nativeImageCount = 0,
+        vectorObjectCount = 0,
+        secondaryWordCount = 0,
+    } = {}
+) {
+    const vectorDocumentWithoutRaster =
+        detectedType.type === "hybrid" &&
+        nativeImageCount === 0 &&
+        secondaryWordCount > 0 &&
+        (vectorObjectCount >= 12 || secondaryWordCount >= 2);
+
+    if (vectorDocumentWithoutRaster) {
+        return {
+            ...detectedType,
+            type: "digital",
+            confidence: Math.max(0.9, detectedType.confidence),
+            reason:
+                "La estructura PDF confirma texto y gráficos vectoriales sin imágenes rasterizadas.",
+        };
+    }
+
+    const hasRasterEvidence = nativeImageCount > 0 || vectorObjectCount < 12;
     const imageDominantWithLimitedText =
         imageCount > 0 &&
+        hasRasterEvidence &&
         detectedType.type === "digital" &&
         detectedType.characterCount < 250 &&
         detectedType.textDensity < 0.012;
@@ -569,6 +603,7 @@ export async function processPDFForWord(
     file,
     {
         mode = "editable",
+        ocrMode = "auto",
         onProgress,
         isCancelled,
         signal,
@@ -592,6 +627,7 @@ export async function processPDFForWord(
     }
 
     const startedAt = now();
+    if (!OCR_MODES.includes(ocrMode)) throw new Error("Selecciona una opción OCR válida.");
     const initialHeap = getHeapSize();
     const pdfjsLib = await getPdfjs();
     onProgress?.({ percent: 3, stage: "loading", detail: "Abriendo el PDF…" });
@@ -607,19 +643,52 @@ export async function processPDFForWord(
     const pages = [];
     let peakCanvasPixels = 0;
     let secondaryNativeDocument = null;
+    const cacheOptions = {
+        mode, ocrMode, ocrDictionary, experimentalHandwriting, maximumCanvasMegapixels,
+        extractImages: !excludeImages, advancedVision, cleanEditableBackground,
+        visionProvider, visionEndpoint,
+        visionVersion: "3.18.0-semantic-table-borders",
+    };
+    const cacheKeys = new Map(selectedPages.map((pageNumber) => [
+        pageNumber, createPageCacheKey(file, pageNumber, cacheOptions),
+    ]));
+    const cachedPages = new Map();
+    if (useCache) {
+        selectedPages.forEach((pageNumber) => {
+            const cached = getCachedPage(cacheKeys.get(pageNumber));
+            if (cached) cachedPages.set(pageNumber, cached);
+        });
+    }
+    const pagesRequiringExtraction = selectedPages.filter(
+        (pageNumber) => !cachedPages.has(pageNumber)
+    );
 
-    if (advancedVision && visionProvider !== "local") {
+    if (advancedVision && visionProvider !== "local" && pagesRequiringExtraction.length) {
         onProgress?.({
             percent: 5,
             stage: "native-structure",
             detail: "Verificando fuentes, vectores y tablas con el segundo extractor…",
         });
-        secondaryNativeDocument = await extractNativeDocumentStructure(file, {
-            pages: selectedPages,
-            endpoint: visionEndpoint,
-            signal,
-            timeoutMs: Math.min(visionTimeoutMs, 45_000),
-        });
+        secondaryNativeDocument = await extractNativeDocumentInBatches(
+            file,
+            pagesRequiringExtraction,
+            (source, batch, batchOptions) => extractNativeDocumentStructure(source, {
+                pages: batch, endpoint: visionEndpoint, signal,
+                includeFonts: batchOptions.includeFonts,
+                timeoutMs: Math.min(visionTimeoutMs, 45_000),
+            }),
+            {
+                batchSize: 100,
+                signal,
+                onBatch: ({ completed, total }) => onProgress?.({
+                    percent: 5,
+                    stage: "native-structure",
+                    detail: total
+                        ? `Analizando estructura nativa por lotes: ${completed}/${total} páginas…`
+                        : "Verificando estructura nativa…",
+                }),
+            }
+        );
     }
 
     try {
@@ -634,16 +703,8 @@ export async function processPDFForWord(
                 pageNumber,
                 startedAt
             );
-            const cacheKey = createPageCacheKey(file, pageNumber, {
-                mode,
-                extractImages: !excludeImages,
-                advancedVision,
-                cleanEditableBackground,
-                visionProvider,
-                visionEndpoint,
-                visionVersion: "3.3.0-native-dual",
-            });
-            const cachedPage = useCache ? getCachedPage(cacheKey) : null;
+            const cacheKey = cacheKeys.get(pageNumber);
+            const cachedPage = cachedPages.get(pageNumber) || null;
 
             if (cachedPage) {
                 const reusedPage = clonePage(cachedPage);
@@ -680,11 +741,20 @@ export async function processPDFForWord(
                 });
                 const primaryNativeContent = normalizeNativeContent(textContent, viewport);
                 const secondaryNativePageRaw = secondaryNativeDocument?.pages?.get(pageNumber);
-                const secondaryNativePage = secondaryNativePageRaw
+                const secondaryNativePageNormalized = secondaryNativePageRaw
                     ? normalizeStructuredNativePage(secondaryNativePageRaw, {
                         width: viewport.width,
                         height: viewport.height,
                     })
+                    : null;
+                const secondaryNativePage = secondaryNativePageNormalized
+                    ? {
+                        ...secondaryNativePageNormalized,
+                        tables: repairNativeTableText(
+                            secondaryNativePageNormalized.tables,
+                            primaryNativeContent
+                        ),
+                    }
                     : null;
                 const nativeContent = selectBestNativeContent(
                     primaryNativeContent,
@@ -692,7 +762,24 @@ export async function processPDFForWord(
                 );
                 const imageInspection = await inspectPageImages(page, pdfjsLib, viewport);
                 const imageCount = imageInspection.count;
-                const pageType = refinePageType(detectedPageType, imageCount);
+                const originalPageType = refinePageType(detectedPageType, {
+                    imageCount,
+                    nativeImageCount: secondaryNativePage?.images?.length || 0,
+                    vectorObjectCount: secondaryNativePage?.vectorObjects?.length || 0,
+                    secondaryWordCount: secondaryNativePage?.content?.words?.length || 0,
+                });
+                const ocrPolicy = resolveOCRPolicy({
+                    ocrMode, mode, pageType: originalPageType.type,
+                    nativeWordCount: nativeContent.words.length,
+                    pageNumber,
+                    isBlank: nativeContent.words.length === 0 &&
+                        (await page.getOperatorList()).fnArray.length === 0,
+                });
+                // Forced OCR must not merge the old text layer or native table text
+                // back into the recognized result.
+                const pageType = ocrPolicy.forceOCR
+                    ? { ...originalPageType, type: "scanned" }
+                    : originalPageType;
                 const vectorTables = pageType.type === "scanned"
                     ? []
                     : await extractVectorTables(
@@ -707,9 +794,23 @@ export async function processPDFForWord(
                         ...(secondaryNativePage?.tables || []),
                         ...vectorTables,
                     ];
+                const editableLayout = chooseEditableLayout({
+                    mode,
+                    pageType,
+                    nativeContent,
+                    nativePage: { ...secondaryNativePage, tables: nativeTables },
+                });
                 let pageContent = nativeContent;
                 let renderedPage = null;
                 let extractedImages = [];
+                const nativeEmbeddedImages = (secondaryNativePage?.images || []).filter(
+                    (image) => image.data?.length
+                );
+                const needsPositionedBackground = needsCleanPositionedBackground({
+                    editableLayout,
+                    tables: nativeTables,
+                    vectorObjectCount: secondaryNativePage?.vectorObjects?.length || 0,
+                });
                 let extractionMethod = nativeContent.source === "native-secondary"
                     ? "native-cross-validated"
                     : "native";
@@ -748,7 +849,7 @@ export async function processPDFForWord(
                         releaseCanvas(rendered.canvas);
                     }
                     extractionMethod = "visual-snapshot";
-                } else if (pageType.type !== "digital") {
+                } else if (ocrPolicy.useOCR) {
                     const renderScale = calculateRenderScale(
                         viewport,
                         3,
@@ -1017,59 +1118,133 @@ export async function processPDFForWord(
                     }
                 } else if (
                     !excludeImages &&
-                    (imageInspection.regions.length || mode === "fidelity")
+                    (
+                        imageInspection.regions.length ||
+                        mode === "fidelity" ||
+                        needsPositionedBackground
+                    )
                 ) {
-                    const renderScale = calculateRenderScale(
-                        viewport,
-                        2,
-                        maximumCanvasMegapixels
-                    );
-                    reportProgress(0.68, "images", "Clasificando y recuperando imágenes…");
-                    const rendered = await renderPage(page, renderScale);
-                    try {
+                    if (
+                        mode === "editable" &&
+                        editableLayout !== "positioned" &&
+                        nativeEmbeddedImages.length
+                    ) {
+                        reportProgress(
+                            0.68,
+                            "images",
+                            "Recuperando firmas e imágenes originales…"
+                        );
+                        extractedImages = nativeEmbeddedImages;
+                    } else {
+                        const renderScale = calculateRenderScale(
+                            viewport,
+                            2,
+                            maximumCanvasMegapixels
+                        );
+                        reportProgress(0.68, "images", "Clasificando y recuperando imágenes…");
+                        const rendered = await renderPage(page, renderScale);
+                        try {
                         peakCanvasPixels = Math.max(
                             peakCanvasPixels,
                             rendered.canvas.width * rendered.canvas.height
                         );
                         if (imageInspection.regions.length) {
-                            extractedImages = await cropPageImageRegions(
-                                rendered.canvas,
-                                imageInspection.regions,
-                                renderScale
-                            );
+                            if (nativeContent.words.length) {
+                                const cleanedImages = createEditableBackground(
+                                    rendered.canvas,
+                                    nativeContent.words,
+                                    [],
+                                    {
+                                        renderedScale: renderScale,
+                                        pageWidth: viewport.width,
+                                        pageHeight: viewport.height,
+                                        padding: 0.25,
+                                    }
+                                );
+                                try {
+                                    extractedImages = (
+                                        await cropPageImageRegions(
+                                            cleanedImages.canvas,
+                                            imageInspection.regions,
+                                            renderScale
+                                        )
+                                    ).map((image) => ({
+                                        ...image,
+                                        cleanedTextLayer: true,
+                                    }));
+                                } finally {
+                                    releaseCanvas(cleanedImages.canvas);
+                                }
+                            } else {
+                                extractedImages = await cropPageImageRegions(
+                                    rendered.canvas,
+                                    imageInspection.regions,
+                                    renderScale
+                                );
+                            }
                         }
                         if (
-                            mode === "fidelity" &&
+                            (mode === "fidelity" || needsPositionedBackground) &&
                             cleanEditableBackground &&
                             nativeContent.words.length
                         ) {
-                            const cleaned = createEditableBackground(
-                                rendered.canvas,
-                                nativeContent.words,
-                                [],
-                                {
-                                    renderedScale: renderScale,
-                                    pageWidth: viewport.width,
-                                    pageHeight: viewport.height,
+                            let nativeBackground = null;
+                            if (
+                                needsPositionedBackground &&
+                                advancedVision &&
+                                visionProvider !== "local"
+                            ) {
+                                try {
+                                    nativeBackground = await fetchNativeCleanBackground(file, {
+                                        pageNumber,
+                                        endpoint: visionEndpoint,
+                                        dpi: 144,
+                                        timeoutMs: Math.min(visionTimeoutMs, 45_000),
+                                        signal,
+                                    });
+                                } catch {
+                                    // El limpiador local del navegador sigue siendo una
+                                    // recuperación válida si el servicio no está disponible.
                                 }
-                            );
-                            try {
-                                renderedPage = {
-                                    data: await canvasToPng(cleaned.canvas),
-                                    type: "png",
-                                    width: viewport.width,
-                                    height: viewport.height,
-                                    pixelWidth: cleaned.canvas.width,
-                                    pixelHeight: cleaned.canvas.height,
-                                    role: "clean-editable-background",
+                            }
+                            if (nativeBackground) {
+                                renderedPage = nativeBackground;
+                                editableBackground = {
+                                    provider: nativeBackground.provider,
+                                    strategy: nativeBackground.strategy,
+                                    removedWordCount: nativeBackground.removedWordCount,
+                                    maskedPixelRatio: nativeBackground.maskedPixelRatio,
                                 };
-                                editableBackground = cleaned.metadata;
-                            } finally {
-                                releaseCanvas(cleaned.canvas);
+                            } else {
+                                const cleaned = createEditableBackground(
+                                    rendered.canvas,
+                                    nativeContent.words,
+                                    [],
+                                    {
+                                        renderedScale: renderScale,
+                                        pageWidth: viewport.width,
+                                        pageHeight: viewport.height,
+                                    }
+                                );
+                                try {
+                                    renderedPage = {
+                                        data: await canvasToPng(cleaned.canvas),
+                                        type: "png",
+                                        width: viewport.width,
+                                        height: viewport.height,
+                                        pixelWidth: cleaned.canvas.width,
+                                        pixelHeight: cleaned.canvas.height,
+                                        role: "clean-editable-background",
+                                    };
+                                    editableBackground = cleaned.metadata;
+                                } finally {
+                                    releaseCanvas(cleaned.canvas);
+                                }
                             }
                         }
-                    } finally {
-                        releaseCanvas(rendered.canvas);
+                        } finally {
+                            releaseCanvas(rendered.canvas);
+                        }
                     }
                 }
 
@@ -1088,7 +1263,8 @@ export async function processPDFForWord(
                     mergeVectorTablesWithAnalysis(
                         mergeVisionLayoutWithAnalysis(baseAnalysis, visionAnalysis),
                         nativeTables
-                    )
+                    ),
+                    pageContent.words
                 );
                 const formFields = detectFormFields(analysis.lines);
                 const regionAnalysis = analyzePageRegions({
@@ -1110,6 +1286,8 @@ export async function processPDFForWord(
                         });
                 const pageResult = {
                     pageNumber,
+                    originalPageType,
+                    ocrMode,
                     dimensions: { width: viewport.width, height: viewport.height },
                     pageType,
                     extractionMethod,
@@ -1121,6 +1299,7 @@ export async function processPDFForWord(
                     renderedPage,
                     vision: visionAnalysis,
                     editableBackground,
+                    editableLayout,
                     ocr: ocrMetadata,
                     review: {
                         strategy: "automatic",
@@ -1217,10 +1396,12 @@ export async function processPDFForWord(
         sourceName: file.name,
         mode,
         pages,
+        embeddedFonts: secondaryNativeDocument?.embeddedFonts || [],
         report,
         documentStructure,
         selectedPages,
         options: {
+            ocrMode,
             pageRange,
             excludeImages,
             maximumCanvasMegapixels,
@@ -1231,7 +1412,7 @@ export async function processPDFForWord(
             visionProvider,
             visionEndpoint,
             visionTimeoutMs,
-            visionVersion: "3.2.0",
+            visionVersion: "3.18.0-semantic-table-borders",
         },
     };
 }

@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 
 import { evaluateCorpus } from "../src/engine/evaluation/ScientificBenchmark.js";
 import { analyzeDocumentStructure } from "../src/engine/layout/DocumentStructureAnalyzer.js";
-import { enhanceTable } from "../src/engine/layout/ProfessionalTableAnalyzer.js";
+import {
+    enhancePageTables,
+    enhanceTable,
+} from "../src/engine/layout/ProfessionalTableAnalyzer.js";
 import { analyzePageRegions } from "../src/engine/layout/RegionIntelligence.js";
 import { normalizePageRange } from "../src/engine/pdf-to-word/PageRange.js";
 
@@ -78,6 +81,27 @@ test("clasifica regiones mixtas y conserva su orden de lectura", () => {
     );
 });
 
+test("conserva coordenadas de celda solo con cobertura nativa completa", () => {
+    const table = {
+        bbox: { x: 100, y: 100, width: 200, height: 80 },
+        rows: [["Uno Dos", ""], ["Tres", ""]],
+        source: "pdfplumber-lines",
+        columnAnchors: [100, 200],
+        structure: { raw: [
+            { cells: [{ text: "Uno\nDos", columnIndex: 0, bbox: { x: 100, y: 100, width: 100, height: 40 } }] },
+            { cells: [{ text: "Tres", columnIndex: 0, bbox: { x: 100, y: 140, width: 100, height: 40 } }] },
+        ] },
+    };
+    const words = [
+        { text: "Uno", x: 112, y: 103, width: 20, height: 9, fontSize: 9, source: "native-secondary" },
+        { text: "Dos", x: 112, y: 123, width: 20, height: 9, fontSize: 9, source: "native-secondary" },
+    ];
+    const complete = enhancePageTables({ tables: [table] }, words).tables[0];
+    assert.deepEqual(complete.professional.grid[0][0].nativeLines.map((line) => line.bbox.y), [103, 123]);
+    const incomplete = enhancePageTables({ tables: [table] }, words.slice(0, 1)).tables[0];
+    assert.equal(incomplete.professional.grid[0][0].nativeLines, undefined);
+});
+
 test("modela tablas profesionales con tipos numéricos y celdas combinadas", () => {
     const enhanced = enhanceTable({
         rows: [
@@ -92,6 +116,195 @@ test("modela tablas profesionales con tipos numéricos y celdas combinadas", () 
     assert.equal(enhanced.professional.headerRows, 1);
     assert.equal(enhanced.professional.grid[1][1].valueType, "currency");
     assert.equal(enhanced.professional.grid[1][1].alignment, "right");
+});
+
+test("conserva saltos, tipografía y alineación de celdas nativas", () => {
+    const result = enhancePageTables(
+        {
+            tables: [
+                {
+                    bbox: { x: 100, y: 100, width: 300, height: 96 },
+                    rows: [["Etapa", "Línea uno Línea dos"], ["UGEL", "Detalle"]],
+                    headers: [],
+                    columnAnchors: [100, 160],
+                    structure: {
+                        raw: [
+                            {
+                                cells: [
+                                    {
+                                        text: "Etapa",
+                                        columnIndex: 0,
+                                        bbox: { x: 100, y: 100, width: 60, height: 48 },
+                                    },
+                                    {
+                                        text: "Línea uno\nLínea dos",
+                                        columnIndex: 1,
+                                        bbox: { x: 160, y: 100, width: 240, height: 48 },
+                                    },
+                                ],
+                            },
+                            {
+                                cells: [
+                                    {
+                                        text: "UGEL",
+                                        columnIndex: 0,
+                                        bbox: { x: 100, y: 148, width: 60, height: 48 },
+                                    },
+                                    {
+                                        text: "Detalle",
+                                        columnIndex: 1,
+                                        bbox: { x: 160, y: 148, width: 240, height: 48 },
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+        },
+        [
+            {
+                text: "Etapa",
+                x: 110,
+                y: 110,
+                width: 30,
+                height: 9,
+                fontSize: 9,
+                fontFamily: "Arial",
+                bold: true,
+            },
+            {
+                text: "Línea",
+                x: 170,
+                y: 110,
+                width: 30,
+                height: 9,
+                fontSize: 9,
+                fontFamily: "Arial",
+            },
+        ]
+    );
+
+    const firstCell = result.tables[0].professional.grid[0][0];
+    const multilineCell = result.tables[0].professional.grid[0][1];
+    assert.deepEqual(multilineCell.sourceLines, ["Línea uno", "Línea dos"]);
+    assert.equal(multilineCell.lineCount, 2);
+    assert.equal(firstCell.fontSize, 9);
+    assert.equal(firstCell.bold, true);
+    assert.equal(firstCell.alignment, "center");
+});
+
+test("elimina celdas vacías cubiertas por una combinación vertical", () => {
+    const enhanced = enhanceTable({
+        rows: [
+            ["Área", "Valor"],
+            ["Ciencia", "1"],
+            ["", "2"],
+        ],
+        headers: ["Área", "Valor"],
+        columnAnchors: [0, 100],
+        structure: {
+            raw: [
+                {
+                    cells: [
+                        { text: "Área", columnIndex: 0, columnSpan: 1, rowSpan: 1 },
+                        { text: "Valor", columnIndex: 1, columnSpan: 1, rowSpan: 1 },
+                    ],
+                },
+                {
+                    cells: [
+                        { text: "Ciencia", columnIndex: 0, columnSpan: 1, rowSpan: 2 },
+                        { text: "1", columnIndex: 1, columnSpan: 1, rowSpan: 1 },
+                    ],
+                },
+                {
+                    cells: [
+                        { text: "2", columnIndex: 1, columnSpan: 1, rowSpan: 1 },
+                    ],
+                },
+            ],
+        },
+        structuralScore: 96,
+    });
+
+    assert.equal(enhanced.professional.grid[2].length, 1);
+    assert.equal(enhanced.professional.grid[2][0].columnIndex, 1);
+    assert.equal(enhanced.professional.grid[2][0].text, "2");
+});
+
+test("elimina encabezados de tabla consecutivos duplicados", () => {
+    const header = {
+        cells: [
+            { text: "Área", columnIndex: 0, columnSpan: 1, rowSpan: 1 },
+            { text: "Valor", columnIndex: 1, columnSpan: 1, rowSpan: 1 },
+        ],
+    };
+    const enhanced = enhanceTable({
+        rows: [["Área", "Valor"], ["Área", "Valor"], ["Ciencia", "2"]],
+        headers: ["Área", "Valor"],
+        columnAnchors: [0, 100],
+        structure: {
+            raw: [
+                header,
+                header,
+                {
+                    cells: [
+                        { text: "Ciencia", columnIndex: 0, columnSpan: 1, rowSpan: 1 },
+                        { text: "2", columnIndex: 1, columnSpan: 1, rowSpan: 1 },
+                    ],
+                },
+            ],
+        },
+        structuralScore: 96,
+    });
+
+    assert.equal(enhanced.professional.grid.length, 2);
+    assert.equal(enhanced.professional.grid[1][0].text, "Ciencia");
+});
+
+test("no inventa una cabecera en una tabla nativa que continúa desde otra página", () => {
+    const enhanced = enhanceTable({
+        source: "pdfplumber-lines",
+        headers: [],
+        columnAnchors: [100, 150, 220],
+        structure: {
+            raw: [
+                {
+                    cells: [
+                        { text: "", columnIndex: 0 },
+                        { text: "D y E", columnIndex: 1 },
+                        { text: "Continuación del contenido", columnIndex: 2 },
+                    ],
+                },
+                {
+                    cells: [
+                        { text: "DRE", columnIndex: 0 },
+                        { text: "D y E", columnIndex: 1 },
+                        { text: "Descripción", columnIndex: 2 },
+                    ],
+                },
+            ],
+        },
+        rows: [
+            ["", "D y E", "Continuación del contenido"],
+            ["DRE", "D y E", "Descripción"],
+        ],
+    });
+
+    assert.equal(enhanced.professional.headerRows, 0);
+});
+
+test("una tabla continuada en la parte superior nunca convierte su primera fila en cabecera", () => {
+    const enhanced = enhanceTable({
+        bbox: { x: 100, y: 70, width: 400, height: 180 },
+        headers: ["", "D y E", "informes de proyecto"],
+        rows: [
+            ["", "D y E", "informes de proyecto"],
+            ["DRE", "D y E", "descripción"],
+        ],
+    });
+
+    assert.equal(enhanced.professional.headerRows, 0);
 });
 
 test("analiza continuidad y capítulos a escala de documento", () => {
@@ -141,4 +354,24 @@ test("agrega CER, WER, tablas, geometría y rendimiento de un corpus", () => {
     assert.equal(result.geometricFidelity, 100);
     assert.equal(result.pagesPerMinute, 120);
     assert.ok(result.cer > 0);
+});
+
+test("conserva filas vacías consecutivas de formularios", () => {
+    const makeRow = (rowIndex, values) => ({
+        cells: values.map((text, columnIndex) => ({
+            text,
+            columnIndex,
+            bbox: { x: columnIndex * 100, y: rowIndex * 20, width: 100, height: 20 },
+        })),
+    });
+    const enhanced = enhanceTable({
+        bbox: { x: 0, y: 0, width: 200, height: 80 },
+        columnAnchors: [0, 100],
+        rows: [["Campo", "Valor"], ["", ""], ["", ""], ["Firma", ""]],
+        structure: { raw: [
+            makeRow(0, ["Campo", "Valor"]), makeRow(1, ["", ""]),
+            makeRow(2, ["", ""]), makeRow(3, ["Firma", ""]),
+        ] },
+    });
+    assert.equal(enhanced.professional.grid.length, 4);
 });

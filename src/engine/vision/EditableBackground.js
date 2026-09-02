@@ -112,7 +112,13 @@ export function createEditableBackground(
     sourceCanvas,
     words = [],
     protectedRegions = [],
-    { renderedScale = 1, pageWidth, pageHeight, minimumConfidence = 42 } = {}
+    {
+        renderedScale = 1,
+        pageWidth,
+        pageHeight,
+        minimumConfidence = 42,
+        padding = 1.15,
+    } = {}
 ) {
     if (!sourceCanvas) throw new Error("No se proporciono un fondo para limpiar.");
     const dimensions = {
@@ -121,6 +127,7 @@ export function createEditableBackground(
     };
     const plan = buildTextRemovalPlan(words, protectedRegions, dimensions, {
         minimumConfidence,
+        padding,
     });
     const canvas = document.createElement("canvas");
     canvas.width = sourceCanvas.width;

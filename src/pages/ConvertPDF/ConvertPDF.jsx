@@ -1945,7 +1945,7 @@ const handleConvertToImage = async () => {
 
 {/* RESULTADO */}
 
-{conversionResult && (
+{conversionResult && !isConverting && (
 
     <div className="conversion-ready">
 
@@ -1965,7 +1965,7 @@ const handleConvertToImage = async () => {
             <a
                 href={conversionDownloadUrl}
                 download={conversionDownloadName}
-                className="conversion-download-button"
+                className="download-link"
             >
                 📥 Descargar{" "}
                 {selectedPages.length > 1
@@ -2310,7 +2310,7 @@ const handleConvertToImage = async () => {
                                     <a
                                         href={imagePdfDownloadUrl}
                                         download={imagePdfDownloadName}
-                                        className="conversion-download-button"
+                                        className="download-link"
                                     >
                                         📥 Descargar PDF
                                     </a>

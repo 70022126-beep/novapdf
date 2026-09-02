@@ -10,6 +10,7 @@
     "test": "node --test",
     "benchmark:pdf": "node scripts/benchmark-pdf-classification.mjs",
     "benchmark:native": "node scripts/benchmark-native-extraction.mjs",
+    "benchmark:docx-native": "node scripts/benchmark-native-docx.mjs",
     "vision:start": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File services/vision/start.ps1",
     "vision:check": "node scripts/check-neural-vision.mjs",
     "vision:warmup": "node scripts/warm-neural-vision.mjs",

@@ -76,3 +76,47 @@ test("conserva la tabla secundaria con mas filas y columnas aunque su score base
     assert.equal(merged.tables.length, 1);
     assert.equal(merged.tables[0].id, "pdfplumber");
 });
+
+test("una tabla nativa estructurada prevalece sobre la rejilla vectorial duplicada", () => {
+    const native = {
+        id: "native-structured",
+        source: "pdfplumber-lines",
+        bbox: { x: 10, y: 10, width: 200, height: 100 },
+        structuralScore: 96,
+        rows: [["A", "B"], ["1", "2"]],
+        structure: { raw: [{ cells: [{ rowSpan: 2 }] }] },
+    };
+    const vector = {
+        id: "native-vector",
+        source: "native-vector",
+        bbox: { x: 10, y: 10, width: 200, height: 100 },
+        structuralScore: 100,
+        rows: [["A", "B"], ["1", "2"], ["", "2"]],
+    };
+
+    const merged = mergeVectorTablesWithAnalysis({ tables: [] }, [native, vector]);
+
+    assert.equal(merged.tables[0].id, "native-structured");
+});
+
+test("la tabla pdfplumber estructurada sustituye una heurística duplicada", () => {
+    const heuristic = {
+        id: "heuristic-high-score",
+        source: "layout-heuristic",
+        bbox: { x: 10, y: 10, width: 200, height: 100 },
+        structuralScore: 100,
+        rows: [["Encabezado"], ["Encabezado"], ["Dato"]],
+    };
+    const native = {
+        id: "pdfplumber-clean",
+        source: "pdfplumber-lines",
+        bbox: { x: 10, y: 10, width: 200, height: 100 },
+        structuralScore: 96,
+        rows: [["Encabezado"], ["Dato"]],
+        structure: { raw: [{ cells: [{}] }, { cells: [{}] }] },
+    };
+
+    const merged = mergeVectorTablesWithAnalysis({ tables: [heuristic] }, [native]);
+
+    assert.equal(merged.tables[0].id, "pdfplumber-clean");
+});

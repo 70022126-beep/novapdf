@@ -20,8 +20,17 @@ export function createPageCacheKey(file, pageNumber, options = {}) {
         createFileSignature(file),
         pageNumber,
         options.mode || "editable",
+        options.ocrMode || "auto",
+        JSON.stringify(options.ocrDictionary || []),
+        options.experimentalHandwriting === true ? "handwriting" : "printed",
+        options.maximumCanvasMegapixels || 20,
         options.ocrLanguage || "auto",
         options.extractImages !== false ? "images" : "no-images",
+        options.advancedVision !== false ? "advanced-vision" : "basic-vision",
+        options.cleanEditableBackground !== false ? "clean-background" : "plain-background",
+        options.visionProvider || "auto",
+        options.visionEndpoint || "local-default",
+        options.visionVersion || "vision-v1",
     ].join("|");
 }
 
@@ -68,4 +77,3 @@ export function getConversionCacheStats() {
         megabytes: Number((totalBytes / 1024 / 1024).toFixed(2)),
     };
 }
-

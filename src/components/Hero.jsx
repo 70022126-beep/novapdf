@@ -1,6 +1,12 @@
 import "./Hero.css";
 
 export default function Hero() {
+  const irAHerramientas = () => {
+    document
+      .getElementById("herramientas")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <section className="hero">
 
@@ -19,7 +25,7 @@ export default function Hero() {
         tus documentos de manera rápida, segura y profesional.
       </p>
 
-      <button>
+      <button type="button" onClick={irAHerramientas}>
         Comenzar gratis
       </button>
 

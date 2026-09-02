@@ -1,5 +1,5 @@
 import "./Footer.css";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function Footer() {
     const navigate = useNavigate();
@@ -126,14 +126,6 @@ function Footer() {
                     >
                         Herramientas
                     </button>
-
-                    <Link to="/">
-                        Precios
-                    </Link>
-
-                    <Link to="/">
-                        Contacto
-                    </Link>
 
                 </div>
 

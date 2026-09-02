@@ -25,6 +25,9 @@ python -m venv .venv
 # Instalar primero el wheel PaddlePaddle adecuado para Python 3.12 y RTX 50
 # siguiendo la documentación oficial vigente.
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+# Segundo candidato para PDFs digitales. --no-deps evita reemplazar el OpenCV
+# de PaddleOCR por otra distribución que expone el mismo módulo cv2.
+.\.venv\Scripts\python.exe -m pip install --no-deps -r requirements-native-docx.txt
 ```
 
 Después:
@@ -56,6 +59,10 @@ documento pague todo el tiempo de inicialización sin información visible.
   `include_tables`. Usa pdfplumber para extraer palabras, fuentes, tamaños,
   colores, rotación, líneas, rectángulos, curvas, imágenes, anotaciones y
   tablas con coordenadas exactas.
+- `POST /v1/convert/native-docx`: segundo candidato local para documentos
+  digitales editables. NovaPDF lo compara con su reconstrucción y solo lo
+  adopta cuando mejora la puntuación sin degradar ninguna página. Se excluye
+  automáticamente en páginas con tablas, fórmulas, firmas o sellos.
 
 La respuesta normalizada incluye dimensiones, proveedor, modelo y regiones con
 tipo, confianza, caja, texto, HTML de tablas, celdas y LaTeX de fórmulas.
@@ -97,7 +104,7 @@ conserva al menos el 88% de los caracteres y suficientes propiedades de estilo.
 Si el servicio no está iniciado, PDF.js continúa funcionando sin bloquear la
 conversión.
 
-## Validación visual posterior (versión 1.3)
+## Validación visual posterior (versión 1.4)
 
 LibreOffice vuelve a renderizar localmente cada DOCX generado. NovaPDF compara
 ese PDF con las páginas originales y mide solapamiento de tinta, bordes,
@@ -107,3 +114,22 @@ archivo Word terminado; no es solamente una estimación de la extracción.
 `POST /v1/quality/docx` recibe un formulario multipart con `pdf`, `docx`,
 `pages` y `dpi`. Los archivos se procesan dentro de un directorio temporal y se
 eliminan al terminar. `GET /health` informa si LibreOffice está disponible.
+
+## Bordes y rellenos de tabla (versión 1.10)
+
+El detector separa los bordes reales de los rectángulos rellenos sin trazo que
+Office coloca detrás del texto. Esos fondos ya no crean filas artificiales en
+cabeceras de varias líneas. Se conservan los rectángulos con contorno y las
+franjas rellenas de hasta 5 puntos usadas como bordes. También se reconocen
+rectángulos codificados como rutas de cuatro segmentos; no se descartan rutas
+compuestas ni curvas arbitrarias.
+
+El filtro solo se aplica a la geometría de detección. El PDF original permanece
+intacto y sus rellenos se recuperan por celda como `structure.raw[].cells[].shading`.
+Un color hexadecimal conserva el fondo detectado; `null` indica una celda sin
+relleno, para que el generador Word no invente una cabecera gris. Los resaltados
+que cubren menos del 90 % de una celda no se propagan a toda la celda.
+
+La prueba de regresión genera en memoria un PDF con fondos de texto, bordes
+rellenos, una cabecera multilínea y dos filas vacías. Comprueba la estructura,
+la conservación de las filas de formulario y el transporte de los colores.

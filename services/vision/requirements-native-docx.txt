@@ -1,0 +1,8 @@
+# Instalar después de requirements.txt. Se usa --no-deps para conservar
+# opencv-contrib-python, requerido por el pipeline documental de PaddleOCR.
+PyMuPDF>=1.28,<2
+python-docx>=1.2,<2
+fonttools>=4.63,<5
+fire>=0.7,<1
+termcolor>=3,<4
+pdf2docx==0.5.13

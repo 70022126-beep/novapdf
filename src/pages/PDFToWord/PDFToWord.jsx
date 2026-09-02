@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 
-import { validateRenderedWordDocument } from "../../engine/evaluation/VisualQualityProvider";
+import {
+    buildQualityOptimizationReport,
+    evaluateQualityRetryPages,
+    mergeQualityRetryPages,
+    selectPagesForQualityRetry,
+    shouldApplyQualityRetry,
+} from "../../engine/evaluation/QualityAutoOptimizer";
+import {
+    checkLocalDocumentService,
+    validateRenderedWordDocument,
+} from "../../engine/evaluation/VisualQualityProvider";
 import { processPDFForWord } from "../../engine/pdf-to-word/HybridPDFProcessor";
+import {
+    convertWithNativeDocxCandidate,
+    isNativeDocxCandidateEligible,
+    shouldApplyNativeDocxCandidate,
+} from "../../engine/pdf-to-word/NativeDocxCandidate";
 import { renderWordDocument } from "../../engine/pdf-to-word/WordDocumentRenderer";
 import PDFReviewWorkspace from "./PDFReviewWorkspace";
 import "./PDFToWord.css";
@@ -13,6 +28,8 @@ const MODE_OPTIONS = [
         description:
             "Texto, tablas, columnas, encabezados y estilos reconstruidos para poder modificarlos.",
         badge: "Recomendado",
+        bestFor: "Contratos, informes y documentos digitales",
+        features: ["Edición fluida", "Tablas Word", "Orden de lectura"],
     },
     {
         id: "fidelity",
@@ -20,6 +37,8 @@ const MODE_OPTIONS = [
         description:
             "Reconstruye texto, tablas e imágenes como capas Word posicionadas sobre la página.",
         badge: "Diseño + edición",
+        bestFor: "Escaneos, formularios y diseños complejos",
+        features: ["Posición precisa", "Capas editables", "Elementos protegidos"],
     },
     {
         id: "visual",
@@ -27,6 +46,8 @@ const MODE_OPTIONS = [
         description:
             "Preserva cada página como imagen cuando el aspecto importa más que la edición.",
         badge: "Solo visual",
+        bestFor: "Archivo, impresión y copia de seguridad",
+        features: ["Aspecto exacto", "Sin reconstrucción", "Texto no editable"],
     },
 ];
 
@@ -41,14 +62,29 @@ const METHOD_LABELS = {
     "adaptive-ocr": "OCR adaptativo",
     "vision-region-ocr": "Vision regional + OCR",
     "native+region-ocr": "Nativo + OCR regional",
+    "native+neural-layout": "Nativo + estructura neuronal",
+    "neural-layout": "Estructura neuronal + OCR",
     "visual-snapshot": "Captura visual",
 };
 
+const QUALITY_ISSUE_LABELS = {
+    page_geometry_changed: "Geometría de página alterada",
+    content_shift: "Contenido desplazado",
+    low_content_overlap: "Bajo solapamiento del contenido",
+    layout_mismatch: "Estructura visual diferente",
+    missing_output_page: "Página ausente en Word",
+    unexpected_output_page: "Página adicional en Word",
+};
+
 const DEFAULT_OPTIONS = {
+    ocrMode: "",
     pageRange: "all",
     excludeImages: false,
     reviewBeforeDownload: true,
     validateVisualQuality: true,
+    autoQualityRetry: true,
+    qualityRetryThreshold: 70,
+    maximumQualityRetryPages: 32,
     maximumCanvasMegapixels: 20,
     cacheMemoryMB: 96,
     ocrDictionary: "",
@@ -78,6 +114,41 @@ function formatDuration(milliseconds) {
         : `${Math.floor(seconds / 60)} min ${Math.round(seconds % 60)} s`;
 }
 
+function parseOCRDictionary(value) {
+    return String(value || "")
+        .split(",")
+        .map((word) => word.trim())
+        .filter(Boolean);
+}
+
+function qualityLevel(score) {
+    if (score >= 85) return { label: "Alta", tone: "excellent" };
+    if (score >= 70) return { label: "Buena", tone: "good" };
+    if (score >= 55) return { label: "Mejorable", tone: "warning" };
+    return { label: "Requiere revisión", tone: "danger" };
+}
+
+function qualityIssueLabel(issue) {
+    return QUALITY_ISSUE_LABELS[issue] || issue?.replaceAll("_", " ") || "Sin alertas";
+}
+
+function pageQualityRecommendation(page) {
+    const issues = new Set(page?.issues || []);
+    if (issues.has("page_geometry_changed")) {
+        return "Revisa el tamaño, la orientación y los márgenes de esta página.";
+    }
+    if (issues.has("low_content_overlap")) {
+        return "Comprueba tablas, imágenes, firmas y bloques que pudieron moverse.";
+    }
+    if (issues.has("content_shift")) {
+        return "Ajusta anclajes o usa fidelidad editable para esta página.";
+    }
+    if (issues.has("layout_mismatch")) {
+        return "Revisa columnas, cuadros de texto y el orden de lectura.";
+    }
+    return "Compara el texto y la posición en la revisión lado a lado.";
+}
+
 function PDFToWord() {
     const [file, setFile] = useState(null);
     const [mode, setMode] = useState("editable");
@@ -93,6 +164,7 @@ function PDFToWord() {
     const [result, setResult] = useState(null);
     const [pendingModel, setPendingModel] = useState(null);
     const [options, setOptions] = useState(DEFAULT_OPTIONS);
+    const [serviceHealth, setServiceHealth] = useState({ status: "checking" });
     const downloadUrlRef = useRef("");
     const runIdRef = useRef(0);
     const abortControllerRef = useRef(null);
@@ -107,6 +179,21 @@ function PDFToWord() {
         },
         []
     );
+
+    useEffect(() => {
+        let active = true;
+        const refreshServiceHealth = () => {
+            checkLocalDocumentService(options.visionEndpoint).then((health) => {
+                if (active) setServiceHealth(health);
+            });
+        };
+        refreshServiceHealth();
+        const refreshTimer = setInterval(refreshServiceHealth, 15_000);
+        return () => {
+            active = false;
+            clearInterval(refreshTimer);
+        };
+    }, [options.visionEndpoint]);
 
     const revokeDownload = () => {
         if (downloadUrlRef.current) {
@@ -165,6 +252,7 @@ function PDFToWord() {
 
         revokeDownload();
         setFile(selectedFile);
+        setOptions((current) => ({ ...current, ocrMode: "" }));
         setResult(null);
         setPendingModel(null);
         setError("");
@@ -203,41 +291,337 @@ function PDFToWord() {
     };
 
     const finishWordDocument = async (model, runId) => {
-        const rendered = await renderWordDocument(model, progressForRun(runId));
+        const initialRendered = await renderWordDocument(model, progressForRun(runId));
         if (runIdRef.current !== runId) return;
 
-        let visualQuality = null;
+        let initialQuality = null;
         if (options.validateVisualQuality) {
             setProgress({
                 percent: 98,
                 stage: "visual-validation",
                 detail: "Verificando el Word renderizado contra el PDF original…",
             });
-            visualQuality = await validateRenderedWordDocument(file, rendered.blob, {
+            initialQuality = await validateRenderedWordDocument(file, initialRendered.blob, {
                 pageNumbers: model.pages.map((page) => page.pageNumber),
                 endpoint: options.visionEndpoint,
+                signal: abortControllerRef.current?.signal,
             });
             if (runIdRef.current !== runId) return;
         }
 
-        const url = URL.createObjectURL(rendered.blob);
+        let selectedModel = model;
+        let selectedRendered = initialRendered;
+        let selectedQuality = initialQuality;
+        let extraGenerationMs = 0;
+        let extraValidationMs = 0;
+        const retryEnabled =
+            options.autoQualityRetry &&
+            options.validateVisualQuality &&
+            model.mode === "editable";
+        let qualityOptimization = buildQualityOptimizationReport({
+            enabled: retryEnabled,
+            initialQuality,
+            reason: !retryEnabled
+                ? "disabled"
+                : initialQuality?.status !== "completed"
+                ? "validation-unavailable"
+                : initialQuality.passed
+                ? "target-achieved"
+                : "no-risk-pages",
+        });
+
+        if (retryEnabled && initialQuality?.status === "completed" && !initialQuality.passed) {
+            const retryPages = selectPagesForQualityRetry(model, initialQuality, {
+                threshold: Number(options.qualityRetryThreshold),
+                maximumPages: Number(options.maximumQualityRetryPages),
+            });
+            if (retryPages.length) {
+                const retryStartedAt = performance.now();
+                try {
+                    setProgress({
+                        percent: 98,
+                        stage: "quality-optimization",
+                        detail: `Reprocesando ${retryPages.length} página(s) débil(es) con fidelidad editable…`,
+                    });
+                    const retryModel = await processPDFForWord(file, {
+                        mode: "fidelity",
+                        ocrMode: model.options?.ocrMode || "auto",
+                        pageRange: retryPages.join(","),
+                        excludeImages: options.excludeImages,
+                        maximumCanvasMegapixels: Number(options.maximumCanvasMegapixels),
+                        cacheMemoryMB: Number(options.cacheMemoryMB),
+                        ocrDictionary: parseOCRDictionary(options.ocrDictionary),
+                        experimentalHandwriting: options.experimentalHandwriting,
+                        advancedVision: options.advancedVision,
+                        cleanEditableBackground: true,
+                        visionProvider: options.visionProvider,
+                        visionEndpoint: options.visionEndpoint,
+                        signal: abortControllerRef.current?.signal,
+                        waitIfPaused,
+                        onProgress: (nextProgress) => {
+                            if (runIdRef.current !== runId) return;
+                            setProgress({
+                                ...nextProgress,
+                                percent: 98,
+                                detail: `Segunda pasada · ${nextProgress.detail}`,
+                            });
+                        },
+                        isCancelled: () => runIdRef.current !== runId,
+                    });
+                    if (runIdRef.current !== runId) return;
+
+                    const candidateModel = mergeQualityRetryPages(
+                        model,
+                        retryModel,
+                        retryPages
+                    );
+                    setProgress({
+                        percent: 98,
+                        stage: "quality-optimization",
+                        detail: "Generando y comparando la versión corregida…",
+                    });
+                    const candidateRendered = await renderWordDocument(
+                        candidateModel,
+                        (nextProgress) => {
+                            if (runIdRef.current !== runId) return;
+                            setProgress({
+                                ...nextProgress,
+                                percent: 98,
+                                detail: "Generando la versión corregida…",
+                            });
+                        }
+                    );
+                    extraGenerationMs = candidateRendered.generationMs;
+                    const candidateQuality = await validateRenderedWordDocument(
+                        file,
+                        candidateRendered.blob,
+                        {
+                            pageNumbers: candidateModel.pages.map(
+                                (page) => page.pageNumber
+                            ),
+                            endpoint: options.visionEndpoint,
+                            signal: abortControllerRef.current?.signal,
+                        }
+                    );
+                    extraValidationMs += candidateQuality.durationMs || 0;
+                    const pageDecisions = evaluateQualityRetryPages(
+                        initialQuality,
+                        candidateQuality,
+                        retryPages
+                    );
+                    const acceptedPages = pageDecisions
+                        .filter((decision) => decision.accepted)
+                        .map((decision) => decision.pageNumber);
+
+                    let proposedModel = candidateModel;
+                    let proposedRendered = candidateRendered;
+                    let proposedQuality = candidateQuality;
+                    if (
+                        acceptedPages.length > 0 &&
+                        acceptedPages.length < retryPages.length
+                    ) {
+                        setProgress({
+                            percent: 98,
+                            stage: "quality-optimization",
+                            detail: `Conservando solo ${acceptedPages.length} página(s) que demostraron mejora…`,
+                        });
+                        proposedModel = mergeQualityRetryPages(
+                            model,
+                            retryModel,
+                            acceptedPages
+                        );
+                        proposedRendered = await renderWordDocument(
+                            proposedModel,
+                            (nextProgress) => {
+                                if (runIdRef.current !== runId) return;
+                                setProgress({
+                                    ...nextProgress,
+                                    percent: 98,
+                                    detail: "Generando la combinación óptima por página…",
+                                });
+                            }
+                        );
+                        extraGenerationMs += proposedRendered.generationMs;
+                        proposedQuality = await validateRenderedWordDocument(
+                            file,
+                            proposedRendered.blob,
+                            {
+                                pageNumbers: proposedModel.pages.map(
+                                    (page) => page.pageNumber
+                                ),
+                                endpoint: options.visionEndpoint,
+                                signal: abortControllerRef.current?.signal,
+                            }
+                        );
+                        extraValidationMs += proposedQuality.durationMs || 0;
+                    }
+
+                    const applied =
+                        acceptedPages.length > 0 &&
+                        shouldApplyQualityRetry(initialQuality, proposedQuality, 0);
+                    if (applied) {
+                        selectedModel = proposedModel;
+                        selectedRendered = proposedRendered;
+                        selectedQuality = proposedQuality;
+                    }
+                    const reportedDecisions = applied
+                        ? pageDecisions
+                        : pageDecisions.map((decision) =>
+                            decision.accepted
+                                ? {
+                                    ...decision,
+                                    accepted: false,
+                                    reason: "final-document-regressed",
+                                }
+                                : decision
+                        );
+                    qualityOptimization = buildQualityOptimizationReport({
+                        enabled: true,
+                        attempted: true,
+                        applied,
+                        pages: retryPages,
+                        pageDecisions: reportedDecisions,
+                        initialQuality,
+                        candidateQuality: proposedQuality,
+                        durationMs: performance.now() - retryStartedAt,
+                        reason: applied
+                            ? acceptedPages.length === retryPages.length
+                                ? "quality-improved-per-page"
+                                : "partial-quality-improvement"
+                            : acceptedPages.length
+                                ? "candidate-rejected"
+                                : "no-page-improvement",
+                    });
+                } catch (retryError) {
+                    if (retryError?.name === "AbortError") throw retryError;
+                    console.warn("Optimización visual omitida:", retryError);
+                    qualityOptimization = buildQualityOptimizationReport({
+                        enabled: true,
+                        attempted: true,
+                        pages: retryPages,
+                        initialQuality,
+                        durationMs: performance.now() - retryStartedAt,
+                        reason: "retry-failed",
+                    });
+                }
+            }
+        }
+
+        const nativeCandidateEnabled =
+            retryEnabled &&
+            serviceHealth.nativeDocxAvailable &&
+            isNativeDocxCandidateEligible(model);
+        let nativeOptimization = {
+            enabled: nativeCandidateEnabled,
+            attempted: false,
+            applied: false,
+            provider: serviceHealth.nativeDocxConverter || "pdf2docx",
+            providerVersion: serviceHealth.nativeDocxVersion || null,
+            scoreBefore: selectedQuality?.visualScore ?? null,
+            candidateScore: null,
+            durationMs: 0,
+            reason: !nativeCandidateEnabled
+                ? "not-eligible"
+                : selectedQuality?.status !== "completed"
+                  ? "validation-unavailable"
+                  : selectedQuality.passed
+                    ? "target-achieved"
+                    : "not-attempted",
+        };
+
+        if (
+            nativeCandidateEnabled &&
+            selectedQuality?.status === "completed" &&
+            !selectedQuality.passed
+        ) {
+            const nativeStartedAt = performance.now();
+            const qualityBeforeNative = selectedQuality;
+            try {
+                setProgress({
+                    percent: 99,
+                    stage: "native-docx-candidate",
+                    detail: "Comparando un segundo motor nativo para texto digital…",
+                });
+                const nativeRendered = await convertWithNativeDocxCandidate(file, {
+                    pageNumbers: model.pages.map((page) => page.pageNumber),
+                    endpoint: options.visionEndpoint,
+                    signal: abortControllerRef.current?.signal,
+                });
+                if (runIdRef.current !== runId) return;
+                extraGenerationMs += nativeRendered.generationMs || 0;
+                const nativeQuality = await validateRenderedWordDocument(
+                    file,
+                    nativeRendered.blob,
+                    {
+                        pageNumbers: model.pages.map((page) => page.pageNumber),
+                        endpoint: options.visionEndpoint,
+                        signal: abortControllerRef.current?.signal,
+                    }
+                );
+                extraValidationMs += nativeQuality.durationMs || 0;
+                const applied = shouldApplyNativeDocxCandidate(
+                    qualityBeforeNative,
+                    nativeQuality
+                );
+                if (applied) {
+                    selectedRendered = nativeRendered;
+                    selectedQuality = nativeQuality;
+                }
+                nativeOptimization = {
+                    enabled: true,
+                    attempted: true,
+                    applied,
+                    provider: nativeRendered.provider,
+                    providerVersion: nativeRendered.providerVersion,
+                    scoreBefore: qualityBeforeNative.visualScore,
+                    candidateScore: nativeQuality.status === "completed"
+                        ? nativeQuality.visualScore
+                        : null,
+                    durationMs: performance.now() - nativeStartedAt,
+                    reason: applied ? "native-candidate-improved" : "native-candidate-rejected",
+                };
+            } catch (nativeError) {
+                if (nativeError?.name === "AbortError") throw nativeError;
+                console.warn("Candidato DOCX nativo omitido:", nativeError);
+                nativeOptimization = {
+                    ...nativeOptimization,
+                    attempted: true,
+                    durationMs: performance.now() - nativeStartedAt,
+                    reason: "native-candidate-failed",
+                };
+            }
+        }
+
+        const totalDurationMs =
+            model.report.durationMs +
+            initialRendered.generationMs +
+            (initialQuality?.durationMs || 0) +
+            qualityOptimization.durationMs +
+            nativeOptimization.durationMs;
+        const url = URL.createObjectURL(selectedRendered.blob);
         downloadUrlRef.current = url;
         setDownloadUrl(url);
         setPendingModel(null);
         setResult({
             report: {
-                ...model.report,
-                documentStructure: model.documentStructure,
-                generationMs: rendered.generationMs,
-                visualValidationMs: visualQuality?.durationMs || 0,
-                visualQuality,
-                totalDurationMs:
-                    model.report.durationMs +
-                    rendered.generationMs +
-                    (visualQuality?.durationMs || 0),
-                outputBytes: rendered.blob.size,
+                ...selectedModel.report,
+                documentStructure: selectedModel.documentStructure,
+                generationMs: initialRendered.generationMs + extraGenerationMs,
+                visualValidationMs:
+                    (initialQuality?.durationMs || 0) + extraValidationMs,
+                visualQuality: selectedQuality,
+                qualityOptimization,
+                nativeOptimization,
+                conversionEngine: nativeOptimization.applied
+                    ? nativeOptimization.provider
+                    : "novapdf-hybrid",
+                totalDurationMs,
+                pagesPerMinute: Number(
+                    ((selectedModel.pages.length * 60_000) / totalDurationMs).toFixed(1)
+                ),
+                outputBytes: selectedRendered.blob.size,
             },
-            pages: model.pages.map((page) => ({
+            pages: selectedModel.pages.map((page) => ({
                 pageNumber: page.pageNumber,
                 pageType: page.pageType,
                 extractionMethod: page.extractionMethod,
@@ -245,7 +629,14 @@ function PDFToWord() {
                 metrics: page.metrics,
             })),
         });
-        setProgress({ percent: 100, detail: "Documento Word terminado." });
+        setProgress({
+            percent: 100,
+            detail: nativeOptimization.applied
+                ? "Documento Word terminado con el mejor motor nativo validado."
+                : qualityOptimization.applied
+                ? "Documento Word terminado con corrección automática de fidelidad."
+                : "Documento Word terminado.",
+        });
     };
 
     const handleConversionError = (conversionError, runId) => {
@@ -264,6 +655,10 @@ function PDFToWord() {
 
     const convertToWord = async () => {
         if (!file || converting) return;
+        if (mode !== "visual" && !options.ocrMode) {
+            setError("Antes de convertir, elige si quieres usar OCR.");
+            return;
+        }
 
         const runId = runIdRef.current + 1;
         const controller = new AbortController();
@@ -281,14 +676,12 @@ function PDFToWord() {
         try {
             const model = await processPDFForWord(file, {
                 mode,
+                ocrMode: mode === "visual" ? "never" : options.ocrMode,
                 pageRange: options.pageRange,
                 excludeImages: options.excludeImages,
                 maximumCanvasMegapixels: Number(options.maximumCanvasMegapixels),
                 cacheMemoryMB: Number(options.cacheMemoryMB),
-                ocrDictionary: options.ocrDictionary
-                    .split(",")
-                    .map((word) => word.trim())
-                    .filter(Boolean),
+                ocrDictionary: parseOCRDictionary(options.ocrDictionary),
                 experimentalHandwriting: options.experimentalHandwriting,
                 advancedVision: options.advancedVision,
                 cleanEditableBackground: options.cleanEditableBackground,
@@ -339,6 +732,30 @@ function PDFToWord() {
     const downloadName = file
         ? `${file.name.replace(/\.pdf$/i, "")}-${mode}.docx`
         : "NovaPDF-documento.docx";
+    const serviceStatus =
+        serviceHealth.status === "ready"
+            ? "Motor neuronal listo"
+            : serviceHealth.status === "loading"
+            ? "Cargando modelos neuronales"
+            : serviceHealth.status === "idle"
+            ? "Servicio listo para iniciar"
+            : serviceHealth.status === "checking"
+            ? "Comprobando motores locales"
+            : "Servicio avanzado no disponible";
+    const measuredQuality = result?.report.visualQuality;
+    const resultQualityScore =
+        measuredQuality?.status === "completed"
+            ? measuredQuality.visualScore
+            : result?.report.mode === "visual"
+            ? 100
+            : result?.report.estimatedQuality || 0;
+    const resultQualityLevel = qualityLevel(resultQualityScore);
+    const weakestPages =
+        measuredQuality?.status === "completed"
+            ? [...measuredQuality.pages]
+                  .sort((first, second) => first.visualScore - second.visualScore)
+                  .slice(0, 5)
+            : [];
 
     return (
         <section className="pdf-word-page">
@@ -361,9 +778,55 @@ function PDFToWord() {
                     <span>Tablas profesionales</span>
                     <span>Revisión y métricas</span>
                 </div>
+                <div className="pdf-word-pipeline" aria-label="Flujo de máxima calidad">
+                    <span><b>1</b> Analiza regiones</span>
+                    <i aria-hidden="true">→</i>
+                    <span><b>2</b> Reconstruye Word</span>
+                    <i aria-hidden="true">→</i>
+                    <span><b>3</b> Verifica el resultado</span>
+                    <i aria-hidden="true">→</i>
+                    <span><b>4</b> Corrige páginas débiles</span>
+                </div>
             </div>
 
             <div className="pdf-word-workspace">
+                <div
+                    className={`pdf-word-service-status is-${serviceHealth.status}`}
+                    aria-live="polite"
+                >
+                    <div>
+                        <span className="pdf-word-service-dot" aria-hidden="true" />
+                        <div>
+                            <strong>{serviceStatus}</strong>
+                            <small>
+                                Procesamiento privado en este equipo · NovaPDF Service {serviceHealth.version || "local"}
+                            </small>
+                        </div>
+                    </div>
+                    <div className="pdf-word-service-capabilities">
+                        <span className={serviceHealth.modelLoaded ? "is-ready" : ""}>
+                            PaddleOCR {serviceHealth.modelLoaded
+                                ? "listo"
+                                : serviceHealth.modelLoading
+                                ? "cargando"
+                                : serviceHealth.status === "unavailable"
+                                ? "no conectado"
+                                : "bajo demanda"}
+                        </span>
+                        <span className={serviceHealth.nativeExtractor ? "is-ready" : ""}>
+                            {serviceHealth.nativeExtractor || "Extractor nativo"}
+                        </span>
+                        <span className={serviceHealth.nativeDocxAvailable ? "is-ready" : ""}>
+                            DOCX nativo {serviceHealth.nativeDocxAvailable
+                                ? `${serviceHealth.nativeDocxConverter || "listo"} ${serviceHealth.nativeDocxVersion || ""}`
+                                : "no instalado"}
+                        </span>
+                        <span className={serviceHealth.rendererAvailable ? "is-ready" : ""}>
+                            LibreOffice {serviceHealth.rendererAvailable ? "listo" : "no detectado"}
+                        </span>
+                    </div>
+                </div>
+
                 <div className="pdf-word-mode-section">
                     <div className="pdf-word-section-heading">
                         <span>1</span>
@@ -401,6 +864,12 @@ function PDFToWord() {
                                 </span>
                                 <strong>{option.title}</strong>
                                 <p>{option.description}</p>
+                                <em>Ideal para: {option.bestFor}</em>
+                                <ul>
+                                    {option.features.map((feature) => (
+                                        <li key={feature}>{feature}</li>
+                                    ))}
+                                </ul>
                                 <small>{option.badge}</small>
                             </button>
                         ))}
@@ -468,6 +937,33 @@ function PDFToWord() {
                             </div>
                         </div>
                         <div className="pdf-word-options-grid">
+                            <label>
+                                ¿Quieres usar OCR para reconocer el texto?
+                                <select
+                                    value={options.ocrMode}
+                                    required={mode !== "visual"}
+                                    disabled={converting || mode === "visual"}
+                                    onChange={(event) => {
+                                        setOptions((current) => ({ ...current, ocrMode: event.target.value }));
+                                        setError("");
+                                    }}
+                                    aria-describedby="pdf-word-ocr-help"
+                                >
+                                    <option value="" disabled>Selecciona cómo extraer el texto</option>
+                                    <option value="auto">Automático · recomendado</option>
+                                    <option value="never">Sin OCR · extraer texto digital</option>
+                                    <option value="always">Con OCR · reconocer todas las páginas</option>
+                                </select>
+                                <small id="pdf-word-ocr-help">
+                                    {mode === "visual"
+                                        ? "El modo visual conserva imágenes de las páginas: no usa OCR ni genera texto editable."
+                                        : options.ocrMode === "always"
+                                          ? "Reconoce el texto desde la imagen, incluso si ya existe texto digital. Puede tardar más, cambiar fuentes o introducir errores."
+                                          : options.ocrMode === "never"
+                                            ? "Conserva el texto digital. El texto dentro de imágenes no será editable; si una página no tiene texto extraíble, se detendrá con un aviso."
+                                            : "Usa texto nativo en páginas digitales y OCR en escaneadas o mixtas. Activar OCR no mejora automáticamente todos los PDF."}
+                                </small>
+                            </label>
                             <label>
                                 Rango de páginas
                                 <input
@@ -568,6 +1064,54 @@ function PDFToWord() {
                                 />
                                 <small>Palabras separadas por comas.</small>
                             </label>
+                            <label>
+                                Umbral de segunda pasada
+                                <select
+                                    value={options.qualityRetryThreshold}
+                                    onChange={(event) =>
+                                        setOptions((current) => ({
+                                            ...current,
+                                            qualityRetryThreshold: event.target.value,
+                                        }))
+                                    }
+                                    disabled={
+                                        converting ||
+                                        mode !== "editable" ||
+                                        !options.validateVisualQuality ||
+                                        !options.autoQualityRetry
+                                    }
+                                >
+                                    <option value="55">55% · Solo casos críticos</option>
+                                    <option value="62">62% · Equilibrado</option>
+                                    <option value="70">70% · Calidad exigente</option>
+                                </select>
+                                <small>Reprocesa solo páginas por debajo de esta fidelidad.</small>
+                            </label>
+                            <label>
+                                Máximo de páginas a corregir
+                                <select
+                                    value={options.maximumQualityRetryPages}
+                                    onChange={(event) =>
+                                        setOptions((current) => ({
+                                            ...current,
+                                            maximumQualityRetryPages: event.target.value,
+                                        }))
+                                    }
+                                    disabled={
+                                        converting ||
+                                        mode !== "editable" ||
+                                        !options.validateVisualQuality ||
+                                        !options.autoQualityRetry
+                                    }
+                                >
+                                    <option value="4">4 páginas · rápido</option>
+                                    <option value="8">8 páginas · documento corto</option>
+                                    <option value="12">12 páginas · equilibrado</option>
+                                    <option value="32">32 páginas · documento extenso</option>
+                                    <option value="64">64 páginas · revisión completa</option>
+                                </select>
+                                <small>Corrige por página sin degradar las que ya superaron la validación.</small>
+                            </label>
                         </div>
                         <div className="pdf-word-option-checks">
                             <label>
@@ -601,6 +1145,24 @@ function PDFToWord() {
                             <label>
                                 <input
                                     type="checkbox"
+                                    checked={options.autoQualityRetry}
+                                    onChange={(event) =>
+                                        setOptions((current) => ({
+                                            ...current,
+                                            autoQualityRetry: event.target.checked,
+                                        }))
+                                    }
+                                    disabled={
+                                        converting ||
+                                        mode !== "editable" ||
+                                        !options.validateVisualQuality
+                                    }
+                                />
+                                Corregir automáticamente las páginas débiles
+                            </label>
+                            <label>
+                                <input
+                                    type="checkbox"
                                     checked={options.excludeImages}
                                     onChange={(event) =>
                                         setOptions((current) => ({
@@ -624,7 +1186,7 @@ function PDFToWord() {
                                     }
                                     disabled={converting}
                                 />
-                                Analisis visual previo al OCR
+                                Análisis visual previo al OCR
                             </label>
                             <label>
                                 <input
@@ -740,7 +1302,7 @@ function PDFToWord() {
                                     <p>NovaPDF analizó y reconstruyó {result.report.pageCount} página(s).</p>
                                 </div>
                             </div>
-                            <span className="pdf-word-quality">
+                            <span className={`pdf-word-quality is-${resultQualityLevel.tone}`}>
                                 {result.report.visualQuality?.status === "completed"
                                     ? `${result.report.visualQuality.visualScore}% fidelidad verificada`
                                     : result.report.mode === "visual"
@@ -749,7 +1311,113 @@ function PDFToWord() {
                             </span>
                         </div>
 
-                        <div className="pdf-word-metrics">
+                        <div className="pdf-word-quality-dashboard">
+                            <div
+                                className={`pdf-word-score-ring is-${resultQualityLevel.tone}`}
+                                style={{
+                                    background: `conic-gradient(#2563eb ${resultQualityScore}%, #e2e8f0 0)`,
+                                }}
+                                aria-label={`${resultQualityScore}% de fidelidad`}
+                            >
+                                <div>
+                                    <strong>{resultQualityScore}%</strong>
+                                    <span>fidelidad</span>
+                                </div>
+                            </div>
+                            <div className="pdf-word-quality-summary">
+                                <span>Resultado medido</span>
+                                <h3>{resultQualityLevel.label}</h3>
+                                <p>
+                                    {measuredQuality?.status === "completed"
+                                        ? `Objetivo: ${measuredQuality.targetScore}%. Se compararon ${measuredQuality.comparedPageCount} página(s) renderizadas.`
+                                        : "Activa la verificación con LibreOffice para medir la fidelidad real del Word."}
+                                </p>
+                                <div className="pdf-word-quality-track">
+                                    <span style={{ width: `${resultQualityScore}%` }} />
+                                    <i style={{ left: `${measuredQuality?.targetScore || 85}%` }} />
+                                </div>
+                            </div>
+                            {result.report.qualityOptimization?.attempted && (
+                                <div
+                                    className={`pdf-word-optimization-result ${
+                                        result.report.qualityOptimization.applied
+                                            ? "is-applied"
+                                            : "is-kept"
+                                    }`}
+                                >
+                                    <strong>
+                                        {result.report.qualityOptimization.applied
+                                            ? "Corrección automática aplicada"
+                                            : "Se conservó la mejor versión"}
+                                    </strong>
+                                    <span>
+                                        {result.report.qualityOptimization.pages.length} página(s) evaluada(s)
+                                        {result.report.qualityOptimization.applied
+                                            ? ` · ${result.report.qualityOptimization.acceptedPages.length} mejorada(s)`
+                                            : ""} · {result.report.qualityOptimization.scoreBefore}% → {result.report.qualityOptimization.candidateScore === null
+                                            ? "sin medición"
+                                            : `${result.report.qualityOptimization.candidateScore}%`}
+                                    </span>
+                                </div>
+                            )}
+                            {result.report.nativeOptimization?.attempted && (
+                                <div
+                                    className={`pdf-word-optimization-result ${
+                                        result.report.nativeOptimization.applied
+                                            ? "is-applied"
+                                            : "is-kept"
+                                    }`}
+                                >
+                                    <strong>
+                                        {result.report.nativeOptimization.applied
+                                            ? "Segundo motor nativo seleccionado"
+                                            : "Segundo motor nativo evaluado"}
+                                    </strong>
+                                    <span>
+                                        {result.report.nativeOptimization.provider}
+                                        {result.report.nativeOptimization.providerVersion
+                                            ? ` ${result.report.nativeOptimization.providerVersion}`
+                                            : ""} · {result.report.nativeOptimization.scoreBefore ?? "—"}% → {result.report.nativeOptimization.candidateScore === null
+                                            ? "sin medición"
+                                            : `${result.report.nativeOptimization.candidateScore}%`}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="pdf-word-quick-metrics">
+                            <article><strong>{result.report.pageCount}</strong><span>Páginas</span></article>
+                            <article><strong>{result.report.tableCount}</strong><span>Tablas</span></article>
+                            <article><strong>{formatDuration(result.report.totalDurationMs)}</strong><span>Tiempo total</span></article>
+                            <article><strong>{formatFileSize(result.report.outputBytes)}</strong><span>DOCX final</span></article>
+                        </div>
+
+                        {weakestPages.length > 0 && resultQualityScore < 85 && (
+                            <section className="pdf-word-weak-pages" aria-labelledby="weak-pages-title">
+                                <div>
+                                    <span>Control de calidad</span>
+                                    <h3 id="weak-pages-title">Páginas que conviene revisar</h3>
+                                </div>
+                                <div className="pdf-word-weak-page-grid">
+                                    {weakestPages.map((page) => (
+                                        <article key={`weak-${page.sourcePageNumber}`}>
+                                            <div>
+                                                <strong>Página {page.sourcePageNumber}</strong>
+                                                <b>{page.visualScore}%</b>
+                                            </div>
+                                            <span>
+                                                {page.issues.map(qualityIssueLabel).join(" · ") || "Fidelidad por debajo del objetivo"}
+                                            </span>
+                                            <p>{pageQualityRecommendation(page)}</p>
+                                        </article>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        <details className="pdf-word-technical-details">
+                            <summary>Ver métricas técnicas del procesamiento</summary>
+                            <div className="pdf-word-metrics">
                             <article>
                                 <strong>{result.report.pageTypes.digital}</strong>
                                 <span>Digitales</span>
@@ -861,7 +1529,8 @@ function PDFToWord() {
                                     </article>
                                 </>
                             )}
-                        </div>
+                            </div>
+                        </details>
 
                         {result.report.visualQuality?.status === "completed" && (
                             <details className="pdf-word-page-details">
@@ -890,7 +1559,7 @@ function PDFToWord() {
                                                     <td>
                                                         {page.horizontalShiftPoints} / {page.verticalShiftPoints} pt
                                                     </td>
-                                                    <td>{page.issues.join(", ") || "—"}</td>
+                                                    <td>{page.issues.map(qualityIssueLabel).join(", ") || "—"}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

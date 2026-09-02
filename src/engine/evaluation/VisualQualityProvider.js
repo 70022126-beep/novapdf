@@ -26,6 +26,69 @@ export function deriveVisualQualityEndpoint(endpoint = DEFAULT_LAYOUT_ENDPOINT) 
     return new URL("/v1/quality/docx", endpoint).toString();
 }
 
+export function deriveServiceHealthEndpoint(endpoint = DEFAULT_LAYOUT_ENDPOINT) {
+    if (!isLoopbackEndpoint(endpoint)) return null;
+    return new URL("/health", endpoint).toString();
+}
+
+export async function checkLocalDocumentService(
+    endpoint = DEFAULT_LAYOUT_ENDPOINT,
+    { timeoutMs = 4_000 } = {}
+) {
+    const healthEndpoint = deriveServiceHealthEndpoint(endpoint);
+    if (!healthEndpoint) {
+        return {
+            status: "unavailable",
+            error: "El servicio debe ejecutarse en este equipo.",
+        };
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(healthEndpoint, {
+            headers: { Accept: "application/json" },
+            signal: controller.signal,
+        });
+        if (!response.ok) {
+            throw new Error(`El servicio respondió ${response.status}.`);
+        }
+        const payload = await response.json();
+        const renderer = payload.document_renderer || {};
+        const nativeDocx = payload.native_docx_converter || {};
+        return {
+            status:
+                payload.model_loaded || payload.status === "ready"
+                    ? "ready"
+                    : payload.model_loading || payload.status === "loading"
+                    ? "loading"
+                    : "idle",
+            version: cleanText(payload.version) || null,
+            modelLoaded: Boolean(payload.model_loaded),
+            modelLoading: Boolean(payload.model_loading),
+            nativeExtractor: cleanText(payload.native_pdf_extractor) || null,
+            nativeDocxAvailable: Boolean(nativeDocx.available),
+            nativeDocxConverter: cleanText(nativeDocx.converter) || null,
+            nativeDocxVersion: cleanText(nativeDocx.version) || null,
+            qualityValidator: cleanText(payload.docx_visual_validator) || "unavailable",
+            rendererAvailable: Boolean(renderer.available),
+            renderer: cleanText(renderer.renderer) || "libreoffice",
+            rendererVersion: cleanText(renderer.version) || null,
+            error: cleanText(payload.error) || null,
+        };
+    } catch (error) {
+        return {
+            status: "unavailable",
+            error:
+                error?.name === "AbortError"
+                    ? "El servicio local no respondió a tiempo."
+                    : error?.message || "El servicio local no está disponible.",
+        };
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
 export function normalizeVisualQualityReport(payload = {}) {
     const status = payload.status === "completed" ? "completed" : "unavailable";
     return {

@@ -94,9 +94,135 @@
     font-weight: 700;
 }
 
+.pdf-word-pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 22px;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 750;
+}
+
+.pdf-word-pipeline span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pdf-word-pipeline b {
+    display: grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    border-radius: 7px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 10px;
+}
+
+.pdf-word-pipeline i {
+    color: #94a3b8;
+    font-style: normal;
+}
+
 .pdf-word-workspace {
     width: min(100%, 1120px);
     margin: 0 auto;
+}
+
+.pdf-word-service-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 18px;
+    padding: 14px 17px;
+    border: 1px solid #cbd5e1;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+}
+
+.pdf-word-service-status > div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.pdf-word-service-status > div:first-child > div {
+    display: grid;
+    gap: 3px;
+}
+
+.pdf-word-service-status strong {
+    color: #0f172a;
+    font-size: 13px;
+}
+
+.pdf-word-service-status small {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.pdf-word-service-dot {
+    flex: 0 0 10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #94a3b8;
+    box-shadow: 0 0 0 5px rgba(148, 163, 184, 0.14);
+}
+
+.pdf-word-service-status.is-ready,
+.pdf-word-service-status.is-idle {
+    border-color: #bbf7d0;
+    background: #f7fff9;
+}
+
+.pdf-word-service-status.is-ready .pdf-word-service-dot,
+.pdf-word-service-status.is-idle .pdf-word-service-dot {
+    background: #16a34a;
+    box-shadow: 0 0 0 5px rgba(22, 163, 74, 0.13);
+}
+
+.pdf-word-service-status.is-loading .pdf-word-service-dot,
+.pdf-word-service-status.is-checking .pdf-word-service-dot {
+    background: #f59e0b;
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.13);
+}
+
+.pdf-word-service-status.is-unavailable {
+    border-color: #fecaca;
+    background: #fffafa;
+}
+
+.pdf-word-service-status.is-unavailable .pdf-word-service-dot {
+    background: #ef4444;
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.12);
+}
+
+.pdf-word-service-capabilities {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pdf-word-service-capabilities span {
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.pdf-word-service-capabilities .is-ready {
+    background: #dcfce7;
+    color: #166534;
 }
 
 .pdf-word-mode-section,
@@ -153,7 +279,7 @@
 
 .pdf-word-mode {
     position: relative;
-    min-height: 170px;
+    min-height: 270px;
     padding: 22px;
     border: 2px solid #e2e8f0;
     border-radius: 15px;
@@ -217,10 +343,36 @@
 }
 
 .pdf-word-mode p {
-    margin: 10px 0 17px;
+    margin: 10px 0 12px;
     color: #64748b;
     font-size: 14px;
     line-height: 1.55;
+}
+
+.pdf-word-mode em {
+    display: block;
+    color: #334155;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+.pdf-word-mode ul {
+    display: grid;
+    gap: 4px;
+    margin: 12px 0 16px;
+    padding: 0;
+    color: #64748b;
+    font-size: 11px;
+    list-style: none;
+}
+
+.pdf-word-mode li::before {
+    margin-right: 6px;
+    color: #2563eb;
+    content: "✓";
+    font-weight: 900;
 }
 
 .pdf-word-mode small {
@@ -504,11 +656,242 @@
     white-space: nowrap;
 }
 
+.pdf-word-quality.is-good {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.pdf-word-quality.is-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.pdf-word-quality.is-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.pdf-word-quality-dashboard {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(210px, 0.72fr);
+    align-items: center;
+    gap: 22px;
+    margin-top: 22px;
+    padding: 20px;
+    border: 1px solid #dbeafe;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f8fbff, #fff);
+}
+
+.pdf-word-score-ring {
+    display: grid;
+    width: 104px;
+    height: 104px;
+    place-items: center;
+    border-radius: 50%;
+}
+
+.pdf-word-score-ring > div {
+    display: grid;
+    width: 80px;
+    height: 80px;
+    place-content: center;
+    border-radius: 50%;
+    background: #fff;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.pdf-word-score-ring strong {
+    color: #0f172a;
+    font-size: 23px;
+    line-height: 1;
+}
+
+.pdf-word-score-ring span {
+    margin-top: 5px;
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.pdf-word-quality-summary > span,
+.pdf-word-weak-pages > div > span {
+    color: #2563eb;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.pdf-word-quality-summary h3,
+.pdf-word-weak-pages h3 {
+    margin: 3px 0 5px;
+    color: #0f172a;
+    font-size: 20px;
+}
+
+.pdf-word-quality-summary p {
+    margin: 0;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.pdf-word-quality-track {
+    position: relative;
+    height: 7px;
+    margin-top: 13px;
+    border-radius: 999px;
+    background: #e2e8f0;
+}
+
+.pdf-word-quality-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #ef4444, #f59e0b 55%, #16a34a 85%);
+}
+
+.pdf-word-quality-track i {
+    position: absolute;
+    top: -4px;
+    width: 2px;
+    height: 15px;
+    background: #0f172a;
+}
+
+.pdf-word-optimization-result {
+    display: grid;
+    gap: 4px;
+    padding: 13px;
+    border: 1px solid #bfdbfe;
+    border-radius: 11px;
+    background: #eff6ff;
+}
+
+.pdf-word-optimization-result.is-applied {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+
+.pdf-word-optimization-result strong {
+    color: #1e3a8a;
+    font-size: 11px;
+}
+
+.pdf-word-optimization-result.is-applied strong {
+    color: #166534;
+}
+
+.pdf-word-optimization-result span {
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.pdf-word-quick-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.pdf-word-quick-metrics article {
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.pdf-word-quick-metrics strong,
+.pdf-word-quick-metrics span {
+    display: block;
+}
+
+.pdf-word-quick-metrics strong {
+    color: #0f172a;
+    font-size: 15px;
+}
+
+.pdf-word-quick-metrics span {
+    margin-top: 2px;
+    color: #64748b;
+    font-size: 9px;
+}
+
+.pdf-word-weak-pages {
+    margin-top: 18px;
+    padding: 17px;
+    border: 1px solid #fed7aa;
+    border-radius: 14px;
+    background: #fffbf5;
+}
+
+.pdf-word-weak-pages h3 {
+    font-size: 16px;
+}
+
+.pdf-word-weak-page-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin-top: 12px;
+}
+
+.pdf-word-weak-page-grid article {
+    padding: 12px;
+    border: 1px solid #ffedd5;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.pdf-word-weak-page-grid article > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: #0f172a;
+    font-size: 12px;
+}
+
+.pdf-word-weak-page-grid b {
+    color: #c2410c;
+}
+
+.pdf-word-weak-page-grid article > span {
+    display: block;
+    margin-top: 6px;
+    color: #9a3412;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.pdf-word-weak-page-grid p {
+    margin: 5px 0 0;
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.pdf-word-technical-details {
+    margin-top: 15px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.pdf-word-technical-details > summary {
+    padding: 14px 0 0;
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
 .pdf-word-metrics {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
-    margin-top: 22px;
+    margin-top: 14px;
 }
 
 .pdf-word-metrics article {
@@ -1076,6 +1459,29 @@
         grid-template-columns: 1fr;
     }
 
+    .pdf-word-service-status,
+    .pdf-word-report-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .pdf-word-service-capabilities {
+        justify-content: flex-start;
+    }
+
+    .pdf-word-quality-dashboard {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .pdf-word-optimization-result {
+        grid-column: 1 / -1;
+    }
+
+    .pdf-word-quick-metrics,
+    .pdf-word-weak-page-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .pdf-word-options-grid,
     .pdf-review-grid {
         grid-template-columns: 1fr;
@@ -1098,10 +1504,6 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .pdf-word-report-heading {
-        align-items: flex-start;
-        flex-direction: column;
-    }
 }
 
 @media (max-width: 430px) {
@@ -1116,5 +1518,29 @@
 
     .pdf-word-progress-header {
         font-size: 13px;
+    }
+
+    .pdf-word-pipeline i {
+        display: none;
+    }
+
+    .pdf-word-pipeline {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        text-align: left;
+    }
+
+    .pdf-word-quality-dashboard {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+    }
+
+    .pdf-word-quality-track {
+        min-width: 210px;
+    }
+
+    .pdf-word-optimization-result {
+        grid-column: auto;
     }
 }

@@ -29,7 +29,7 @@ function PDFThumbnail({ file }) {
         // ============================================
 
         const pdfjsWorker = await import(
-          "pdfjs-dist/build/pdf.worker.mjs?url"
+          "pdfjs-dist/build/pdf.worker.min.mjs?url"
         );
 
 

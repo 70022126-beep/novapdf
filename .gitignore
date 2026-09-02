@@ -15,6 +15,11 @@ dist-ssr
 services/vision/.venv/
 services/vision/.models/
 .novapdf-*
+tmp/
+
+# Python
+__pycache__/
+*.py[cod]
 
 # Editor directories and files
 .vscode/*

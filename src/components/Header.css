@@ -173,53 +173,6 @@
 
 
 /* ============================================
-   LOGIN DESKTOP
-   ============================================ */
-
-.login-btn {
-    border: none;
-
-    background: #2563eb;
-
-    color: white;
-
-    padding: 12px 22px;
-
-    border-radius: 10px;
-
-    cursor: pointer;
-
-    font-family: inherit;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-    white-space: nowrap;
-
-    transition:
-        background 0.25s ease,
-        transform 0.25s ease,
-        box-shadow 0.25s ease;
-
-    flex-shrink: 0;
-}
-
-.login-btn:hover {
-    background: #1d4ed8;
-
-    transform: translateY(-2px);
-
-    box-shadow:
-        0 6px 15px rgba(37, 99, 235, 0.25);
-}
-
-.login-btn:active {
-    transform: translateY(0);
-}
-
-
-/* ============================================
    BOTÓN HAMBURGUESA
    ============================================ */
 
@@ -259,15 +212,6 @@
 
 
 /* ============================================
-   LOGIN DENTRO DEL MENÚ MÓVIL
-   ============================================ */
-
-.mobile-login-btn {
-    display: none;
-}
-
-
-/* ============================================
    TABLET
    ============================================ */
 
@@ -290,10 +234,6 @@
 
     .logo-text {
         font-size: 25px;
-    }
-
-    .login-btn {
-        padding: 11px 17px;
     }
 }
 
@@ -330,13 +270,6 @@
 
     .logo-text {
         font-size: 22px;
-    }
-
-
-    /* Ocultar login de escritorio */
-
-    .login-btn {
-        display: none !important;
     }
 
 
@@ -439,41 +372,6 @@
         color: #2563eb;
 
         background: #f8fafc;
-    }
-
-
-    /* ========================================
-       LOGIN MÓVIL
-       ======================================== */
-
-    .mobile-login-btn {
-        display: block;
-
-        width: 100%;
-
-        margin-top: 15px;
-
-        padding: 12px 18px;
-
-        border: none;
-
-        border-radius: 9px;
-
-        background: #2563eb;
-
-        color: white;
-
-        font-family: inherit;
-
-        font-size: 14px;
-
-        font-weight: 600;
-
-        cursor: pointer;
-    }
-
-    .mobile-login-btn:hover {
-        background: #1d4ed8;
     }
 }
 
