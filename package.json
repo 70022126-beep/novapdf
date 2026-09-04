@@ -15,7 +15,7 @@
     "vision:check": "node scripts/check-neural-vision.mjs",
     "vision:warmup": "node scripts/warm-neural-vision.mjs",
     "vision:runtime": "services\\vision\\.venv\\Scripts\\python.exe services/vision/check_runtime.py",
-    "vision:test": "services\\vision\\.venv\\Scripts\\python.exe -m unittest services.vision.test_app",
+    "vision:test": "services\\vision\\.venv\\Scripts\\python.exe -m unittest services.vision.test_app services.vision.test_table_text_audit",
     "preview": "vite preview"
   },
   "dependencies": {

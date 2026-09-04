@@ -6,6 +6,7 @@ import {
     FrameAnchorType,
     FrameWrap,
     Header,
+    HeadingLevel,
     HeightRule,
     HighlightColor,
     HorizontalPositionRelativeFrom,
@@ -15,11 +16,14 @@ import {
     Packer,
     Paragraph,
     SectionType,
+    SimpleField,
     Table,
     TableAnchorType,
     TableCell,
     TableLayoutType,
     TableRow,
+    Tab,
+    TabStopType,
     TextRun,
     TextDirection,
     TextWrappingSide,
@@ -67,10 +71,8 @@ function cleanText(value) {
 function canonicalFontFamily(value) {
     return cleanText(value)
         .replace(/^[A-Z]{6}\+/i, "")
-        .replace(/[^a-z0-9]+/gi, " ")
-        .replace(/\b(?:thin|extra light|extralight|light|regular|medium|semi bold|semibold|bold|black|heavy|italic|oblique)\b/gi, " ")
-        .replace(/\s+/g, " ")
-        .trim()
+        .replace(/(?:[\s_-]*(?:thin|extra[\s_-]*light|light|regular|medium|semi[\s_-]*bold|bold|black|heavy|italic|oblique))+$/i, "")
+        .replace(/[^a-z0-9]+/gi, "")
         .toLocaleLowerCase("en");
 }
 
@@ -78,15 +80,33 @@ function embeddedFontFamilyFor(value) {
     const requested = canonicalFontFamily(value);
     if (!requested) return null;
     return activeEmbeddedFontFamilies.find(
-        (font) => canonicalFontFamily(font.name) === requested
-    )?.name || null;
+        (font) => font.family === requested
+    )?.familyName || null;
+}
+
+function embeddedFontFaceFor(value, { bold = false, italic = false } = {}) {
+    const family = canonicalFontFamily(value);
+    if (!family) return null;
+    const requestedStyle = bold && italic ? "boldItalic" : bold ? "bold" : italic ? "italic" : "regular";
+    const faces = activeEmbeddedFontFamilies.filter((font) => font.family === family);
+    return faces.find((font) => font.style === requestedStyle) ||
+        faces.find((font) => font.style === "regular") || faces[0] || null;
+}
+
+function normalizeEmbeddedFontStyle(font = {}) {
+    const descriptor = cleanText(font.style) || cleanText(`${font.sourceName || ""} ${font.name || ""}`);
+    const bold = /(?:^|[\s_-])(?:bold|black|heavy|semi[\s_-]*bold|demi)(?:$|[\s_-])/i.test(descriptor);
+    const italic = /(?:^|[\s_-])(?:italic|oblique)(?:$|[\s_-])/i.test(descriptor);
+    if (bold && italic) return "boldItalic";
+    if (bold) return "bold";
+    if (italic) return "italic";
+    return "regular";
 }
 
 function normalizeEmbeddedFontsForDocument(fonts = []) {
-    const candidatesByFamily = new Map();
+    const candidatesByFamilyAndStyle = new Map();
     for (const font of fonts || []) {
         const name = cleanText(font?.name);
-        const sourceName = cleanText(font?.sourceName);
         const data = font?.data;
         const family = canonicalFontFamily(name);
         if (
@@ -97,20 +117,86 @@ function normalizeEmbeddedFontsForDocument(fonts = []) {
             !Number.isFinite(Number(data.length)) ||
             data.length < 32 ||
             data.length > 2 * 1024 * 1024 ||
-            (font.embedding && font.embedding !== "editable") ||
-            /(?:bold|black|heavy|semibold|demi|italic|oblique)/i.test(sourceName)
+            (font.embedding && font.embedding !== "editable")
         ) continue;
-        const candidates = candidatesByFamily.get(family) || [];
-        candidates.push({ name, data });
-        candidatesByFamily.set(family, candidates);
+        const style = normalizeEmbeddedFontStyle(font);
+        const key = `${family}:${style}`;
+        const candidates = candidatesByFamilyAndStyle.get(key) || [];
+        candidates.push({
+            name, data, family, style,
+            spaceAdvanceEm: Number(font.spaceAdvanceEm),
+            characterWidthsEm: font.characterWidthsEm && typeof font.characterWidthsEm === "object"
+                ? font.characterWidthsEm : {},
+        });
+        candidatesByFamilyAndStyle.set(key, candidates);
     }
     // Los PDF suelen dividir una misma tipografía en varios subconjuntos. No es
     // seguro aplicar uno de ellos a todos los textos: los glifos ausentes cambian
     // el ancho y pueden desplazar páginas completas. Solo incrustamos familias
     // inequívocas; las fragmentadas usan la sustitución métrica probada.
-    return [...candidatesByFamily.values()]
+    const unambiguous = [...candidatesByFamilyAndStyle.values()]
         .filter((candidates) => candidates.length === 1)
         .map(([font]) => font);
+    const familyNames = new Map();
+    for (const font of unambiguous) {
+        if (font.style === "regular" || !familyNames.has(font.family)) {
+            familyNames.set(font.family, font.name);
+        }
+    }
+    return unambiguous.map((font, index) => ({
+        ...font,
+        familyName: familyNames.get(font.family) || font.name,
+        // docx 9.x only emits w:embedRegular. Give each transported face a
+        // unique temporary name, then consolidate the family in OOXML below.
+        transportName: `NovaPDF Embedded ${index + 1}`,
+    }));
+}
+
+function usesStableSystemFontMetrics(value) {
+    return /^(?:arial|calibri|cambria|courier|georgia|helvetica|symbol|tahoma|times|trebuchet|verdana|wingdings)/i
+        .test(cleanText(value).replace(/^[A-Z]{6}\+/i, ""));
+}
+
+function nativeWordHorizontalScale(word, fallbackScale) {
+    if (!String(word?.source || "").includes("native") || toNumber(word?.rotation) ||
+        !Number.isFinite(Number(word?.width)) || Number(word.width) <= 0 ||
+        fallbackScale !== NATIVE_TEXT_HORIZONTAL_SCALE ||
+        usesStableSystemFontMetrics(word.fontFamily || word.fontName) ||
+        (word.correctedText !== undefined && cleanText(word.correctedText) !== cleanText(word.text))) {
+        return fallbackScale;
+    }
+    const face = embeddedFontFaceFor(word.fontFamily || word.fontName, word);
+    const widths = face?.characterWidthsEm;
+    const characters = Array.from(cleanText(word.text));
+    if (!characters.length || !widths) return fallbackScale;
+    const advances = characters.map((character) => Number(widths[String(character.codePointAt(0))]));
+    if (advances.some((advance) => !Number.isFinite(advance) || advance <= 0)) return fallbackScale;
+    const fontSize = clamp(toNumber(word.fontSize, word.height * 0.82), 1, 400);
+    const tracking = Number.isFinite(Number(word.characterSpacing))
+        ? Number(word.characterSpacing) * Math.max(0, characters.length - 1) : 0;
+    const nominalWidth = fontSize * advances.reduce((sum, advance) => sum + advance, 0) + tracking;
+    const ratio = Number(word.width) / nominalWidth;
+    if (!Number.isFinite(ratio) || ratio < 0.75 || ratio > 1.25) return fallbackScale;
+    // Word rounds w:w to integer percentages. Sub-percent corrections turn
+    // into a full 1 % change and produced measurable regressions in Arial
+    // tables. Keep a dead band; real condensed/expanded text still benefits.
+    if (Math.abs(ratio - fallbackScale / 100) < 0.015) return fallbackScale;
+    return clamp(Math.round(ratio * 100), 80, 120);
+}
+
+function nativeSpaceAdvanceFactor(word, fontFamily) {
+    // A PDF subset can omit or remap its space glyph. Applying that value to
+    // thousands of synthetic Word spacer runs accumulates rounding drift even
+    // when every visible word is correct. Common Office/PDF fonts already match
+    // the cross-reader heuristic, so keep that stable path. Distinct display
+    // fonts (Shrikhand, Amaranth, Canva Sans...) benefit from their real advance.
+    const commonFamily = usesStableSystemFontMetrics(fontFamily);
+    const measured = commonFamily ? NaN : Number(
+        embeddedFontFaceFor(word?.fontFamily || word?.fontName, word)?.spaceAdvanceEm
+    );
+    if (Number.isFinite(measured) && measured >= 0.12 && measured <= 0.8) return measured;
+    if (/courier/i.test(fontFamily)) return 0.6;
+    return /times/i.test(fontFamily) ? 0.25 : 0.278;
 }
 
 function embeddedFontFallback(name) {
@@ -131,18 +217,46 @@ async function addEmbeddedFontFallbacks(blob, embeddedFonts) {
     const archive = await JSZip.loadAsync(await blob.arrayBuffer());
     const entry = archive.file("word/fontTable.xml");
     if (!entry) return blob;
+    // docx emits lowercase GUIDs. Some Word-compatible readers decode font
+    // keys only with uppercase hex and silently replace otherwise valid fonts.
+    // Casing changes neither the GUID nor the embedded font's XOR bytes.
     let xml = await entry.async("string");
+    const grouped = new Map();
     for (const font of embeddedFonts) {
-        const name = escapeXmlAttribute(font.name);
-        const opening = `<w:font w:name="${name}">`;
-        if (!xml.includes(opening) || xml.includes(
-            `${opening}<w:altName w:val="${escapeXmlAttribute(embeddedFontFallback(font.name))}"/>`
-        )) continue;
-        xml = xml.replace(
-            opening,
-            `${opening}<w:altName w:val="${escapeXmlAttribute(embeddedFontFallback(font.name))}"/>`
+        const escapedTransportName = escapeXmlAttribute(font.transportName);
+        const pattern = new RegExp(
+            `<w:font w:name="${escapedTransportName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}">[\\s\\S]*?<\\/w:font>`
         );
+        const node = xml.match(pattern)?.[0];
+        if (!node) continue;
+        const relationship = node.match(/<w:embedRegular\b[^>]*(?:\/>|>[\s\S]*?<\/w:embedRegular>)/)?.[0];
+        if (!relationship) continue;
+        const family = grouped.get(font.family) || {
+            familyName: font.familyName,
+            fallback: embeddedFontFallback(font.familyName),
+            relationships: [],
+        };
+        const tag = {
+            regular: "w:embedRegular",
+            bold: "w:embedBold",
+            italic: "w:embedItalic",
+            boldItalic: "w:embedBoldItalic",
+        }[font.style] || "w:embedRegular";
+        family.relationships.push(relationship.replaceAll("w:embedRegular", tag));
+        grouped.set(font.family, family);
+        xml = xml.replace(node, "");
     }
+    const familyNodes = [...grouped.values()].map((family) => (
+        `<w:font w:name="${escapeXmlAttribute(family.familyName)}">` +
+        `<w:altName w:val="${escapeXmlAttribute(family.fallback)}"/>` +
+        `<w:family w:val="auto"/><w:pitch w:val="variable"/>` +
+        family.relationships.join("") +
+        "</w:font>"
+    )).join("");
+    xml = xml.replace("</w:fonts>", `${familyNodes}</w:fonts>`).replace(
+        /w:fontKey="(\{[0-9a-f-]+\})"/gi,
+        (_match, key) => `w:fontKey="${key.toUpperCase()}"`
+    );
     archive.file("word/fontTable.xml", xml);
     return archive.generateAsync({
         type: "blob",
@@ -222,7 +336,7 @@ function isZoneExcluded(page, type) {
 
 function getPageMargins(page) {
     const { width, height } = page.dimensions;
-    const textBox = page.analysis.spatial.textBox;
+    const textBox = page.analysis?.spatial?.textBox || {};
     const left = clamp(textBox.x || 36, 18, Math.min(90, width * 0.18));
     const right = clamp(
         width - (textBox.x + textBox.width) || 36,
@@ -310,19 +424,41 @@ function inferAlignment(bbox, pageWidth, lines = []) {
     return AlignmentType.LEFT;
 }
 
-function createWordRuns(words, { firstBreak = false, preserveGaps = false, horizontalScale = NATIVE_TEXT_HORIZONTAL_SCALE } = {}) {
+function createWordRuns(words, {
+    firstBreak = false,
+    preserveGaps = false,
+    horizontalScale = NATIVE_TEXT_HORIZONTAL_SCALE,
+    artworkContainsDecorations = false,
+    preserveNativeScriptMetrics = false,
+    leadingTab = false,
+} = {}) {
     if (!words.length) {
         return [];
     }
 
     const runs = [];
+    const baselineWords = words.filter((word) => !word.superscript && !word.subscript &&
+        Number.isFinite(Number(word.y)) && Number.isFinite(Number(word.height)) && Number(word.height) > 0);
+    const referenceBottom = baselineWords.length
+        ? average(baselineWords.map((word) => toNumber(word.y) + toNumber(word.height)))
+        : null;
     words.forEach((word, index) => {
-        const fontSize = clamp(toNumber(word.fontSize, word.height * 0.82), 6, 48);
+        const isNative = String(word.source || "").includes("native");
+        const nativeScript = preserveNativeScriptMetrics && isNative && (word.superscript || word.subscript);
+        // Measured digital titles are not OCR guesses: the OCR safety cap of
+        // 48 pt used to shrink 72–96 pt cover/slide headings.
+        const fontSize = clamp(toNumber(word.fontSize, word.height * 0.82), isNative ? 1 : 6, isNative ? 400 : 48);
         const fontFamily = normalizeWordFontFamily(
             word.fontFamily || word.fontName,
             fontSize
         );
         const previous = words[index - 1];
+        // w:vertAlign would shrink the already-small PDF script a second time.
+        // Explicit half-point baseline offsets keep its original font size.
+        const nativeScriptPosition = nativeScript && referenceBottom !== null &&
+            Number.isFinite(Number(word.y)) && Number.isFinite(Number(word.height))
+            ? Math.round((referenceBottom - toNumber(word.y) - toNumber(word.height)) * 2)
+            : null;
         const hasMeasuredGap =
             preserveGaps &&
             index > 0 &&
@@ -330,18 +466,21 @@ function createWordRuns(words, { firstBreak = false, preserveGaps = false, horiz
             Number.isFinite(Number(previous?.x)) &&
             Number.isFinite(Number(previous?.width));
 
-        if (hasMeasuredGap) {
+        if (hasMeasuredGap && leadingTab && index === 1) {
+            runs.push(new TextRun({ children: [new Tab()], font: fontFamily, size: Math.round(fontSize * 2) }));
+        } else if (hasMeasuredGap) {
             const measuredGap = Math.max(
                 0,
                 toNumber(word.x) - (toNumber(previous.x) + toNumber(previous.width))
             );
-            const spaceFactor = /courier/i.test(fontFamily)
-                ? 0.6
-                : /times/i.test(fontFamily) ? 0.25 : 0.278;
+            const spaceFactor = nativeSpaceAdvanceFactor(word, fontFamily);
+            const scaledSpaceFactor = spaceFactor * horizontalScale / 100;
             // Word/LibreOffice no siempre comprimen un espacio aislado con
             // w:spacing negativo. Reducir su cuerpo invisible y añadir solo
             // espaciado positivo conserva el ancho sin provocar saltos extra.
-            const spaceSize = Math.max(1, Math.floor(Math.min(fontSize, measuredGap / spaceFactor) * 2));
+            const spaceSize = Math.max(1, Math.floor(Math.min(
+                fontSize, measuredGap / scaledSpaceFactor
+            ) * 2));
             if (measuredGap > 0.1) {
                 runs.push(
                     new TextRun({
@@ -350,7 +489,7 @@ function createWordRuns(words, { firstBreak = false, preserveGaps = false, horiz
                         font: fontFamily,
                         scale: horizontalScale,
                         characterSpacing: pointsToTwips(
-                            clamp(measuredGap - (spaceSize / 2) * spaceFactor, 0, 72)
+                            clamp(measuredGap - (spaceSize / 2) * scaledSpaceFactor, 0, 72)
                         ),
                         language: { value: "es-PE" },
                     })
@@ -366,16 +505,17 @@ function createWordRuns(words, { firstBreak = false, preserveGaps = false, horiz
             size: Math.round(fontSize * 2),
             font: fontFamily,
             scale: String(word.source || "").includes("native")
-                ? horizontalScale
+                ? nativeWordHorizontalScale(word, horizontalScale)
                 : undefined,
             bold: Boolean(word.bold),
             italics: Boolean(word.italic),
-            underline: word.underline
+            underline: word.underline && !(artworkContainsDecorations && word.vectorUnderline)
                 ? { type: UnderlineType.SINGLE, color: word.color }
                 : undefined,
-            strike: Boolean(word.strike),
-            superScript: Boolean(word.superscript),
-            subScript: Boolean(word.subscript),
+            strike: Boolean(word.strike && !(artworkContainsDecorations && word.vectorStrike)),
+            position: nativeScriptPosition !== null ? String(nativeScriptPosition) : undefined,
+            superScript: nativeScriptPosition === null && Boolean(word.superscript),
+            subScript: nativeScriptPosition === null && Boolean(word.subscript),
             color: String(word.color || "").replace(/^#/, "") || undefined,
             characterSpacing: Number.isFinite(Number(word.characterSpacing))
                 ? pointsToTwips(word.characterSpacing)
@@ -394,10 +534,49 @@ function createWordRuns(words, { firstBreak = false, preserveGaps = false, horiz
     return runs;
 }
 
+function startsNumberedList(text) {
+    const value = cleanText(text);
+    return /^(\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[.)]\s+/.test(value);
+}
+
+function dehyphenateLineWords(validLines = []) {
+    if (!validLines?.length) return [];
+    if (validLines.length === 1) {
+        return (validLines[0].words || []).map((word) => ({ ...word }));
+    }
+
+    const words = [];
+    validLines.forEach((line) => {
+        const lineWords = (line.words || []).map((word) => ({ ...word }));
+        if (!lineWords.length) return;
+
+        if (words.length > 0) {
+            const previousWord = words[words.length - 1];
+            const prevText = cleanText(previousWord.correctedText ?? previousWord.text);
+            const firstWord = lineWords[0];
+            const firstText = cleanText(firstWord.correctedText ?? firstWord.text);
+
+            if (
+                /^[a-záéíóúñA-ZÁÉÍÓÚÑ]{2,}[-‐‑\u00ad]$/i.test(prevText) &&
+                /^[a-záéíóúñ]/i.test(firstText)
+            ) {
+                const combined = prevText.replace(/[-‐‑\u00ad]$/, "") + firstText;
+                previousWord.text = combined;
+                if (previousWord.correctedText) previousWord.correctedText = combined;
+                previousWord.width = toNumber(previousWord.width) + toNumber(firstWord.width);
+                lineWords.shift();
+            }
+        }
+        words.push(...lineWords);
+    });
+
+    return words;
+}
+
 function createParagraphFromLines(lines, page, margins, options = {}) {
     const validLines = (lines || []).filter((line) => cleanText(line.text));
     const isBullet = Boolean(options.isBullet);
-    const words = validLines.flatMap((line) => line.words || []).map((word) => ({ ...word }));
+    const words = dehyphenateLineWords(validLines);
     if (isBullet && words.length) {
         const firstText = cleanText(words[0].correctedText ?? words[0].text);
         const stripped = firstText.replace(/^[•▪◦‣·]\s*/, "");
@@ -445,6 +624,19 @@ function createParagraphFromLines(lines, page, margins, options = {}) {
     const averageFontSize = average(
         words.map((word) => toNumber(word.fontSize, word.height * 0.82)).filter(Boolean)
     );
+    const headingText = cleanText(options.text);
+    const isStructuredHeading = startsStructuredHeading(headingText);
+    const isLargeTitle = (averageFontSize >= 15 && validLines.length <= 2) || (averageFontSize >= 20);
+    const isHeading = !isBullet && (isStructuredHeading || isLargeTitle);
+    const isNumberedList = !isBullet && !isHeading && startsNumberedList(headingText);
+
+    let headingLevel = undefined;
+    if (isHeading) {
+        if (averageFontSize >= 22) headingLevel = HeadingLevel.HEADING_1;
+        else if (averageFontSize >= 16) headingLevel = HeadingLevel.HEADING_2;
+        else if (averageFontSize >= 12 || isStructuredHeading) headingLevel = HeadingLevel.HEADING_3;
+    }
+
     const indent = clamp(toNumber(bbox.x) - margins.left, 0, page.dimensions.width * 0.35);
     const rightIndent = clamp(
         page.dimensions.width -
@@ -454,6 +646,12 @@ function createParagraphFromLines(lines, page, margins, options = {}) {
         0,
         page.dimensions.width * 0.35
     );
+    const hangingIndentTwips = isNumberedList ? pointsToTwips(18) : undefined;
+    const leftIndentTwips = isNumberedList
+        ? pointsToTwips(indent + 18)
+        : indent > 2
+          ? pointsToTwips(indent)
+          : undefined;
     const sourceGap = clamp(toNumber(options.beforePoints), 0, 72);
     const sourceLineHeight =
         toNumber(options.bbox?.height) > 0 && validLines.length
@@ -468,36 +666,134 @@ function createParagraphFromLines(lines, page, margins, options = {}) {
     return new Paragraph({
         children: runs.length ? runs : [new TextRun(cleanText(options.text))],
         alignment,
+        heading: headingLevel,
         bullet: isBullet ? { level: 0 } : undefined,
         indent:
-            !isBullet && (indent > 2 || rightIndent > 2)
+            !isBullet && (leftIndentTwips !== undefined || rightIndent > 2)
                 ? {
-                    left: indent > 2 ? pointsToTwips(indent) : undefined,
+                    left: leftIndentTwips,
                     right: rightIndent > 2 ? pointsToTwips(rightIndent) : undefined,
+                    hanging: hangingIndentTwips,
                 }
                 : undefined,
         spacing: {
             before: pointsToTwips(sourceGap),
             after: 0,
             line: pointsToTwips(lineHeight),
-            lineRule: LineRuleType.EXACT,
+            lineRule: LineRuleType.ATLEAST,
         },
-        keepNext: false,
-        widowControl: false,
+        keepNext: Boolean(isHeading),
+        widowControl: true,
     });
 }
 
-function createZoneParagraphs(zone, page, margins) {
+function parsePageNumberParts(lineText, pageNumber, totalPages) {
+    const text = cleanText(lineText);
+    if (!text) return null;
+
+    const matchExplicit = /^(.*?)\b(?:p[aá]g(?:ina)?\.?\s*)(\d{1,4})(?:\s*(?:\/|de)\s*(\d{1,4}))?(.*)$/i.exec(text);
+    if (matchExplicit) {
+        return {
+            prefix: matchExplicit[1] ? matchExplicit[1].trim() + " " : "",
+            hasLabel: true,
+            label: text.match(/\b(?:p[aá]g(?:ina)?\.?\s*)/i)?.[0] || "Página ",
+            currentPage: matchExplicit[2],
+            hasTotal: Boolean(matchExplicit[3]),
+            totalSeparator: text.includes("/") ? " / " : " de ",
+            totalPages: matchExplicit[3] || String(totalPages),
+            suffix: matchExplicit[4] ? " " + matchExplicit[4].trim() : "",
+        };
+    }
+
+    const matchSlash = /^(.*?)\b(\d{1,4})\s*(\/|de)\s*(\d{1,4})(.*)$/i.exec(text);
+    if (matchSlash && !/[a-zA-Z]{3,}/.test(matchSlash[1])) {
+        return {
+            prefix: matchSlash[1] ? matchSlash[1].trim() + " " : "",
+            hasLabel: false,
+            currentPage: matchSlash[2],
+            hasTotal: true,
+            totalSeparator: ` ${matchSlash[3]} `,
+            totalPages: matchSlash[4] || String(totalPages),
+            suffix: matchSlash[5] ? " " + matchSlash[5].trim() : "",
+        };
+    }
+
+    const matchDashes = /^[-–—]\s*(\d{1,4})\s*[-–—]$/.exec(text);
+    if (matchDashes) {
+        return {
+            prefix: "- ",
+            hasLabel: false,
+            currentPage: matchDashes[1],
+            hasTotal: false,
+            suffix: " -",
+        };
+    }
+
+    const matchNumber = /^(\d{1,4})$/.exec(text);
+    if (matchNumber) {
+        return {
+            prefix: "",
+            hasLabel: false,
+            currentPage: matchNumber[1],
+            hasTotal: false,
+            suffix: "",
+        };
+    }
+
+    return null;
+}
+
+function createZoneParagraphs(zone, page, margins, totalPages = 1) {
     if (!zone?.lines?.length) {
         return [];
     }
 
-    return zone.lines.map((line) =>
-        createParagraphFromLines([line], page, margins, {
+    return zone.lines.map((line) => {
+        const pageParts = parsePageNumberParts(line.text, page.pageNumber, totalPages);
+        if (pageParts) {
+            const words = line.words || [];
+            const fontFamily = normalizeWordFontFamily(
+                words[0]?.fontFamily || words[0]?.fontName || "Arial",
+                10
+            );
+            const fontSizeHalfPoints = words[0]?.fontSize
+                ? Math.round(toNumber(words[0].fontSize) * 2)
+                : 20;
+            const color = words[0]?.color
+                ? String(words[0].color).replace(/^#/, "")
+                : undefined;
+            const bold = Boolean(words[0]?.bold);
+            const italics = Boolean(words[0]?.italic);
+
+            const children = [];
+            if (pageParts.prefix) {
+                children.push(new TextRun({ text: pageParts.prefix, font: fontFamily, size: fontSizeHalfPoints, color, bold, italics }));
+            }
+            if (pageParts.hasLabel && pageParts.label) {
+                children.push(new TextRun({ text: pageParts.label, font: fontFamily, size: fontSizeHalfPoints, color, bold, italics }));
+            }
+            children.push(new SimpleField("PAGE", String(pageParts.currentPage)));
+            if (pageParts.hasTotal) {
+                children.push(new TextRun({ text: pageParts.totalSeparator, font: fontFamily, size: fontSizeHalfPoints, color, bold, italics }));
+                children.push(new SimpleField("NUMPAGES", String(pageParts.totalPages)));
+            }
+            if (pageParts.suffix) {
+                children.push(new TextRun({ text: pageParts.suffix, font: fontFamily, size: fontSizeHalfPoints, color, bold, italics }));
+            }
+
+            const alignment = inferAlignment(line.bbox, page.dimensions.width, [line]);
+            return new Paragraph({
+                children,
+                alignment,
+                spacing: { before: 0, after: 0 },
+            });
+        }
+
+        return createParagraphFromLines([line], page, margins, {
             bbox: line.bbox,
             text: line.text,
-        })
-    );
+        });
+    });
 }
 
 function normalizeTableRows(table) {
@@ -606,6 +902,53 @@ function normalizeTableRows(table) {
     };
 }
 
+function planNativeCellLines(lines, fallbackFontSize) {
+    const metrics = lines.map((line) => {
+        const baseWords = line.words.filter((word) => !word.superscript && !word.subscript &&
+            Number.isFinite(Number(word.y)));
+        return {
+            fontSize: average((baseWords.length ? baseWords : line.words)
+                .map((word) => toNumber(word.fontSize, fallbackFontSize))),
+            baseline: baseWords.length && baseWords.every((word) => Number.isFinite(word.baselineY))
+                ? average(baseWords.map((word) => word.baselineY)) : null,
+            // A raised reference must not move the line's body reference top.
+            top: baseWords.length ? average(baseWords.map((word) => Number(word.y))) : toNumber(line.bbox?.y),
+        };
+    });
+    const heights = metrics.map((metric, index) => {
+        const normalHeight = Math.max(7, metric.fontSize * 1.15);
+        const next = metrics[index + 1];
+        // Font ascent changes the top of glyphs, not the source baseline.
+        // Older services and OCR keep the geometry-only fallback.
+        const advance = next
+            ? Math.max(1, metric.baseline !== null && next.baseline !== null
+                ? next.baseline - metric.baseline : next.top - metric.top)
+            : normalHeight;
+        return { ...metric, advance, lineHeight: Math.min(normalHeight, advance) };
+    });
+    return heights.map((metric, index) => ({
+        ...metric,
+        // The next paragraph's exact line box sets the next baseline. Using
+        // the current one accumulates drift whenever adjacent font sizes differ.
+        after: heights[index + 1] ? Math.max(0, metric.advance - heights[index + 1].lineHeight) : 0,
+    }));
+}
+
+function nativeBulletTabPosition(words, cellBox) {
+    const [marker, firstText] = words;
+    if (!marker || !firstText || !/^[•▪◦‣·]$/.test(cleanText(marker.text))) return null;
+    if (![marker, firstText].every((word) => String(word.source || "").includes("native") &&
+        Number.isFinite(word.x) && !toNumber(word.rotation))) return null;
+    if (!Number.isFinite(marker.width) || marker.width <= 0 ||
+        !Number.isFinite(cellBox?.x) || !Number.isFinite(cellBox?.width)) return null;
+    const offset = firstText.x - marker.x;
+    const position = firstText.x - cellBox.x;
+    // A real tab fixes the text start even when Word substitutes the bullet
+    // font. Reject tight/malformed geometry that could jump to a default tab.
+    return offset >= Math.max(marker.width + 0.5, toNumber(marker.fontSize, 9) * 0.7) &&
+        marker.x >= cellBox.x && position > 0 && position < cellBox.width ? position : null;
+}
+
 function createTableCell(
     value,
     isHeader,
@@ -614,12 +957,14 @@ function createTableCell(
         fontSizeHalfPoints = 18,
         verticalMarginTwips = 70,
         horizontalMarginTwips = 90,
+        nativeRowGeometry = false,
     } = {}
 ) {
     const cell = typeof value === "object" && value !== null
         ? value
         : { text: value };
     const nativeLines = (cell.nativeLines || []).filter((line) => line.words?.length);
+    const preserveCellGeometry = nativeRowGeometry || nativeLines.length > 0;
     const alignment = {
         center: AlignmentType.CENTER,
         right: AlignmentType.RIGHT,
@@ -659,23 +1004,25 @@ function createTableCell(
     const textColor = typeof cell.color === "string"
         ? cell.color.replace(/^#/, "") || undefined
         : undefined;
+    const nativeLineLayout = planNativeCellLines(nativeLines, fontPoints);
     const nativeParagraphs = nativeLines.map((line, index) => {
-        const lineFontSize = average(line.words.map((word) => toNumber(word.fontSize, fontPoints)));
-        const normalLineHeight = Math.max(7, lineFontSize * 1.15);
-        const nextLine = nativeLines[index + 1];
-        const sourceAdvance = nextLine
-            ? Math.max(1, toNumber(nextLine.bbox?.y) - toNumber(line.bbox?.y))
-            : normalLineHeight;
-        const exactLineHeight = Math.min(normalLineHeight, sourceAdvance);
-        const sourceTop = toNumber(line.bbox?.y) - toNumber(cell.bbox?.y);
+        const { fontSize: lineFontSize, lineHeight: exactLineHeight, after, top } = nativeLineLayout[index];
+        const hasScript = line.words.some((word) => word.superscript || word.subscript);
+        const sourceTop = (hasScript ? top : toNumber(line.bbox?.y)) - toNumber(cell.bbox?.y);
         const baselineCompensation = clamp(lineFontSize * 0.13, 1.2, 3.2);
         const leftInset = Math.max(0, toNumber(line.bbox?.x) - toNumber(cell.bbox?.x));
         const availableWidth = Math.max(1, widthTwips / POINT_TO_TWIP - leftInset);
         // Full native lines are sensitive to half-point font and twip rounding.
         // Reserve 1% only on near-full cell lines, never by shrinking the document.
         const horizontalScale = toNumber(line.bbox?.width) >= availableWidth * 0.97 ? 99 : 100;
+        const bulletTab = nativeBulletTabPosition(line.words, cell.bbox);
         return new Paragraph({
-            children: createWordRuns(line.words, { preserveGaps: true, horizontalScale }),
+            children: createWordRuns(line.words, {
+                preserveGaps: true, horizontalScale, preserveNativeScriptMetrics: true,
+                leadingTab: bulletTab !== null,
+            }),
+            tabStops: bulletTab !== null ? [{ type: TabStopType.LEFT, position: pointsToTwips(bulletTab) }] : undefined,
+            run: { font: fontFamily, size: Math.round(lineFontSize * 2) },
             alignment: AlignmentType.LEFT,
             indent: {
                 left: pointsToTwips(Math.max(0, toNumber(line.bbox?.x) - toNumber(cell.bbox?.x))),
@@ -685,7 +1032,7 @@ function createTableCell(
             },
             spacing: {
                 before: index === 0 ? pointsToTwips(Math.max(0, sourceTop - baselineCompensation)) : 0,
-                after: nextLine ? pointsToTwips(Math.max(0, sourceAdvance - exactLineHeight)) : 0,
+                after: pointsToTwips(after),
                 line: pointsToTwips(exactLineHeight),
                 lineRule: LineRuleType.EXACT,
             },
@@ -715,10 +1062,10 @@ function createTableCell(
               : undefined,
         margins: {
             marginUnitType: WidthType.DXA,
-            top: nativeParagraphs.length ? 0 : verticalMarginTwips,
-            right: nativeParagraphs.length ? 0 : horizontalMarginTwips,
-            bottom: nativeParagraphs.length ? 0 : verticalMarginTwips,
-            left: nativeParagraphs.length ? 0 : horizontalMarginTwips,
+            top: preserveCellGeometry ? 0 : verticalMarginTwips,
+            right: preserveCellGeometry ? 0 : horizontalMarginTwips,
+            bottom: preserveCellGeometry ? 0 : verticalMarginTwips,
+            left: preserveCellGeometry ? 0 : horizontalMarginTwips,
         },
         children: nativeParagraphs.length ? nativeParagraphs : [
             new Paragraph({
@@ -747,14 +1094,39 @@ function createTableCell(
     });
 }
 
-function createWordTable(table, { floating = false, leftMargin = 0 } = {}) {
+function hasNativeRowGeometry(row) {
+    // An empty continuation cell still belongs to the measured native row.
+    // Its default padding otherwise shifts text in neighboring Word cells.
+    return row.some((cell) => cell?.nativeLines?.length) && row.every((cell) =>
+        cell?.nativeLines?.length || (!cleanText(cell?.text) &&
+            !cell?.sourceLines?.some(cleanText) && toNumber(cell?.bbox?.height) > 0 &&
+            toNumber(cell?.bbox?.width) > 0));
+}
+
+function createWordTable(table, { floating = false, leftMargin = 0, printableWidth = 0 } = {}) {
     const normalized = normalizeTableRows(table);
 
     if (!normalized) {
         return null;
     }
 
-    const columnWidthsTwips = normalized.columnWidths.map(pointsToTwips);
+    let columnWidths = [...normalized.columnWidths];
+    let indentPoints = Math.max(0, toNumber(table.bbox?.x) - leftMargin);
+
+    if (!floating && printableWidth > 0) {
+        if (indentPoints > printableWidth * 0.25) {
+            indentPoints = Math.max(0, printableWidth * 0.08);
+        }
+        const availableWidth = Math.max(72, printableWidth - indentPoints);
+        const currentTableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
+
+        if (currentTableWidth > availableWidth) {
+            const scale = availableWidth / currentTableWidth;
+            columnWidths = columnWidths.map((width) => Math.max(4, width * scale));
+        }
+    }
+
+    const columnWidthsTwips = columnWidths.map(pointsToTwips);
     const tableWidthTwips = columnWidthsTwips.reduce((sum, width) => sum + width, 0);
     const rows = [];
     const rowCount = Math.max(
@@ -780,7 +1152,7 @@ function createWordTable(table, { floating = false, leftMargin = 0 } = {}) {
     const verticalMarginTwips = detectedTableHeight > 0 ? 30 : 70;
     const horizontalMarginTwips = detectedTableHeight > 0 ? 30 : 90;
     const rowHeightFor = (row) => {
-        const nativeRowGeometry = row.length > 0 && row.every((cell) => cell?.nativeLines?.length);
+        const nativeRowGeometry = hasNativeRowGeometry(row);
         const singleRowHeights = (row || [])
             .filter((cell) => Math.max(1, toNumber(cell?.rowSpan, 1)) === 1)
             .map((cell) => toNumber(cell?.bbox?.height));
@@ -844,6 +1216,7 @@ function createWordTable(table, { floating = false, leftMargin = 0 } = {}) {
     }
 
     const createRowCells = (row, isHeader) => {
+        const nativeRowGeometry = hasNativeRowGeometry(row);
         let nextColumn = 0;
         return row.map((cell) => {
             const explicitColumn = Number(cell?.columnIndex);
@@ -859,6 +1232,7 @@ function createWordTable(table, { floating = false, leftMargin = 0 } = {}) {
                 fontSizeHalfPoints,
                 verticalMarginTwips,
                 horizontalMarginTwips,
+                nativeRowGeometry,
             });
         });
     };
@@ -897,8 +1271,8 @@ function createWordTable(table, { floating = false, leftMargin = 0 } = {}) {
         width: { size: tableWidthTwips, type: WidthType.DXA },
         columnWidths: columnWidthsTwips,
         layout: TableLayoutType.FIXED,
-        indent: !floating
-            ? { size: pointsToTwips(toNumber(table.bbox?.x) - leftMargin), type: WidthType.DXA }
+        indent: !floating && indentPoints > 0
+            ? { size: pointsToTwips(indentPoints), type: WidthType.DXA }
             : undefined,
         float: floating
             ? {
@@ -1124,6 +1498,42 @@ function groupParagraphLines(paragraph = {}) {
     });
 }
 
+function createHorizontalRuleParagraph(rule, margins, pageWidth) {
+    const ruleX = toNumber(rule.bbox?.x, margins.left);
+    const ruleWidth = toNumber(rule.bbox?.width, pageWidth - margins.left - margins.right);
+    const leftIndent = clamp(ruleX - margins.left, 0, pageWidth * 0.4);
+    const rightIndent = clamp(pageWidth - margins.right - (ruleX + ruleWidth), 0, pageWidth * 0.4);
+    const color = rule.strokingColor || rule.color || "9CA3AF";
+    const cleanColor = String(color).replace(/^#/, "") || "000000";
+    const size = clamp(Math.round(toNumber(rule.lineWidth, 1) * 6), 2, 24);
+
+    return new Paragraph({
+        children: [
+            new TextRun({
+                text: "",
+                size: 2,
+            }),
+        ],
+        border: {
+            bottom: {
+                style: BorderStyle.SINGLE,
+                size,
+                color: cleanColor,
+            },
+        },
+        indent: {
+            left: leftIndent > 2 ? pointsToTwips(leftIndent) : undefined,
+            right: rightIndent > 2 ? pointsToTwips(rightIndent) : undefined,
+        },
+        spacing: {
+            before: pointsToTwips(4),
+            after: pointsToTwips(4),
+            line: 20,
+            lineRule: LineRuleType.EXACT,
+        },
+    });
+}
+
 function createEditablePageChildren(page) {
     if (
         cleanText(page.review?.correctedText) &&
@@ -1148,9 +1558,9 @@ function createEditablePageChildren(page) {
     const margins = getPageMargins(page);
     const elements = [];
     const floatingImages = [];
-    const neuralFormulas = page.analysis.neuralFormulas || [];
+    const neuralFormulas = page.analysis?.neuralFormulas || [];
 
-    page.analysis.paragraphs.forEach((paragraph) => {
+    (page.analysis?.paragraphs || []).forEach((paragraph) => {
         if (
             isInsideZone(paragraph, header) ||
             isInsideZone(paragraph, footer) ||
@@ -1163,7 +1573,9 @@ function createEditablePageChildren(page) {
 
         groupParagraphLines(paragraph).forEach((group) => {
             if (
-                page.analysis.tables.some((table) => isTextGroupInsideTable(group, table))
+                isInsideZone(group, header) ||
+                isInsideZone(group, footer) ||
+                (page.analysis?.tables || []).some((table) => isTextGroupInsideTable(group, table))
             ) {
                 return;
             }
@@ -1185,14 +1597,65 @@ function createEditablePageChildren(page) {
         });
     });
 
-    page.analysis.tables.forEach((table) => {
-        const element = createWordTable(table, { floating: false, leftMargin: margins.left });
+    const printableWidth = Math.max(100, page.dimensions.width - margins.left - margins.right);
+    let hasComplexTables = false;
+    (page.analysis?.tables || []).forEach((table) => {
+        if (isComplexPositionedTable(table)) {
+            // Tablas ultra-complejas (>12 columnas o >24 filas): Word acumula
+            // márgenes internos de celda y desborda la página. Se renderiza como
+            // imagen de fondo y el texto nativo se superpone encima.
+            hasComplexTables = true;
+            return;
+        }
+        const element = createWordTable(table, {
+            floating: false,
+            leftMargin: margins.left,
+            printableWidth,
+        });
         if (element) {
             elements.push({
                 type: "table",
                 y: toNumber(table.bbox?.y),
                 bbox: table.bbox,
                 element,
+            });
+        }
+    });
+
+    // Si hay tablas ultra-complejas y existe una imagen de fondo limpia, añadirla
+    // como placa detrás del contenido para preservar la estructura visual.
+    if (hasComplexTables && page.renderedPage && !page.review?.excludeImages) {
+        floatingImages.unshift(
+            createFloatingImage(
+                {
+                    ...page.renderedPage,
+                    x: 0,
+                    y: 0,
+                    width: page.dimensions.width,
+                    height: page.dimensions.height,
+                },
+                page,
+                { background: true, zIndex: 0 }
+            )
+        );
+    }
+
+
+    (page.vectorObjects || []).forEach((shape) => {
+        const bbox = shape.bbox || {};
+        const isHorizontalLine =
+            toNumber(bbox.height) <= 3.5 &&
+            toNumber(bbox.width) >= 36 &&
+            !(page.analysis?.tables || []).some((t) => boxOverlapRatio(t.bbox, bbox) > 0.25) &&
+            !isInsideZone(shape, header) &&
+            !isInsideZone(shape, footer);
+
+        if (isHorizontalLine) {
+            elements.push({
+                type: "horizontal-rule",
+                y: toNumber(bbox.y),
+                bbox,
+                element: createHorizontalRuleParagraph(shape, margins, page.dimensions.width),
             });
         }
     });
@@ -1215,7 +1678,11 @@ function createEditablePageChildren(page) {
     });
 
     if (!elements.length) {
-        page.analysis.lines.forEach((line) => {
+        const fallbackLines = [
+            ...(page.analysis?.lines || []),
+            ...(page.content?.lines || []),
+        ];
+        fallbackLines.forEach((line) => {
             if (!isInsideZone(line, header) && !isInsideZone(line, footer)) {
                 elements.push({
                     type: "paragraph",
@@ -1231,7 +1698,7 @@ function createEditablePageChildren(page) {
             }
         });
     }
-    let previousBottom = toNumber(page.analysis.spatial?.textBox?.y, margins.top);
+    let previousBottom = toNumber(page.analysis?.spatial?.textBox?.y, margins.top);
     const flowChildren = elements
         .sort((a, b) => a.y - b.y)
         .map((entry) => {
@@ -1265,7 +1732,7 @@ function createEditablePageChildren(page) {
                     },
                 });
             }
-            if (entry.type === "table") {
+            if (entry.type === "table" || entry.type === "horizontal-rule") {
                 return entry.element;
             }
             return entry.element;
@@ -1398,6 +1865,9 @@ function createTextFrame(region, page) {
             // del motor de Word para evitar duplicar la expansión de espacios.
             preserveGaps: alignment !== AlignmentType.JUSTIFIED,
             horizontalScale: nativeHorizontalScale,
+            artworkContainsDecorations:
+                page.renderedPage?.role === "clean-editable-background" &&
+                !page.review?.excludeImages,
         }));
     });
 
@@ -1436,11 +1906,24 @@ function createTextFrame(region, page) {
     // glifo; Word posiciona primero la caja de línea y añade el ascendente.
     // La comparación a 120 dpi de Arial 11–12 pt sitúa este ascendente en
     // 1,4–1,6 pt. Una compensación del 22 % elevaba el texto cerca de 1 pt.
-    const baselineCompensation = clamp(
+    let baselineCompensation = clamp(
         (averageFontSize || 10) * 0.13 + (usesSmallQuicksand ? 1 : 0),
         1.2,
         4.2
     );
+    const nativeBaselines = words.filter((word) => String(word.source || "").includes("native") &&
+        Number.isFinite(word.baselineY)).map((word) => word.baselineY);
+    const measuredAscent = average(nativeBaselines) - toNumber(bbox.y);
+    if (lineCount === 1 && averageFontSize >= 30 && nativeBaselines.length === words.length &&
+        embeddedFontFamilyFor(words[0]?.fontFamily || words[0]?.fontName) &&
+        measuredAscent > 0 && measuredAscent < averageFontSize * 0.68 &&
+        Math.max(...nativeBaselines) - Math.min(...nativeBaselines) < averageFontSize * 0.1) {
+        // Deep-descender display fonts expose a PDF box far above/below their
+        // true baseline. The Arial-sized 4.2 pt cap is inappropriate here.
+        // Approximate the baseline in Word's exact line box (80% of its height)
+        // only for this measured single-line case; ordinary text keeps its policy.
+        baselineCompensation = Math.max(baselineCompensation, estimatedLineHeight * 0.8 - measuredAscent);
+    }
 
     return new Paragraph({
         children,
@@ -1803,7 +2286,7 @@ function preparePageCorrections(page) {
     return page;
 }
 
-function createSection(page, mode) {
+function createSection(page, mode, totalPages = 1) {
     const effectiveMode =
         page.review?.strategy && page.review.strategy !== "automatic"
             ? page.review.strategy
@@ -1841,25 +2324,23 @@ function createSection(page, mode) {
         },
         headers:
             effectiveMode === "editable" &&
-            !positionedEditable &&
             header &&
             !isZoneExcluded(page, "header") &&
             (!cleanText(page.review?.correctedText) || page.review?.wordCorrectionApplied)
                 ? {
                     default: new Header({
-                        children: createZoneParagraphs(header, page, margins),
+                        children: createZoneParagraphs(header, page, margins, totalPages),
                     }),
                 }
                 : { default: new Header({ children: [new Paragraph({ children: [] })] }) },
         footers:
             effectiveMode === "editable" &&
-            !positionedEditable &&
             footer &&
             !isZoneExcluded(page, "footer") &&
             (!cleanText(page.review?.correctedText) || page.review?.wordCorrectionApplied)
                 ? {
                     default: new Footer({
-                        children: createZoneParagraphs(footer, page, margins),
+                        children: createZoneParagraphs(footer, page, margins, totalPages),
                     }),
                 }
                 : { default: new Footer({ children: [new Paragraph({ children: [] })] }) },
@@ -1868,9 +2349,14 @@ function createSection(page, mode) {
                 ? createFidelityPageChildren(page)
                 : effectiveMode === "fidelity"
                   ? createLayeredFidelityPageChildren(page)
-                  : positionedEditable
+                  // Para modo editable:
+                  // - "positioned": páginas de diseño gráfico (portadas, formularios vacíos,
+                  //   páginas con pocas palabras) → texto con frames precisos superpuestos
+                  // - "flow": páginas de texto/tablas digitales → párrafos fluidos y
+                  //   tablas nativas Word via createWordTable({ floating: false })
+                  : page.editableLayout === "positioned"
                     ? createLayeredFidelityPageChildren(page)
-                  : createEditablePageChildren(page),
+                    : createEditablePageChildren(page),
     };
 }
 
@@ -1892,7 +2378,7 @@ export async function renderWordDocument(model, onProgress) {
                 model.mode === "fidelity"
                     ? "Documento convertido por NovaPDF en modo de máxima fidelidad."
                     : "Documento editable convertido por el motor híbrido de NovaPDF.",
-            fonts: embeddedFonts.map(({ name, data }) => ({ name, data })),
+            fonts: embeddedFonts.map(({ transportName: name, data }) => ({ name, data })),
             styles: {
                 default: {
                     document: {
@@ -1903,7 +2389,7 @@ export async function renderWordDocument(model, onProgress) {
             },
             sections: model.pages
                 .map(preparePageCorrections)
-                .map((page) => createSection(page, model.mode)),
+                .map((page) => createSection(page, model.mode, model.pages.length)),
         });
     } finally {
         activeEmbeddedFontFamilies = previousEmbeddedFontFamilies;
@@ -1928,3 +2414,8 @@ export function __normalizeTableRowsForTests(table) {
 export function __groupParagraphLinesForTests(paragraph) {
     return groupParagraphLines(paragraph);
 }
+
+export const __planNativeCellLinesForTests = planNativeCellLines;
+export const __dehyphenateLineWordsForTests = dehyphenateLineWords;
+export const __startsNumberedListForTests = startsNumberedList;
+export const __parsePageNumberPartsForTests = parsePageNumberParts;

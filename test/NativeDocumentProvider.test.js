@@ -9,6 +9,15 @@ import {
     selectBestNativeContent,
 } from "../src/engine/pdf-to-word/NativeDocumentProvider.js";
 
+test("conserva la necesidad de composición aunque una máscara no se pueda decodificar", () => {
+    const page = normalizeStructuredNativePage({ width: 300, height: 200, images: [
+        { bbox: [20, 30, 100, 120], requires_compositing: true },
+    ] });
+    assert.equal(page.images.length, 0);
+    assert.equal(page.artworkRequiresCompositing, true);
+    assert.equal(normalizeStructuredNativePage({}).artworkRequiresCompositing, false);
+});
+
 test("transporta tipografías PDF autorizadas para incrustarlas en Word", async () => {
     const previousFetch = globalThis.fetch;
     let requestOptions;
@@ -25,6 +34,10 @@ test("transporta tipografías PDF autorizadas para incrustarlas en Word", async 
                     source_name: "ABCDEF+Quicksand-Light",
                     extension: "ttf",
                     sha256: "font-sha",
+                    style: "Bold",
+                    units_per_em: 1000,
+                    space_advance_em: 0.25,
+                    character_widths_em: { 32: 0.25, 65: 0.6, broken: "x" },
                     embedding: "editable",
                     data_base64: "AQIDBA==",
                 }],
@@ -38,6 +51,10 @@ test("transporta tipografías PDF autorizadas para incrustarlas en Word", async 
         assert.equal(result.embeddedFonts.length, 1);
         assert.equal(result.embeddedFonts[0].name, "Quicksand Light");
         assert.equal(result.embeddedFonts[0].id, "font-sha");
+        assert.equal(result.embeddedFonts[0].style, "Bold");
+        assert.equal(result.embeddedFonts[0].unitsPerEm, 1000);
+        assert.equal(result.embeddedFonts[0].spaceAdvanceEm, 0.25);
+        assert.deepEqual(result.embeddedFonts[0].characterWidthsEm, { 32: 0.25, 65: 0.6 });
         assert.deepEqual([...result.embeddedFonts[0].data], [1, 2, 3, 4]);
         assert.equal(requestOptions.body.get("include_fonts"), "true");
     } finally {
@@ -144,12 +161,23 @@ test("normaliza la segunda extraccion nativa con tipografia, color y tablas", ()
     assert.equal(page.content.words[0].fontFamily, "Arial");
     assert.equal(page.content.words[0].color, "#2457D6");
     assert.equal(page.content.words[0].underline, true);
+    assert.equal(page.content.words[0].vectorUnderline, true);
     assert.equal(page.tables[0].bbox.width, 290);
     assert.equal(page.tables[0].structuralScore, 96);
     assert.equal(page.images[0].x, 50);
     assert.equal(page.images[0].width, 20);
     assert.equal(page.images[0].data.length, 3);
     assert.equal(page.images[0].nativeEmbedded, true);
+});
+
+test("escala la línea base medida y no inventa una para datos ausentes o inválidos", () => {
+    const baselines = [80, 0, null, undefined, NaN, Infinity, "80"];
+    const page = normalizeStructuredNativePage({
+        width: 600, height: 800,
+        words: baselines.map((baseline_y) => ({ text: "Texto", bbox: [20, 60, 50, 75], baseline_y })),
+    }, { width: 300, height: 400 });
+    assert.deepEqual(page.content.words.map((word) => word.baselineY),
+        [40, 0, undefined, undefined, undefined, undefined, undefined]);
 });
 
 test("conserva una tabla con bordes que continúa mediante una sola fila", () => {

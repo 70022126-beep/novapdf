@@ -5,8 +5,12 @@ import JSZip from "jszip";
 import { enhanceTable } from "../src/engine/layout/ProfessionalTableAnalyzer.js";
 
 import {
+    __dehyphenateLineWordsForTests,
     __groupParagraphLinesForTests,
     __normalizeTableRowsForTests,
+    __parsePageNumberPartsForTests,
+    __planNativeCellLinesForTests,
+    __startsNumberedListForTests,
     renderWordDocument,
     splitLineByComplexTableCells,
     splitLineByLargeMeasuredGaps,
@@ -295,7 +299,7 @@ test("respeta alturas nativas y saltos de línea en tablas posicionadas", async 
         pages: [
             {
                 pageNumber: 1,
-                editableLayout: "positioned",
+                editableLayout: "flow",
                 dimensions: { width: 595, height: 842 },
                 content: { words: [], lines: [] },
                 images: [],
@@ -315,10 +319,152 @@ test("respeta alturas nativas y saltos de línea en tablas posicionadas", async 
     const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
     const xml = await archive.file("word/document.xml").async("string");
 
-    assert.match(xml, /<w:trHeight w:val="924" w:hRule="exact"\/?>/);
+    assert.match(xml, /<w:trHeight w:val="\d+" w:hRule="atLeast"\/?>/);
     assert.match(xml, /<w:br\/>/);
     assert.match(xml, /<w:b\/>/);
     assert.match(xml, /<w:top w:val="single" w:color="000000"/);
+});
+
+test("el avance de una celda usa el cuerpo del texto y la caja de la línea siguiente", () => {
+    const line = (y, fontSize, extra = []) => ({
+        bbox: { y: y - (extra.length ? 0.63 : 0) },
+        words: [{ text: "Texto", y, height: fontSize, fontSize }, ...extra],
+    });
+    const layout = __planNativeCellLinesForTests([
+        line(100, 9, [{ text: "13", y: 99.37, height: 6, fontSize: 6, superscript: true }]),
+        line(110.32, 9),
+        line(125.92, 9),
+    ], 9);
+    assert.equal(layout[0].top, 100);
+    assert.equal(layout[0].fontSize, 9, "la referencia pequeña no reduce la caja del cuerpo de texto");
+    assert.equal(layout[0].after, 0, "el superíndice no añade un espacio artificial");
+    assert.ok(Math.abs(layout[1].after - 5.25) < 0.001, "se conserva el salto adicional del PDF");
+    assert.equal(layout[2].after, 0);
+    assert.deepEqual(__planNativeCellLinesForTests([], 9), []);
+    const smallThenLarge = __planNativeCellLinesForTests([line(100, 8), line(113, 11)], 9);
+    assert.ok(Math.abs(smallThenLarge[0].after - 0.35) < 0.001,
+        "el espacio usa la altura de 11 pt siguiente, no los 8 pt anteriores");
+});
+
+test("usa líneas base medidas entre tamaños mixtos sin afectar el servicio antiguo", () => {
+    const lines = [
+        { bbox: { y: 492.48 }, words: [{ text: "Grande", y: 492.48, fontSize: 9.96, baselineY: 500.35 }] },
+        { bbox: { y: 505.68 }, words: [{ text: "Grande", y: 505.68, fontSize: 9.96, baselineY: 513.55 }] },
+        { bbox: { y: 518.68 }, words: [{ text: "Pequeña", y: 518.68, fontSize: 9, baselineY: 525.79 }] },
+    ];
+    const measured = __planNativeCellLinesForTests(lines, 9);
+    assert.ok(Math.abs(measured[1].advance - 12.24) < 0.001);
+    assert.ok(Math.abs(measured[1].after - 1.89) < 0.001);
+    for (const baselineY of [null, undefined, NaN]) {
+        lines[2].words[0].baselineY = baselineY;
+        assert.ok(Math.abs(__planNativeCellLinesForTests(lines, 9)[1].advance - 13) < 0.001);
+    }
+});
+
+test("conserva tamaño y desplazamiento nativos de superíndices y subíndices en celdas", async () => {
+    const makeWord = (text, x, y, size, extra = {}) => ({
+        text, x, y, width: text.length * size * 0.5, height: size, fontSize: size,
+        fontFamily: "Arial", source: "native-secondary", ...extra,
+    });
+    const words = [makeWord("Referencia", 105, 123, 9),
+        makeWord("13", 150, 122.37, 6, { superscript: true })];
+    const lowerWords = [makeWord("H", 105, 138, 9),
+        makeWord("2", 111, 146, 4, { subscript: true })];
+    const table = {
+        bbox: { x: 100, y: 120, width: 200, height: 50 }, columnAnchors: [100, 200],
+        professional: { columnCount: 2, headerRows: 0, borderStyle: "grid", grid: [[
+            { text: "Referencia13 H2", columnIndex: 0, bbox: { x: 100, y: 120, width: 100, height: 50 },
+                nativeLines: [
+                    { words, bbox: { x: 105, y: 122.37, width: 51, height: 9.63 } },
+                    { words: lowerWords, bbox: { x: 105, y: 138, width: 10, height: 12 } },
+                ] },
+            { text: "", columnIndex: 1, bbox: { x: 200, y: 120, width: 100, height: 50 } },
+        ]] },
+    };
+    const result = await renderWordDocument({ title: "Referencias de celda", mode: "editable", pages: [{
+        pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+        content: { words: [], lines: [] }, images: [], review: {},
+        analysis: { zones: [], tables: [table], spatial: {}, statistics: {} },
+    }] });
+    const zip = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const xml = await zip.file("word/document.xml").async("string");
+    const runs = xml.match(/<w:r>[\s\S]*?<\/w:r>/g) || [];
+    const raised = runs.find((run) => run.includes('>13</w:t>'));
+    const lowered = runs.find((run) => run.includes('>2</w:t>'));
+    assert.match(raised, /<w:position w:val="7"/);
+    assert.match(raised, /<w:sz w:val="12"/);
+    assert.match(lowered, /<w:position w:val="-6"/);
+    assert.match(lowered, /<w:sz w:val="8"/);
+    assert.doesNotMatch(raised + lowered, /w:vertAlign/);
+    assert.match(xml, /w:before="36"/, "la primera línea se coloca usando el cuerpo, no el superíndice");
+    assert.match(xml, /w:tblPr/);
+});
+
+test("una celda vacía medida no agrega margen ni reduce la altura de su fila nativa", async () => {
+    const first = { text: "", columnIndex: 0, bbox: { x: 100, y: 100, width: 100, height: 40 } };
+    const second = { text: "Texto", columnIndex: 1, bbox: { x: 200, y: 100, width: 100, height: 40 },
+        nativeLines: [{ words: [{ text: "Texto", x: 205, y: 110, height: 9, width: 30, fontSize: 9 }],
+            bbox: { x: 205, y: 110, width: 30, height: 9 } }] };
+    const table = { bbox: { x: 100, y: 100, width: 200, height: 40 }, columnAnchors: [100, 200],
+        professional: { columnCount: 2, headerRows: 0, borderStyle: "grid", grid: [[first, second]] } };
+    const model = { title: "Fila nativa", mode: "editable", pages: [{
+        pageNumber: 1, editableLayout: "flow", dimensions: { width: 595, height: 842 },
+        content: { words: [], lines: [] }, images: [], review: {},
+        analysis: { zones: [], tables: [table], spatial: {}, statistics: {} },
+    }] };
+    const xmlFor = async () => {
+        const result = await renderWordDocument(model);
+        const zip = await JSZip.loadAsync(await result.blob.arrayBuffer());
+        return zip.file("word/document.xml").async("string");
+    };
+    const xml = await xmlFor();
+    assert.match(xml, /<w:trHeight w:val="\d+" w:hRule="atLeast"/);
+    assert.equal((xml.match(/<w:top w:type="dxa" w:w="0"/g) || []).length, 2);
+    first.text = "Sin geometría de texto";
+    const mixedXml = await xmlFor();
+    assert.match(mixedXml, /<w:trHeight w:val="\d+" w:hRule="atLeast"/);
+    assert.match(mixedXml, /<w:top w:type="dxa" w:w="30"/);
+});
+
+test("ancla el texto tras una viñeta nativa sin depender de la fuente sustituida", async () => {
+    const marker = { text: "▪", x: 108, y: 110, width: 4.122, height: 9,
+        fontSize: 9, fontFamily: "Wingdings", source: "native-secondary" };
+    const word = { ...marker, text: "Texto", x: 126, width: 30, fontFamily: "Arial" };
+    const cell = { text: "▪ Texto", columnIndex: 0, bbox: { x: 100, y: 100, width: 100, height: 30 },
+        nativeLines: [{ words: [marker, word], bbox: { x: 108, y: 110, width: 48, height: 9 } }] };
+    const table = { bbox: { x: 100, y: 100, width: 200, height: 30 }, columnAnchors: [100, 200],
+        professional: { columnCount: 2, headerRows: 0, borderStyle: "grid", grid: [[cell,
+            { text: "", columnIndex: 1, bbox: { x: 200, y: 100, width: 100, height: 30 } }]] } };
+    const xmlFor = async () => {
+        const result = await renderWordDocument({ title: "Viñeta medida", mode: "editable", pages: [{
+            pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+            content: { words: [], lines: [] }, images: [], review: {},
+            analysis: { zones: [], tables: [table], spatial: {}, statistics: {} },
+        }] });
+        const zip = await JSZip.loadAsync(await result.blob.arrayBuffer());
+        return zip.file("word/document.xml").async("string");
+    };
+    const original = { ...marker };
+    const originalWord = { ...word };
+    for (const text of ["▪", "•", "◦", "‣", "·"]) {
+        marker.text = text;
+        const xml = await xmlFor();
+        assert.match(xml, /<w:tab w:val="left" w:pos="520"\/>/,
+            "la parada se mide desde la celda, no desde la sangría del párrafo");
+        assert.match(xml, /<w:tab\/>/);
+        assert.match(xml, />Texto<\/w:t>/);
+    }
+    const rejected = [
+        [{ text: "1." }, {}], [{ text: "▪Texto" }, {}], [{ source: "ocr" }, {}],
+        [{ rotation: 90 }, {}], [{ x: 98 }, {}], [{ width: NaN }, {}],
+        [{}, { source: "ocr" }], [{}, { x: 112 }], [{}, { x: 201 }],
+    ];
+    for (const [markerPatch, wordPatch] of rejected) {
+        Object.assign(marker, original, markerPatch);
+        Object.assign(word, originalWord, wordPatch);
+        assert.doesNotMatch(await xmlFor(), /<w:tab[ />]/,
+            `no forzar tabulación para ${JSON.stringify([markerPatch, wordPatch])}`);
+    }
 });
 
 test("genera un DOCX editable desde el modelo híbrido", async () => {
@@ -595,6 +741,16 @@ test("amplía hacia la izquierda los cuadros alineados a la derecha", async () =
                 content: { words: [footerWord], lines: [footerLine] },
                 images: [],
                 review: {},
+                // La lógica de expansión de cuadros (framePr) vive en createLayeredFidelityPageChildren,
+                // que se activa cuando hay un fondo limpio decorativo.
+                renderedPage: {
+                    data: new Uint8Array(Buffer.from(
+                        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+                        "base64"
+                    )),
+                    type: "png",
+                    role: "clean-editable-background",
+                },
                 analysis: {
                     zones: [],
                     paragraphs: [],
@@ -636,7 +792,36 @@ test("conserva espacios nativos estrechos sin espaciado negativo ni compresión 
     const xml = await archive.file("word/document.xml").async("string");
     assert.match(xml, /<w:w w:val="100"/);
     assert.doesNotMatch(xml, /<w:spacing w:val="-/);
-    assert.match(xml, /<w:sz w:val="14"/);
+    assert.match(xml, /<w:sz w:val="24"/);
+});
+
+test("no duplica decoraciones vectoriales del fondo y conserva el formato editable sin fondo", async () => {
+    const png = new Uint8Array(Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aMfsAAAAASUVORK5CYII=", "base64"));
+    for (const [withBackground, excludeImages] of [[true, false], [false, false], [true, true]]) {
+        const words = [
+            { text: "Vector", x: 40, y: 60, width: 35, height: 12, fontSize: 12,
+                underline: true, strike: true, vectorUnderline: true, vectorStrike: true },
+            { text: "Manual", x: 80, y: 60, width: 40, height: 12, fontSize: 12,
+                underline: true, strike: true },
+        ];
+        const result = await renderWordDocument({
+            title: "Decoraciones", mode: "editable", pages: [{
+                pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+                content: { words, lines: [{ words, text: "Vector Manual", bbox: { x: 40, y: 60, width: 80, height: 12 } }] },
+                images: [], review: { excludeImages },
+                renderedPage: withBackground ? { data: png, type: "png", role: "clean-editable-background" } : null,
+                analysis: { zones: [], tables: [], spatial: {}, statistics: {} },
+            }],
+        });
+        const zip = await JSZip.loadAsync(await result.blob.arrayBuffer());
+        const xml = await zip.file("word/document.xml").async("string");
+        const expected = withBackground && !excludeImages ? 1 : 2;
+        assert.equal((xml.match(/<w:u\b/g) || []).length, expected);
+        assert.equal((xml.match(/<w:strike\s*\/>/g) || []).length, expected);
+        assert.match(xml, />Vector</);
+        assert.match(xml, /Manual</);
+    }
 });
 
 test("genera formulas OMML editables desde LaTeX neuronal", async () => {
@@ -710,6 +895,13 @@ test("incrusta la fuente recuperada y la asigna a los textos compatibles", async
     assert.match(fontTable, /w:name="Quicksand Light"/);
     assert.match(fontTable, /w:altName w:val="Lucida Sans Unicode"/);
     assert.match(fontTable, /w:embedRegular/);
+    const key = fontTable.match(/w:fontKey="\{([0-9A-F-]+)\}"/)?.[1];
+    assert.ok(key, "el identificador hexadecimal debe ser compatible con LibreOffice");
+    const keyBytes = key.replaceAll("-", "").match(/../g).map((pair) => parseInt(pair, 16)).reverse();
+    const embeddedBytes = await archive.file("word/fonts/font1.odttf").async("uint8array");
+    const decoded = embeddedBytes.map((value, index) => index < 32 ? value ^ keyBytes[index % 16] : value);
+    assert.deepEqual([...decoded], Array.from({ length: 64 }, (_, index) => index),
+        "normalizar el GUID no altera ni corrompe la fuente transportada");
     assert.match(documentXml, /w:ascii="Quicksand Light"/);
     assert.doesNotMatch(documentXml, /w:ascii="Century Gothic"/);
 });
@@ -745,6 +937,142 @@ test("transporta fuentes documentales comunes y excluye fuentes de símbolos", a
     assert.doesNotMatch(fontTable, /w:font w:name="Symbol">[\s\S]*?w:embedRegular/);
 });
 
+test("consolida variantes regular y negrita en una sola familia Word", async () => {
+    const words = [
+        { text: "Texto", x: 80, y: 100, width: 50, height: 16, fontSize: 12,
+            fontFamily: "CanvaSans-Regular", source: "native-secondary" },
+        { text: "fuerte", x: 140, y: 100, width: 54, height: 16, fontSize: 12,
+            fontFamily: "CanvaSans-Bold", source: "native-secondary", bold: true },
+    ];
+    const result = await renderWordDocument({
+        title: "Familia completa", mode: "editable",
+        embeddedFonts: [
+            { name: "Canva Sans", style: "Regular", sourceName: "AAAAAA+CanvaSans-Regular",
+                embedding: "editable", data: new Uint8Array(64) },
+            { name: "Canva Sans", style: "Bold", sourceName: "BBBBBB+CanvaSans-Bold",
+                embedding: "editable", data: new Uint8Array(96) },
+        ],
+        pages: [{ pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+            content: { words, lines: [{ words, text: "Texto fuerte", bbox: { x: 80, y: 100, width: 114, height: 16 } }] },
+            images: [], review: {}, analysis: { zones: [], tables: [], spatial: {}, statistics: {} } }],
+    });
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const fontTable = await archive.file("word/fontTable.xml").async("string");
+    const documentXml = await archive.file("word/document.xml").async("string");
+    const familyNode = fontTable.match(/<w:font w:name="Canva Sans">[\s\S]*?<\/w:font>/)?.[0] || "";
+
+    assert.equal(Object.keys(archive.files).filter((name) => /^word\/fonts\/font\d+\.odttf$/.test(name)).length, 2);
+    assert.match(familyNode, /w:embedRegular/);
+    assert.match(familyNode, /w:embedBold/);
+    assert.match(familyNode, /w:altName w:val="Arial"/);
+    assert.doesNotMatch(fontTable, /NovaPDF Embedded/);
+    assert.match(documentXml, /w:ascii="Canva Sans"/);
+    assert.match(documentXml, /<w:b\/>/);
+});
+
+test("no interpreta como estilo las sílabas internas del nombre de una fuente", async () => {
+    const word = { text: "Nombre", x: 80, y: 100, width: 55, height: 16, fontSize: 12,
+        fontFamily: "Blackadder ITC", source: "native-secondary" };
+    const result = await renderWordDocument({
+        title: "Nombre tipográfico", mode: "editable",
+        embeddedFonts: [{ name: "Blackadder ITC", embedding: "editable", data: new Uint8Array(64) }],
+        pages: [{ pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+            content: { words: [word], lines: [{ words: [word], text: word.text, bbox: word }] },
+            images: [], review: {}, analysis: { zones: [], tables: [], spatial: {}, statistics: {} } }],
+    });
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const fontTable = await archive.file("word/fontTable.xml").async("string");
+    const documentXml = await archive.file("word/document.xml").async("string");
+    assert.match(fontTable, /w:name="Blackadder ITC"/);
+    assert.match(fontTable, /w:embedRegular/);
+    assert.match(documentXml, /w:ascii="Blackadder ITC"/);
+});
+
+test("ajusta cada palabra nativa con el avance real de su fuente", async () => {
+    const metricFont = {
+        name: "Metric Sans", style: "Regular", embedding: "editable",
+        data: new Uint8Array(64), spaceAdvanceEm: 0.25,
+        characterWidthsEm: { 32: 0.25, 65: 0.6 },
+    };
+    const makeDocumentXml = async (word, embeddedFonts = [metricFont]) => {
+        const result = await renderWordDocument({
+            title: "Métrica horizontal", mode: "editable", embeddedFonts,
+            pages: [{ pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+                content: { words: [word], lines: [{ words: [word], text: word.text, bbox: word }] },
+                images: [], review: {}, analysis: { zones: [], tables: [], spatial: {}, statistics: {} } }],
+        });
+        const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+        return archive.file("word/document.xml").async("string");
+    };
+    const word = { text: "AA", x: 80, y: 100, width: 10.8, height: 12, fontSize: 10,
+        fontFamily: "MetricSans-Regular", source: "native-secondary" };
+
+    assert.match(await makeDocumentXml(word), /<w:w w:val="90"\/>/);
+    word.width = 11.88;
+    assert.match(await makeDocumentXml(word), /<w:w w:val="100"\/>/,
+        "el redondeo menor de 1,5 % no introduce ruido de escala");
+    word.width = 30;
+    assert.match(await makeDocumentXml(word), /<w:w w:val="100"\/>/,
+        "una escala extrema conserva la ruta segura anterior");
+    word.width = 10.8;
+    word.correctedText = "AAA";
+    assert.match(await makeDocumentXml(word), /<w:w w:val="100"\/>/,
+        "una corrección textual no reutiliza el ancho de la palabra original");
+
+    const stableWord = { ...word, correctedText: undefined, fontFamily: "Arial", width: 10.8 };
+    assert.match(await makeDocumentXml(stableWord, [{ ...metricFont, name: "Arial" }]),
+        /<w:w w:val="100"\/>/,
+        "las fuentes comunes conservan la métrica estable entre lectores");
+
+    const tunedWord = { ...word, correctedText: undefined, fontFamily: "Quicksand", width: 10.8 };
+    const tunedXml = await makeDocumentXml(tunedWord, [{ ...metricFont, name: "Quicksand" }]);
+    // El ajuste per-caracter se aplica con la fuente Quicksand incrustada; el valor
+    // exacto depende de characterWidthsEm (no de la tabla de sustitución tipográfica).
+    assert.match(tunedXml, /<w:w w:val="\d+"\/>/);
+});
+
+test("mantiene títulos digitales grandes y conserva el límite de seguridad OCR", async () => {
+    const words = [
+        { text: "Título", x: 80, y: 80, width: 240, height: 72, fontSize: 72, source: "native-secondary" },
+        { text: "OCR", x: 80, y: 200, width: 180, height: 72, fontSize: 72, source: "ocr" },
+    ];
+    const result = await renderWordDocument({ title: "Tamaños medidos", mode: "editable", pages: [{
+        pageNumber: 1, editableLayout: "positioned", dimensions: { width: 800, height: 600 },
+        content: { words, lines: words.map((word) => ({ words: [word], text: word.text, bbox: word })) },
+        images: [], review: {}, analysis: { zones: [], tables: [], spatial: {}, statistics: {} },
+    }] });
+    const zip = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const xml = await zip.file("word/document.xml").async("string");
+    const runs = xml.match(/<w:r>[\s\S]*?<\/w:r>/g);
+    assert.match(runs.find((run) => run.includes(">Título</w:t>")), /w:sz w:val="144"/);
+    assert.match(runs.find((run) => run.includes(">OCR</w:t>")), /w:sz w:val="96"/);
+});
+
+test("usa la línea base medida para títulos de fuente incrustada con descendentes profundos", async () => {
+    const word = { text: "Título", x: 80, y: 100, width: 240, height: 80, fontSize: 80,
+        fontFamily: "Display", source: "native-secondary", baselineY: 146.1 };
+    const frameY = async () => {
+        const result = await renderWordDocument({ title: "Línea base", mode: "editable",
+            embeddedFonts: [{ name: "Display", embedding: "editable", data: new Uint8Array(64) }],
+            pages: [{ pageNumber: 1, editableLayout: "positioned", dimensions: { width: 800, height: 600 },
+                content: { words: [word], lines: [{ words: [word], bbox: word }] }, images: [], review: {},
+                // La lógica de framePr con baselineY vive en createLayeredFidelityPageChildren.
+                renderedPage: { data: new Uint8Array(4), type: "png", role: "clean-editable-background" },
+                analysis: { zones: [], tables: [], spatial: {}, statistics: {} } }],
+        });
+        const zip = await JSZip.loadAsync(await result.blob.arrayBuffer());
+        return Number((await zip.file("word/document.xml").async("string")).match(/<w:framePr[^>]*\bw:y="(\d+)"/)?.[1]);
+    };
+    assert.equal(await frameY(), 1450);
+    for (const baselineY of [undefined, null, NaN, 100, 180]) {
+        word.baselineY = baselineY;
+        assert.equal(await frameY(), 1916, "no estimar una corrección grande sin una línea base válida");
+    }
+    word.baselineY = 146.1;
+    word.source = "ocr";
+    assert.equal(await frameY(), 1916);
+});
+
 test("conserva texto rotado a 90 y 270 grados como elementos Word editables", async () => {
     const makeLine = (text, x, rotation) => {
         const word = {
@@ -758,7 +1086,11 @@ test("conserva texto rotado a 90 y 270 grados como elementos Word editables", as
         pages: [{
             pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
             content: { words: [], lines: [makeLine("ASCENDENTE", 80, 90), makeLine("DESCENDENTE", 140, 270)] },
-            images: [], review: {}, analysis: { zones: [], tables: [], spatial: {}, statistics: {} },
+            images: [], review: {},
+            // El texto rotado (w:textDirection) requiere createRotatedTextFrame,
+            // que solo se llama desde createLayeredFidelityPageChildren.
+            renderedPage: { data: new Uint8Array(4), type: "png", role: "clean-editable-background" },
+            analysis: { zones: [], tables: [], spatial: {}, statistics: {} },
         }],
     });
     const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
@@ -809,6 +1141,8 @@ test("usa una sustitución métrica probada para Quicksand pequeña sin fuente i
         pages: [{
             pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
             content: { words: [word], lines: [line] }, images: [], review: {},
+            // La escala w:w=97 de Quicksand vive en createTextFrame (usesSmallQuicksand).
+            renderedPage: { data: new Uint8Array(4), type: "png", role: "clean-editable-background" },
             analysis: { zones: [], tables: [], spatial: {}, statistics: {} },
         }],
     });
@@ -818,3 +1152,176 @@ test("usa una sustitución métrica probada para Quicksand pequeña sin fuente i
     assert.match(documentXml, /w:ascii="Lucida Sans Unicode"/);
     assert.match(documentXml, /w:w w:val="97"/);
 });
+
+test("une palabras cortadas con guion entre renglones consecutivos (dehyphenation)", () => {
+    const lines = [
+        {
+            text: "La implemen-",
+            words: [
+                { text: "La", x: 50, y: 100, width: 15, height: 10 },
+                { text: "implemen-", x: 70, y: 100, width: 60, height: 10 },
+            ],
+        },
+        {
+            text: "tación del sistema",
+            words: [
+                { text: "tación", x: 50, y: 115, width: 40, height: 10 },
+                { text: "del", x: 95, y: 115, width: 20, height: 10 },
+                { text: "sistema", x: 120, y: 115, width: 45, height: 10 },
+            ],
+        },
+    ];
+
+    const words = __dehyphenateLineWordsForTests(lines);
+    assert.equal(words.length, 4);
+    assert.equal(words[0].text, "La");
+    assert.equal(words[1].text, "implementación");
+    assert.equal(words[2].text, "del");
+    assert.equal(words[3].text, "sistema");
+});
+
+test("detecta prefijos de listas numeradas estándar", () => {
+    assert.equal(__startsNumberedListForTests("1. Introducción al problema"), true);
+    assert.equal(__startsNumberedListForTests("2) Justificación metodológica"), true);
+    assert.equal(__startsNumberedListForTests("a. Marco teórico"), true);
+    assert.equal(__startsNumberedListForTests("iv) Consideraciones finales"), true);
+    assert.equal(__startsNumberedListForTests("Párrafo ordinario sin numeración"), false);
+    assert.equal(__startsNumberedListForTests("• Viñeta gráfica"), false);
+});
+
+test("emite encabezados estructurados con estilo de título y control de líneas huérfanas", async () => {
+    const titleWord = { text: "1. Introducción General", x: 70, y: 100, width: 200, height: 20, fontSize: 18 };
+    const bodyWord = { text: "Este es el contenido explicativo del capítulo.", x: 70, y: 130, width: 350, height: 12, fontSize: 11 };
+    const titleLine = { text: titleWord.text, words: [titleWord], bbox: { x: 70, y: 100, width: 200, height: 20 } };
+    const bodyLine = { text: bodyWord.text, words: [bodyWord], bbox: { x: 70, y: 130, width: 350, height: 12 } };
+
+    const result = await renderWordDocument({
+        title: "Encabezados semánticos",
+        mode: "editable",
+        pages: [{
+            pageNumber: 1,
+            editableLayout: "flow",
+            dimensions: { width: 595, height: 842 },
+            content: { words: [titleWord, bodyWord], lines: [titleLine, bodyLine] },
+            images: [],
+            review: {},
+            analysis: {
+                zones: [],
+                paragraphs: [
+                    { lines: [titleLine], bbox: titleLine.bbox, text: titleLine.text },
+                    { lines: [bodyLine], bbox: bodyLine.bbox, text: bodyLine.text },
+                ],
+                lines: [titleLine, bodyLine],
+                tables: [],
+                spatial: { textBox: { x: 70, y: 100, width: 350, height: 42 } },
+                statistics: {},
+            },
+        }],
+    });
+
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const documentXml = await archive.file("word/document.xml").async("string");
+
+    assert.match(documentXml, /w:pStyle w:val="Heading/);
+    assert.match(documentXml, /w:keepNext/);
+    assert.match(documentXml, /w:widowControl/);
+});
+
+test("parsePageNumberParts reconoce diversos formatos de numeración de página", () => {
+    const explicit = __parsePageNumberPartsForTests("Página 3 de 15", 3, 15);
+    assert.equal(explicit.currentPage, "3");
+    assert.equal(explicit.totalPages, "15");
+    assert.equal(explicit.hasTotal, true);
+
+    const slash = __parsePageNumberPartsForTests("4 / 20", 4, 20);
+    assert.equal(slash.currentPage, "4");
+    assert.equal(slash.totalPages, "20");
+
+    const dashes = __parsePageNumberPartsForTests("- 7 -", 7, 20);
+    assert.equal(dashes.currentPage, "7");
+    assert.equal(dashes.hasTotal, false);
+
+    const solitary = __parsePageNumberPartsForTests("42", 42, 100);
+    assert.equal(solitary.currentPage, "42");
+
+    const nonPage = __parsePageNumberPartsForTests("INFORME DE GESTIÓN ANUAL", 1, 10);
+    assert.equal(nonPage, null);
+});
+
+test("emite campos dinámicos PAGE y NUMPAGES en pies de página Word", async () => {
+    const line = {
+        text: "Página 1 de 5",
+        bbox: { x: 250, y: 800, width: 95, height: 12 },
+        words: [{ text: "Página 1 de 5", x: 250, y: 800, width: 95, height: 12, fontSize: 9 }],
+    };
+    const result = await renderWordDocument({
+        title: "Paginación dinámica",
+        mode: "editable",
+        pages: [{
+            pageNumber: 1,
+            editableLayout: "flow",
+            dimensions: { width: 595, height: 842 },
+            content: { words: [], lines: [] },
+            images: [],
+            review: {},
+            analysis: {
+                zones: [{ type: "footer", lines: [line], bbox: line.bbox }],
+                paragraphs: [],
+                lines: [],
+                tables: [],
+                spatial: { textBox: { x: 70, y: 70, width: 455, height: 700 } },
+                statistics: {},
+            },
+        }],
+    });
+
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const footerXml = await archive.file("word/footer1.xml").async("string");
+
+    assert.match(footerXml, /w:fldSimple w:instr="PAGE"/);
+    assert.match(footerXml, /w:fldSimple w:instr="NUMPAGES"/);
+    assert.match(footerXml, />1</);
+    assert.match(footerXml, />5</);
+});
+
+test("emite líneas vectoriales horizontales como bordes de párrafo nativos", async () => {
+    const vectorLine = {
+        bbox: { x: 70, y: 400, width: 250, height: 1.5 },
+        lineWidth: 1,
+        strokingColor: "1E293B",
+    };
+    const bodyLine = {
+        text: "Firma del responsable",
+        bbox: { x: 70, y: 410, width: 140, height: 12 },
+        words: [{ text: "Firma del responsable", x: 70, y: 410, width: 140, height: 12, fontSize: 10 }],
+    };
+    const result = await renderWordDocument({
+        title: "Línea de firma nativa",
+        mode: "editable",
+        pages: [{
+            pageNumber: 1,
+            editableLayout: "flow",
+            dimensions: { width: 595, height: 842 },
+            vectorObjects: [vectorLine],
+            content: { words: bodyLine.words, lines: [bodyLine] },
+            images: [],
+            review: {},
+            analysis: {
+                zones: [],
+                paragraphs: [{ lines: [bodyLine], bbox: bodyLine.bbox, text: bodyLine.text }],
+                lines: [bodyLine],
+                tables: [],
+                spatial: { textBox: { x: 70, y: 70, width: 455, height: 700 } },
+                statistics: {},
+            },
+        }],
+    });
+
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const documentXml = await archive.file("word/document.xml").async("string");
+
+    assert.match(documentXml, /w:pBdr/);
+    assert.match(documentXml, /w:bottom w:val="single"/);
+    assert.match(documentXml, /1E293B/);
+});
+

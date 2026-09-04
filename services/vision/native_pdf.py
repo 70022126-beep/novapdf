@@ -55,6 +55,40 @@ def _font_style_name(data: bytes) -> str:
     return "Regular"
 
 
+def _font_character_metrics(data: bytes, characters: set[str] | None = None) -> dict[str, Any]:
+    """Return portable horizontal advances from the embedded OpenType face."""
+    try:
+        from fontTools.ttLib import TTFont
+
+        font = TTFont(BytesIO(data), lazy=True)
+        try:
+            units_per_em = int(getattr(font.get("head"), "unitsPerEm", 0) or 0)
+            cmap = font.getBestCmap() or {}
+            metrics = getattr(font.get("hmtx"), "metrics", {}) or {}
+            if units_per_em <= 0 or not cmap or not metrics:
+                return {}
+            requested = set(characters or set())
+            requested.add(" ")
+            widths: dict[str, float] = {}
+            for character in sorted(requested, key=ord)[:512]:
+                glyph_name = cmap.get(ord(character))
+                advance = metrics.get(glyph_name, (0, 0))[0] if glyph_name else 0
+                normalized = float(advance) / units_per_em if advance else 0.0
+                if 0.02 <= normalized <= 4:
+                    widths[str(ord(character))] = round(normalized, 6)
+            result: dict[str, Any] = {
+                "units_per_em": units_per_em,
+                "character_widths_em": widths,
+            }
+            if str(ord(" ")) in widths:
+                result["space_advance_em"] = widths[str(ord(" "))]
+            return result
+        finally:
+            font.close()
+    except Exception:
+        return {}
+
+
 def _font_allows_editable_embedding(data: bytes) -> bool:
     """Honor the OpenType OS/2 embedding permissions before exporting."""
     try:
@@ -103,6 +137,12 @@ def _merge_font_subsets(fonts: list[dict[str, Any]]) -> list[dict[str, Any]]:
             first = candidates[0]
             merged_fonts.append({
                 **first,
+                # fontTools can consolidate the naming table while merging
+                # subsets. Re-read it from the final bytes: Word matches an
+                # embedded face by this internal family, not by the first PDF
+                # subset alias retained in ``first``.
+                "name": _font_family_name(data, str(first.get("name") or "")),
+                "style": _font_style_name(data),
                 "data": data,
                 "source_name": ",".join(dict.fromkeys(
                     str(font.get("source_name") or "") for font in candidates
@@ -125,10 +165,16 @@ def _extract_embeddable_fonts(
         return []
 
     fonts: list[dict[str, Any]] = []
+    used_characters: set[str] = set()
     seen: set[str] = set()
     total_bytes = 0
     document = pymupdf.open(stream=content, filetype="pdf")
     try:
+        for page_index in page_indices:
+            try:
+                used_characters.update(document[page_index].get_text("text"))
+            except Exception:
+                continue
         xrefs = sorted({
             int(font[0])
             for page_index in page_indices
@@ -168,6 +214,7 @@ def _extract_embeddable_fonts(
             continue
         result.append({
             **font,
+            **_font_character_metrics(data, used_characters),
             "sha256": hashlib.sha256(data).hexdigest(),
             "data_base64": base64.b64encode(data).decode("ascii"),
             "byte_length": len(data),
@@ -280,6 +327,19 @@ def normalize_word(word: dict[str, Any], index: int) -> dict[str, Any] | None:
     font_size = _number(reference.get("size", word.get("size")), box[3] - box[1])
     descriptor = font_name.lower()
     color = _color(reference.get("non_stroking_color"))
+    baselines = []
+    for char in chars:
+        matrix = list(char.get("matrix") or [])
+        if len(matrix) < 6 or abs(_rotation(char)) > 0.1:
+            continue
+        values = [char.get("top"), char.get("y1"), matrix[5]]
+        if any(value is None or not math.isfinite(_number(value, float("nan"))) for value in values):
+            continue
+        # top is page-relative; y1 and the text matrix use bottom-up coordinates.
+        # Their difference preserves the real baseline without assuming a font's
+        # ascent or a page origin (including non-zero MediaBoxes/cropped pages).
+        baselines.append(float(values[0]) + float(values[1]) - float(values[2]))
+    baselines.sort()
     return {
         "id": f"native-word-{index + 1}",
         "text": text,
@@ -287,6 +347,7 @@ def normalize_word(word: dict[str, Any], index: int) -> dict[str, Any] | None:
         "bbox_format": "xyxy",
         "font_name": font_name,
         "font_size": font_size,
+        "baseline_y": baselines[len(baselines) // 2] if baselines else None,
         "bold": bool(re.search(r"bold|black|heavy|semibold|demi", descriptor)),
         "italic": bool(re.search(r"italic|oblique|kursiv", descriptor)),
         "color": color,
@@ -360,6 +421,14 @@ def embedded_image_payload(
         "height": height,
     }
     stream = item.get("stream")
+    # Raw image bytes do not include PDF soft/stencil masks or clipping. A
+    # page compositor must resolve them before Word sees the artwork.
+    attributes = getattr(stream, "attrs", {}) or {}
+    payload["requires_compositing"] = bool(
+        any(key in attributes for key in ("SMask", "Mask"))
+        or attributes.get("ImageMask")
+        or item.get("imagemask")
+    )
     if not stream or width <= 0 or height <= 0:
         return payload
 
@@ -926,7 +995,53 @@ def is_plausible_text_table(payload: dict[str, Any], page: Any) -> bool:
     return short_ratio < 0.10 and fragmentation_ratio < 0.32
 
 
+def _deduplicate_overprinted_chars(page: Any) -> tuple[Any, int]:
+    """Keep the last paint of an exactly coincident glyph, not doubled letters.
+
+    Some PDF writers paint the same glyph black, then in its final colour.
+    Word needs one editable character with that last colour. Adjacent repeated
+    letters, offset shadows, font changes and graphics are left untouched.
+    """
+    if not hasattr(page, "filter"):
+        return page, 0
+    seen: set[tuple[Any, ...]] = set()
+    discarded: set[int] = set()
+    for char in reversed(page.chars or []):
+        coordinates = [char.get(key) for key in ("x0", "top", "x1", "bottom", "size")]
+        if not all(isinstance(value, (int, float)) and math.isfinite(value) for value in coordinates):
+            continue
+        key = (char.get("text"), char.get("fontname"), char.get("upright"),
+               *(round(value, 3) for value in coordinates))
+        if key in seen:
+            discarded.add(id(char))
+        else:
+            seen.add(key)
+    return (page.filter(lambda obj: id(obj) not in discarded), len(discarded)) if discarded else (page, 0)
+
+
+def _relative_page_geometry(value: Any, left: float, top: float) -> Any:
+    """Translate every exported box/anchor to the visible page's local origin."""
+    if isinstance(value, list):
+        return [_relative_page_geometry(item, left, top) for item in value]
+    if not isinstance(value, dict):
+        return value
+    result = {}
+    for key, item in value.items():
+        if key == "bbox" and isinstance(item, list) and len(item) == 4:
+            result[key] = [item[0] - left, item[1] - top, item[2] - left, item[3] - top]
+        elif key == "bbox" and isinstance(item, dict):
+            result[key] = {**item, "x": _number(item.get("x")) - left, "y": _number(item.get("y")) - top}
+        elif key == "column_anchors" and isinstance(item, list):
+            result[key] = [anchor - left for anchor in item]
+        elif key == "baseline_y" and item is not None:
+            result[key] = item - top
+        else:
+            result[key] = _relative_page_geometry(item, left, top)
+    return result
+
+
 def extract_page(page: Any, page_number: int, include_tables: bool = True) -> dict[str, Any]:
+    page, removed_overprints = _deduplicate_overprinted_chars(page)
     words_raw = page.extract_words(
         x_tolerance=2,
         y_tolerance=3,
@@ -980,7 +1095,7 @@ def extract_page(page: Any, page_number: int, include_tables: bool = True) -> di
             }
         )
     tables = _extract_tables(page) if include_tables else []
-    return {
+    payload = {
         "page_number": page_number,
         "width": _number(page.width),
         "height": _number(page.height),
@@ -993,6 +1108,7 @@ def extract_page(page: Any, page_number: int, include_tables: bool = True) -> di
         "images": images,
         "annotations": annotations,
         "statistics": {
+            "removed_overprinted_characters": removed_overprints,
             "character_count": sum(len(word["text"].replace(" ", "")) for word in words),
             "word_count": len(words),
             "table_count": len(tables),
@@ -1001,6 +1117,9 @@ def extract_page(page: Any, page_number: int, include_tables: bool = True) -> di
             "annotation_count": len(annotations),
         },
     }
+    origin = getattr(page, "bbox", None) or (0, 0, page.width, page.height)
+    left, top = _number(origin[0]), _number(origin[1])
+    return _relative_page_geometry(payload, left, top) if left or top else payload
 
 
 def extract_native_document(

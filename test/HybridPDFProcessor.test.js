@@ -9,7 +9,7 @@ test("mantiene flujo en texto digital denso sin tablas", () => {
         nativePage: { tables: [] } }), "flow");
 });
 
-test("ancla tablas digitales densas para evitar desbordamientos de flujo", () => {
+test("usa flujo para páginas digitales densas con tablas (tablas nativas en Word)", () => {
     assert.equal(
         chooseEditableLayout({
             mode: "editable",
@@ -17,7 +17,7 @@ test("ancla tablas digitales densas para evitar desbordamientos de flujo", () =>
             nativeContent: { words: Array.from({ length: 446 }, () => ({})) },
             nativePage: { vectorObjects: Array.from({ length: 81 }, () => ({})), tables: [{}] },
         }),
-        "positioned"
+        "flow"
     );
 });
 
@@ -32,3 +32,4 @@ test("reserva el posicionamiento absoluto para portadas digitales dispersas", ()
         "positioned"
     );
 });
+

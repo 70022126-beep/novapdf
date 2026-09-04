@@ -113,10 +113,23 @@ function normalizeEmbeddedFont(font = {}, index = 0) {
     const data = decodeBase64Bytes(font.data_base64 ?? font.dataBase64);
     const name = cleanText(font.name || font.source_name || font.sourceName);
     if (!name || !data?.length || data.length > 2 * 1024 * 1024) return null;
+    const rawWidths = font.character_widths_em ?? font.characterWidthsEm;
+    const characterWidthsEm = Object.fromEntries(Object.entries(
+        rawWidths && typeof rawWidths === "object" ? rawWidths : {}
+    ).filter(([codePoint, width]) => /^\d+$/.test(codePoint) &&
+        Number.isFinite(Number(width)) && Number(width) >= 0.02 && Number(width) <= 4
+    ).slice(0, 512).map(([codePoint, width]) => [codePoint, Number(width)]));
+    const spaceAdvanceEm = Number(font.space_advance_em ?? font.spaceAdvanceEm);
     return {
         id: font.sha256 || `embedded-font-${index + 1}`,
         name,
         sourceName: cleanText(font.source_name ?? font.sourceName),
+        style: cleanText(font.style || "Regular"),
+        unitsPerEm: Number.isFinite(Number(font.units_per_em ?? font.unitsPerEm))
+            ? Number(font.units_per_em ?? font.unitsPerEm) : undefined,
+        spaceAdvanceEm: Number.isFinite(spaceAdvanceEm) && spaceAdvanceEm >= 0.02 && spaceAdvanceEm <= 4
+            ? spaceAdvanceEm : undefined,
+        characterWidthsEm,
         extension: cleanText(font.extension || "ttf").toLowerCase(),
         embedding: cleanText(font.embedding || "editable"),
         data,
@@ -317,7 +330,13 @@ function applyVectorTextDecorations(words = [], vectorObjects = [], tables = [])
             }
         });
 
-        return underline || strike ? { ...word, underline, strike } : word;
+        return underline || strike ? {
+            ...word, underline, strike,
+            // Keep provenance: a clean page plate already contains these
+            // vector strokes, but editable flow still needs Word formatting.
+            vectorUnderline: underline && !word.underline,
+            vectorStrike: strike && !word.strike,
+        } : word;
     });
 }
 
@@ -349,6 +368,7 @@ export function normalizeStructuredNativePage(page = {}, dimensions = {}) {
         const text = cleanText(word.text);
         if (!bbox || !text || bbox.width <= 0 || bbox.height <= 0) return null;
         const fontName = cleanText(word.font_name || word.fontName || "Arial");
+        const baseline = word.baseline_y ?? word.baselineY;
         return {
             id: word.id || `secondary-native-word-${index + 1}`,
             text,
@@ -358,6 +378,8 @@ export function normalizeStructuredNativePage(page = {}, dimensions = {}) {
             fontName,
             fontFamily: normalizeFamily(fontName),
             fontSize: Math.max(1, number(word.font_size ?? word.fontSize, bbox.height) * scaleY),
+            baselineY: typeof baseline === "number" && Number.isFinite(baseline)
+                ? baseline * scaleY : undefined,
             bold: Boolean(word.bold),
             italic: Boolean(word.italic),
             color: word.color || null,
@@ -399,6 +421,9 @@ export function normalizeStructuredNativePage(page = {}, dimensions = {}) {
         tables,
         vectorObjects,
         images,
+        // Keep the signal even when the image decoder returned geometry only.
+        artworkRequiresCompositing: (page.images || []).some((image) =>
+            image.requires_compositing === true || image.requiresCompositing === true),
         annotations: page.annotations || [],
         statistics: page.statistics || {},
         provider: "pdfplumber",

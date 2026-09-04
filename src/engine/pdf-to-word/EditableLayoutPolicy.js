@@ -10,8 +10,11 @@ export function chooseEditableLayout({ mode, pageType, nativeContent, nativePage
         wordCount <= 60 ||
         (wordCount <= 120 && vectorObjectCount >= 40 && tableCount === 0);
 
-    // Las tablas nativas conservan coordenadas, celdas combinadas y alturas.
-    // Refluirlas junto al texto acumula desplazamientos y páginas adicionales.
-    // El contenido sigue siendo editable, anclado a la página original.
-    return sparseDesignedPage || tableCount > 0 ? "positioned" : "flow";
+    // El modo "positioned" se reserva para páginas con diseño gráfico disperso:
+    // cubiertas, formularios vacíos o páginas con muy pocos elementos de texto.
+    // Las tablas son manejadas de forma nativa en createEditablePageChildren
+    // mediante createWordTable({ floating: false }), por lo que ya no necesitan
+    // el modo posicionado — el flujo de lectura preserva orden y estructura.
+    return sparseDesignedPage ? "positioned" : "flow";
 }
+

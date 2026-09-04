@@ -19,6 +19,19 @@ test("reserva el fondo limpio para cronogramas con demasiadas columnas", () => {
     }), false);
 });
 
+test("conserva campos y firmas aunque la página tenga pocos trazos vectoriales", () => {
+    for (const vectorObjectCount of [1, 2, 6, 11, 12]) {
+        assert.equal(needsCleanPositionedBackground({
+            editableLayout: "positioned", vectorObjectCount,
+        }), true, `Debe conservar ${vectorObjectCount} trazos`);
+    }
+    for (const vectorObjectCount of [0, -1, NaN, Infinity, undefined]) {
+        assert.equal(needsCleanPositionedBackground({
+            editableLayout: "positioned", vectorObjectCount,
+        }), false);
+    }
+});
+
 test("conserva arte vectorial solo cuando no duplicará una tabla Word normal", () => {
     assert.equal(needsCleanPositionedBackground({
         editableLayout: "positioned",
@@ -48,4 +61,12 @@ test("conserva arte vectorial solo cuando no duplicará una tabla Word normal", 
         tables: [],
         vectorObjectCount: 98,
     }), false);
+});
+
+test("compone máscaras PDF incluso si un dibujo fue detectado como tabla", () => {
+    const page = { editableLayout: "positioned", artworkRequiresCompositing: true,
+        tables: [{ professional: { columnCount: 3 } }], vectorObjectCount: 0 };
+    assert.equal(needsCleanPositionedBackground(page), true);
+    assert.equal(needsCleanPositionedBackground({ ...page, artworkRequiresCompositing: false }), false);
+    assert.equal(needsCleanPositionedBackground({ ...page, editableLayout: "flow" }), false);
 });

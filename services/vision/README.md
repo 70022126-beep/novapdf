@@ -133,3 +133,123 @@ que cubren menos del 90 % de una celda no se propagan a toda la celda.
 La prueba de regresión genera en memoria un PDF con fondos de texto, bordes
 rellenos, una cabecera multilínea y dos filas vacías. Comprueba la estructura,
 la conservación de las filas de formulario y el transporte de los colores.
+
+## Gráficos escasos y formularios
+
+En el diseño posicionado, el cliente conserva el fondo gráfico de páginas sin
+tablas incluso si solo contienen un trazo vectorial. El antiguo umbral de 12
+objetos omitía líneas de firma, campos y recuadros de huella. Las páginas de
+texto puro siguen sin necesitar un fondo; se mantiene la política de tablas
+para no duplicar sus bordes.
+
+Los trazos se conservan como parte del fondo PNG, con texto Word editable por
+encima. Esto no convierte las líneas en controles de formulario interactivos.
+La procedencia de subrayados y tachados vectoriales se transporta hasta Word:
+no se vuelven a dibujar cuando ya están en el fondo limpio visible. Sin ese
+fondo, se conservan como formato Word. La caché del cliente cambia a
+`3.19.0-sparse-vector-artwork` para invalidar conversiones anteriores.
+
+La prueba PDF de regresión recorre `render_clean_background` con dos reglas,
+un rectángulo coloreado y texto. Comprueba píxeles de los trazos, eliminación
+del texto del fondo y conservación del PDF fuente en memoria.
+
+## Líneas y referencias dentro de celdas nativas
+
+El generador Word calcula el avance vertical con la posición del cuerpo de
+texto, sin desplazarlo por una referencia elevada. El espacio entre párrafos
+tiene en cuenta la altura de la línea siguiente, evitando acumular desfases
+cuando cambia el tamaño de letra. Se conservan las alturas originales de las
+filas y los saltos adicionales medidos en el PDF.
+
+Los superíndices y subíndices nativos con geometría válida conservan su tamaño
+y usan un desplazamiento explícito de línea base en Word; no se aplica una
+segunda reducción automática. Esta política se limita a las celdas nativas;
+el OCR y los textos sin geometría suficiente mantienen el comportamiento
+anterior. La caché actual del cliente es `3.20.0-native-cell-baselines`.
+
+La auditoría reproducible y sus límites están en
+`docs/quality/FENCYT-table-baselines-v14.md`. La validación utiliza LibreOffice;
+no sustituye una prueba de edición manual en Microsoft Word.
+
+## Geometría nativa de celdas (versión 1.11)
+
+Cada palabra horizontal puede incluir `baseline_y`, en puntos con origen
+superior izquierdo. Se calcula a partir de la matriz del carácter PDF, sin
+suponer un ascendente fijo para todas las fuentes. El cliente escala este
+valor como `baselineY`. Cuando falta, es inválido o el texto está rotado, se
+conserva el cálculo geométrico anterior. Las referencias pequeñas no reducen
+la altura del cuerpo ni desplazan el inicio de la primera línea.
+
+Las celdas vacías con caja medida conservan los márgenes y la altura de su
+fila nativa. Antes recibían el relleno de las celdas inferidas, que desplazaba
+también el texto vecino. Las filas sin texto nativo o con contenido sin
+geometría mantienen su política anterior. Caché: `3.21.0-measured-native-baselines`.
+
+La auditoría local por celda complementa la comparación de imágenes. Recibe
+el JSON de `benchmark-native-docx.mjs` y el PDF renderizado del DOCX:
+
+```powershell
+services/vision/.venv/Scripts/python.exe -m services.vision.table_text_audit --report tmp/deep-audit/FENCYT-native-cell-geometry-v18.quality.json --rendered tmp/deep-audit/FENCYT-native-cell-geometry-v18-rendered/FENCYT-native-cell-geometry-v18.pdf --output tmp/deep-audit/FENCYT-all-cells-v18.json
+npm run vision:test
+```
+
+El JSON distingue diferencias de caracteres, desplazamiento horizontal,
+desviación de línea base y geometrías no evaluables. Normaliza espacios y
+ligaduras; no es CER/WER, no prueba visibilidad de tinta y no sustituye QA
+visual. No se aplica al OCR de escaneos. Las pruebas incluyen orden de
+superíndices, ordinales, celdas vacías y cajas degeneradas.
+
+## Composición gráfica, fuentes y origen de página (versión 1.12)
+
+Las imágenes exportan `requires_compositing` cuando contienen máscaras PDF
+`SMask`, `Mask` o `ImageMask`. El cliente conserva esta señal aunque no haya
+bytes decodificables y, en diseño posicionado, solicita la placa gráfica limpia.
+Así se resuelven transparencias y recortes en el compositor PDF, en vez de
+insertar bytes incompletos como imágenes negras. El texto nativo sigue siendo
+Word editable; los gráficos de la placa no son formas Word independientes.
+
+La extracción conserva una sola copia del último glifo pintado cuando texto,
+fuente, tamaño y coordenadas coinciden. No elimina letras repetidas adyacentes
+ni sombras desplazadas. El contador `removed_overprinted_characters` hace
+auditable esta decisión. Cajas, celdas, anclas de columna y líneas base se
+trasladan al origen local de la página, incluso con MediaBox no nulo.
+
+El DOCX normaliza a mayúsculas el GUID de las fuentes incrustadas, sin cambiar
+su contenido ni permisos. Las pruebas aisladas confirmaron que LibreOffice
+26.2 cargaba Shrikhand/Amaranth/Canva Sans con este cambio, mientras que añadir
+opciones de guardado de fuentes por sí solo no resolvía la sustitución.
+
+Las viñetas nativas de celdas usan una tabulación medida para independizar el
+inicio del texto del ancho de la fuente sustituta del símbolo. Los títulos
+digitales conservan tamaños superiores a 48 puntos; el límite OCR se mantiene.
+Una corrección acotada de línea base cubre títulos de fuente incrustada con
+descendentes profundos, sin modificar párrafos ordinarios ni OCR.
+
+Caché actual: `3.23.0-native-font-compositing-baselines`. Resultados, regresiones
+y límites: `docs/quality/native-corpus-v21.md`. La clasificación del corpus
+puede guardarse con `benchmark:pdf -- --output=tmp/corpus.json ...`; ese informe
+no mide reconocimiento OCR ni memoria máxima.
+
+## Métricas horizontales de fuentes (versión 1.13)
+
+Las fuentes autorizadas exportan ahora `units_per_em`, `space_advance_em` y un
+mapa acotado de avances por carácter utilizado. El cliente conserva estas
+métricas y calcula una escala horizontal por palabra únicamente cuando dispone
+de todos sus glifos, la palabra no fue corregida y la relación medida permanece
+entre 75 % y 125 %. OCR, texto rotado, fuentes incompletas y valores anómalos
+mantienen la política anterior. Las fuentes comunes y las escalas documentales
+ya calibradas conservan la ruta estable entre lectores. Los espacios de fuentes
+de diseño pueden usar su avance real; Arial, Calibri, Times y otras familias de
+sistema mantienen la heurística interoperable para evitar deriva acumulada.
+
+Caché actual: `3.25.0-native-font-metrics`.
+
+## Nombre interno tras fusionar fuentes (versión 1.14)
+
+Después de fusionar subconjuntos de una misma fuente, el servicio vuelve a leer
+la tabla OpenType `name` del archivo final. El nombre que se entrega a Word ya
+no es el alias del primer subconjunto PDF, sino la familia interna que el lector
+usa para asociar `w:rFonts` con `w:embedRegular`, `w:embedBold` y sus variantes.
+Esto evita sustituciones silenciosas como `Quicksand` frente a `Quicksand Light`.
+
+Caché actual: `3.26.0-internal-font-family`.

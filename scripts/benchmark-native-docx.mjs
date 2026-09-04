@@ -106,6 +106,7 @@ if (!files.length) {
             editableLayout,
             tables: analysis.tables,
             vectorObjectCount: normalized.vectorObjects.length,
+            artworkRequiresCompositing: normalized.artworkRequiresCompositing,
         });
         const renderedPage = needsBackground
             ? await fetchNativeCleanBackground(sourceFile, {
@@ -172,6 +173,8 @@ if (!files.length) {
             lines: page.content.lines.length,
             editableLayout: page.editableLayout,
             cleanBackground: Boolean(page.renderedPage),
+            removedOverprintedCharacters: extracted.pages.get(page.pageNumber)?.statistics?.removed_overprinted_characters || 0,
+            artworkRequiresCompositing: (extracted.pages.get(page.pageNumber)?.images || []).some((image) => image.requires_compositing === true),
             images: page.images.length,
             tables: page.analysis.tables.length,
             tableGeometry: page.analysis.tables.map((table) => ({

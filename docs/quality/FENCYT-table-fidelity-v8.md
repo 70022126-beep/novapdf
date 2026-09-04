@@ -34,11 +34,11 @@ confirman visualmente la corrección de cabeceras y rellenos.
 
 ## Defectos abiertos detectados visualmente
 
-1. En la página 34, el PDF muestra `194`; la salida renderizada muestra solo
-   el último dígito. La extracción nativa y `word/document.xml` contienen
-   `194` completo. Investigar superposición/recorte de marcos y anclajes en
-   LibreOffice y Word; no atribuir este caso a OCR ni corregirlo cambiando
-   el texto. Se observan síntomas similares en otros pies de página.
+1. **Rectificación de la revisión posterior:** la sospecha de números de
+   página incompletos fue un falso positivo de inspección visual. Un recorte
+   ampliado del PNG original de la página 34 muestra `194` completo, igual
+   que el PDF renderizado mediante PyMuPDF y su extracción de texto. No se
+   modificó la numeración; no hay evidencia de ese recorte en el archivo.
 2. En esa misma página faltan líneas vectoriales de campos (por ejemplo,
    Dirección y Teléfono). Comparación directa con el PDF original confirma
    que no son espacios vacíos del documento fuente.

@@ -42,8 +42,12 @@ export function needsCleanPositionedBackground({
     editableLayout,
     tables = [],
     vectorObjectCount = 0,
+    artworkRequiresCompositing = false,
 } = {}) {
     if (editableLayout !== "positioned") return false;
+    // Embedded bytes alone lose PDF transparency, clipping and stencil masks.
+    // The clean plate resolves those operations while native text stays editable.
+    if (artworkRequiresCompositing) return true;
     if (tables.some(isComplexPositionedTable)) return true;
     if (
         tables.length > 1 &&
@@ -51,8 +55,11 @@ export function needsCleanPositionedBackground({
     ) {
         return true;
     }
-    // Una portada o separador vectorial necesita conservar su arte gráfico.
+    // Even one vector object can be essential: a signature rule, an empty
+    // form field or a separator. Counting >= 12 objects used to discard the
+    // six form rules on FENCYT page 34. Plain text pages still need no plate.
     // Cuando hay una tabla Word normal, sus propios bordes no deben duplicarse
     // mediante una captura de fondo.
-    return tables.length === 0 && Number(vectorObjectCount) >= 12;
+    return tables.length === 0 && Number.isFinite(Number(vectorObjectCount)) &&
+        Number(vectorObjectCount) > 0;
 }

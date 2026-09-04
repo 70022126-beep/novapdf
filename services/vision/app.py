@@ -34,7 +34,7 @@ except ImportError:  # uvicorn iniciado desde services/vision
     from native_pdf import extract_native_document, parse_page_selection
 
 
-APP_VERSION = "1.10.0"
+APP_VERSION = "1.14.0"
 MAX_IMAGE_PIXELS = int(os.getenv("NOVAPDF_VISION_MAX_PIXELS", "50000000"))
 MAX_PDF_BYTES = int(os.getenv("NOVAPDF_VISION_MAX_PDF_BYTES", str(256 * 1024 * 1024)))
 MAX_DOCX_BYTES = int(os.getenv("NOVAPDF_QUALITY_MAX_DOCX_BYTES", str(256 * 1024 * 1024)))

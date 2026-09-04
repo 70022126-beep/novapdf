@@ -323,6 +323,35 @@ test("analiza continuidad y capítulos a escala de documento", () => {
     assert.equal(structure.paragraphContinuations.length, 1);
 });
 
+test("detecta encabezados y numeración de página repetitivos a escala de documento", () => {
+    const headerLine = { text: "INFORME TÉCNICO DE GESTIÓN", bbox: { x: 50, y: 30, width: 250, height: 12 } };
+    const page1 = {
+        pageNumber: 1,
+        dimensions: { width: 595, height: 842 },
+        analysis: {
+            zones: [
+                { type: "header", lines: [headerLine], bbox: headerLine.bbox },
+                { type: "footer", lines: [{ text: "Página 1 de 2", bbox: { x: 250, y: 800, width: 80, height: 12 } }], bbox: { x: 250, y: 800, width: 80, height: 12 } },
+            ],
+        },
+    };
+    const page2 = {
+        pageNumber: 2,
+        dimensions: { width: 595, height: 842 },
+        analysis: {
+            zones: [
+                { type: "header", lines: [headerLine], bbox: headerLine.bbox },
+                { type: "footer", lines: [{ text: "Página 2 de 2", bbox: { x: 250, y: 800, width: 80, height: 12 } }], bbox: { x: 250, y: 800, width: 80, height: 12 } },
+            ],
+        },
+    };
+
+    const structure = analyzeDocumentStructure([page1, page2]);
+    assert.equal(structure.repeatingHeadersAndFooters.hasRunningHeader, true);
+    assert.equal(structure.repeatingHeadersAndFooters.runningHeader, "INFORME TÉCNICO DE GESTIÓN");
+    assert.equal(structure.repeatingHeadersAndFooters.hasPageNumbers, true);
+});
+
 test("agrega CER, WER, tablas, geometría y rendimiento de un corpus", () => {
     const result = evaluateCorpus([
         {

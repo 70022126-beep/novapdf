@@ -146,17 +146,110 @@ function countRegionTypes(pages) {
     }, {});
 }
 
+function detectRepeatingHeadersAndFooters(pages = []) {
+    if (!pages?.length) {
+        return {
+            hasRunningHeader: false,
+            runningHeader: null,
+            hasRunningFooter: false,
+            runningFooter: null,
+            hasPageNumbers: false,
+            pageNumberZone: null,
+            detectedPageNumbers: [],
+        };
+    }
+
+    const headerFrequencies = new Map();
+    const footerFrequencies = new Map();
+    const pageNumberCandidates = [];
+
+    const PAGE_NUM_PATTERN = /^(?:p[aá]g(?:ina)?\.?\s*)?(\d{1,4})(?:\s*(?:\/|de)\s*(\d{1,4}))?$/i;
+    const ENCLOSED_PATTERN = /^[-–—]\s*(\d{1,4})\s*[-–—]$/;
+
+    pages.forEach((page) => {
+        const pageHeight = page.dimensions?.height || 842;
+        const zones = page.analysis?.zones || [];
+        const headerZone = zones.find((z) => z.type === "header");
+        const footerZone = zones.find((z) => z.type === "footer");
+
+        const headerLines = headerZone?.lines ||
+            (page.regionAnalysis?.regions || [])
+                .filter((r) => r.bbox && (r.bbox.y <= pageHeight * 0.15))
+                .flatMap((r) => r.lines || []);
+
+        if (headerLines.length) {
+            const hText = headerLines.map((l) => cleanText(l.text)).filter(Boolean).join(" ");
+            const hSig = normalizeText(hText);
+            if (hSig) {
+                headerFrequencies.set(hSig, {
+                    count: (headerFrequencies.get(hSig)?.count || 0) + 1,
+                    rawText: hText,
+                });
+            }
+        }
+
+        const footerLines = footerZone?.lines ||
+            (page.regionAnalysis?.regions || [])
+                .filter((r) => r.bbox && (r.bbox.y >= pageHeight * 0.85))
+                .flatMap((r) => r.lines || []);
+
+        if (footerLines.length) {
+            const fText = footerLines.map((l) => cleanText(l.text)).filter(Boolean).join(" ");
+            const fSig = normalizeText(fText);
+            if (fSig) {
+                footerFrequencies.set(fSig, {
+                    count: (footerFrequencies.get(fSig)?.count || 0) + 1,
+                    rawText: fText,
+                });
+            }
+
+            footerLines.forEach((line) => {
+                const text = cleanText(line.text);
+                const match = PAGE_NUM_PATTERN.exec(text) || ENCLOSED_PATTERN.exec(text);
+                if (match) {
+                    pageNumberCandidates.push({
+                        pageNumber: page.pageNumber,
+                        parsedNumber: Number(match[1]),
+                        zone: "footer",
+                        rawText: text,
+                    });
+                }
+            });
+        }
+    });
+
+    const threshold = Math.max(2, Math.ceil(pages.length * 0.25));
+    const dominantHeader = [...headerFrequencies.values()].find((item) => item.count >= threshold);
+    const dominantFooter = [...footerFrequencies.values()].find((item) => item.count >= threshold);
+    const hasMonotonicPageNumbers = pageNumberCandidates.length >= 2 &&
+        pageNumberCandidates.every((c, i) => i === 0 || c.parsedNumber >= pageNumberCandidates[i - 1].parsedNumber);
+
+    return {
+        hasRunningHeader: Boolean(dominantHeader),
+        runningHeader: dominantHeader?.rawText || null,
+        hasRunningFooter: Boolean(dominantFooter),
+        runningFooter: dominantFooter?.rawText || null,
+        hasPageNumbers: Boolean(hasMonotonicPageNumbers || pageNumberCandidates.length >= 2),
+        pageNumberZone: pageNumberCandidates.length ? "footer" : null,
+        detectedPageNumbers: pageNumberCandidates,
+    };
+}
+
+export { detectRepeatingHeadersAndFooters };
+
 export function analyzeDocumentStructure(pages = []) {
     const chapters = detectChapters(pages);
     const paragraphContinuations = detectParagraphContinuations(pages);
     const tableContinuations = detectTableContinuations(pages);
     const regionTypes = countRegionTypes(pages);
+    const repeatingHeadersAndFooters = detectRepeatingHeadersAndFooters(pages);
 
     return {
         pageCount: pages.length,
         chapters,
         paragraphContinuations,
         tableContinuations,
+        repeatingHeadersAndFooters,
         regionTypes,
         lowConfidenceRegions: pages.reduce(
             (total, page) =>

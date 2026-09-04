@@ -29,15 +29,17 @@ export function isNativeDocxCandidateEligible(model = {}) {
 
     return pages.every((page) => {
         const pageType = page.pageType?.type || page.pageType || "digital";
-        const tables = page.analysis?.tables || [];
-        const formulas = page.analysis?.neuralFormulas || [];
-        const protectedRegions = (page.regionAnalysis?.regions || []).filter(
-            (region) => region.protected || ["signature", "stamp", "seal"].includes(region.type)
+        const tables = page.tables || page.analysis?.tables || [];
+        const formulas = (page.regionAnalysis?.regions || []).filter(
+            (region) => region.type === "formula"
         );
-        const nativeWords = (page.content?.words || []).filter((word) =>
-            String(word.source || "").includes("native")
+        const protectedRegions = (page.regionAnalysis?.regions || []).filter((region) =>
+            ["signature", "stamp"].includes(region.type)
         );
-        const nativeCoverage = nativeWords.length /
+        const nativeCoverage =
+            (page.content?.words || []).filter((word) =>
+                String(word.source || "").includes("native")
+            ).length /
             Math.max(1, page.content?.words?.length || 0);
 
         // pdf2docx es excelente como candidato para documentos digitales de

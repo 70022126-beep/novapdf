@@ -1,57 +1,57 @@
-import { analyzePage } from "../layout/PageAnalyzer";
-import { analyzePageRegions } from "../layout/RegionIntelligence";
-import { analyzeDocumentStructure } from "../layout/DocumentStructureAnalyzer";
+import { analyzePage } from "../layout/PageAnalyzer.js";
+import { analyzePageRegions } from "../layout/RegionIntelligence.js";
+import { analyzeDocumentStructure } from "../layout/DocumentStructureAnalyzer.js";
 import {
     detectFormFields,
     enhancePageTables,
-} from "../layout/ProfessionalTableAnalyzer";
-import { recognizeAdaptive } from "../ocr/AdaptiveOCR";
+} from "../layout/ProfessionalTableAnalyzer.js";
+import { recognizeAdaptive } from "../ocr/AdaptiveOCR.js";
 import { OCR_MODES, resolveOCRPolicy } from "./OCRPolicy.js";
 import {
     needsCleanPositionedBackground,
 } from "./TableRenderingPolicy.js";
 import { extractNativeDocumentInBatches } from "./NativeDocumentBatcher.js";
-import { detectPageType } from "./PageTypeDetector";
+import { detectPageType } from "./PageTypeDetector.js";
 import {
     countCharacters,
     buildLinesFromWords,
     mergeNativeAndOCR,
     normalizeNativeContent,
     normalizeOCRContent,
-} from "./PageContentNormalizer";
+} from "./PageContentNormalizer.js";
 import {
     cropPageImageRegions,
     inspectPageImages,
-} from "./PDFImageExtractor";
+} from "./PDFImageExtractor.js";
 import {
     createPageCacheKey,
     getCachedPage,
     getConversionCacheStats,
     setCachedPage,
-} from "./ConversionCache";
-import { normalizePageRange } from "./PageRange";
-import { analyzePageWithVision } from "../vision/NeuralVisionProvider";
-import { createEditableBackground } from "../vision/EditableBackground";
+} from "./ConversionCache.js";
+import { normalizePageRange } from "./PageRange.js";
+import { analyzePageWithVision } from "../vision/NeuralVisionProvider.js";
+import { createEditableBackground } from "../vision/EditableBackground.js";
 import { fetchNativeCleanBackground } from "./NativeBackgroundProvider.js";
-import { mergeVisionLayoutWithAnalysis } from "../layout/NeuralLayoutFusion";
+import { mergeVisionLayoutWithAnalysis } from "../layout/NeuralLayoutFusion.js";
 import {
     fuseNeuralTextWithOCR,
     getNeuralFallbackRegions,
     neuralVisionToContent,
-} from "../vision/NeuralTextFusion";
+} from "../vision/NeuralTextFusion.js";
 import {
     extractVectorTables,
     mergeVectorTablesWithAnalysis,
-} from "./PDFVectorTableExtractor";
+} from "./PDFVectorTableExtractor.js";
 import {
     extractNativeDocumentStructure,
     normalizeStructuredNativePage,
     repairNativeTableText,
     selectBestNativeContent,
-} from "./NativeDocumentProvider";
-import { chooseEditableLayout } from "./EditableLayoutPolicy";
+} from "./NativeDocumentProvider.js";
+import { chooseEditableLayout } from "./EditableLayoutPolicy.js";
 
-export { normalizePageRange } from "./PageRange";
+export { normalizePageRange } from "./PageRange.js";
 
 let pdfjsPromise = null;
 
@@ -647,7 +647,7 @@ export async function processPDFForWord(
         mode, ocrMode, ocrDictionary, experimentalHandwriting, maximumCanvasMegapixels,
         extractImages: !excludeImages, advancedVision, cleanEditableBackground,
         visionProvider, visionEndpoint,
-        visionVersion: "3.18.0-semantic-table-borders",
+        visionVersion: "3.26.0-internal-font-family",
     };
     const cacheKeys = new Map(selectedPages.map((pageNumber) => [
         pageNumber, createPageCacheKey(file, pageNumber, cacheOptions),
@@ -766,6 +766,7 @@ export async function processPDFForWord(
                     imageCount,
                     nativeImageCount: secondaryNativePage?.images?.length || 0,
                     vectorObjectCount: secondaryNativePage?.vectorObjects?.length || 0,
+                    artworkRequiresCompositing: secondaryNativePage?.artworkRequiresCompositing,
                     secondaryWordCount: secondaryNativePage?.content?.words?.length || 0,
                 });
                 const ocrPolicy = resolveOCRPolicy({
@@ -1412,7 +1413,7 @@ export async function processPDFForWord(
             visionProvider,
             visionEndpoint,
             visionTimeoutMs,
-            visionVersion: "3.18.0-semantic-table-borders",
+            visionVersion: "3.26.0-internal-font-family",
         },
     };
 }

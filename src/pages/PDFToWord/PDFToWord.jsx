@@ -24,12 +24,12 @@ import "./PDFToWord.css";
 const MODE_OPTIONS = [
     {
         id: "editable",
-        title: "Máxima edición",
+        title: "Flujo de lectura editable",
         description:
-            "Texto, tablas, columnas, encabezados y estilos reconstruidos para poder modificarlos.",
+            "Texto, tablas y formatos fluidos y editables optimizados para Microsoft Word con alta fidelidad visual.",
         badge: "Recomendado",
-        bestFor: "Contratos, informes y documentos digitales",
-        features: ["Edición fluida", "Tablas Word", "Orden de lectura"],
+        bestFor: "Contratos, informes, tesis y documentos editables",
+        features: ["Texto y tablas editables", "Paginación dinámica", "Alta fidelidad estructural"],
     },
     {
         id: "fidelity",

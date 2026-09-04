@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { basename } from "node:path";
 import { performance } from "node:perf_hooks";
 
@@ -12,6 +12,7 @@ const maxPagesArgument = argumentsList.find((argument) => argument.startsWith("-
 const maxPages = Math.max(1, Number(maxPagesArgument?.split("=")[1]) || Infinity);
 const includePageDetails = argumentsList.includes("--details");
 const complexPagesOnly = argumentsList.includes("--complex-only");
+const outputPath = argumentsList.find((argument) => argument.startsWith("--output="))?.slice("--output=".length);
 const paths = argumentsList.filter((argument) => !argument.startsWith("--"));
 
 if (!paths.length) {
@@ -109,15 +110,12 @@ if (!paths.length) {
     }
 
     const durationMs = performance.now() - collectionStartedAt;
-    console.log(
-        JSON.stringify(
-            {
-                files: results.length,
-                durationMs: Math.round(durationMs),
-                results,
-            },
-            null,
-            2
-        )
-    );
+    const report = JSON.stringify({
+        note: "Page classification only; no OCR/conversion accuracy or peak-memory measurement.",
+        files: results.length,
+        durationMs: Math.round(durationMs),
+        results,
+    }, null, 2);
+    if (outputPath) await writeFile(outputPath, `${report}\n`, "utf8");
+    console.log(report);
 }
