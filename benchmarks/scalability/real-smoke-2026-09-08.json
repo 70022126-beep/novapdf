@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "executedAtLocal": "2026-09-08",
+  "source": "C:/Users/Administrador/Downloads/FENCYT-bases-y-cronograma.pdf",
+  "serviceVersion": "1.16.0",
+  "singlePageConversion": {
+    "sourcePage": 2,
+    "pageCount": 1,
+    "outputBytes": 230399,
+    "extractionMethod": "native-cross-validated",
+    "estimatedQuality": 89,
+    "persistent": true,
+    "checkpointedPages": 1,
+    "documentRegisteredOnce": true,
+    "sourceUploadStrategy": "single-upload-document-id",
+    "releasedBinaryMB": 0.6
+  },
+  "closeAndResume": {
+    "selectedPages": 62,
+    "completedBeforeClose": 3,
+    "resumePanelVisibleAfterReopen": true,
+    "recoveredFilename": "FENCYT-bases-y-cronograma.pdf",
+    "recoveredPageRange": "1-62"
+  }
+}

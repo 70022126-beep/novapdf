@@ -17,6 +17,9 @@ services/vision/.models/
 .novapdf-*
 tmp/
 
+# Corpus OCR privado: contiene rutas locales, imágenes y transcripciones humanas.
+benchmarks/ocr-corpus/private/
+
 # Python
 __pycache__/
 *.py[cod]

@@ -8,12 +8,16 @@ test("extrae documentos extensos en lotes sin perder páginas", async () => {
         async (_file, pages, options) => {
             calls.push({ pages, options });
             return { provider: "test", pageCount: 235,
+                fontScope: "document", fontPageCount: 235,
                 pages: new Map(pages.map((page) => [page, { page_number: page }])) };
         }, { batchSize: 100 });
     assert.deepEqual(calls.map(({ pages }) => pages.length), [100, 100, 35]);
     assert.deepEqual(calls.map(({ options }) => options.includeFonts), [true, false, false]);
+    assert.deepEqual(calls.map(({ options }) => options.fontScope), ["document", "document", "document"]);
     assert.deepEqual(calls.map(({ options }) => options.batchIndex), [0, 1, 2]);
     assert.equal(result.pages.size, 235);
+    assert.equal(result.fontScope, "document");
+    assert.equal(result.fontPageCount, 235);
     assert.equal(result.pages.get(235).page_number, 235);
 });
 

@@ -53,6 +53,13 @@ documento pague todo el tiempo de inicialización sin información visible.
 ## Contrato
 
 - `GET /health`: estado, dispositivo y carga del modelo.
+- `POST /v1/documents`: registra un PDF una sola vez y devuelve su identificador
+  SHA-256. Los endpoints registrados de extracción y fondo reutilizan ese archivo.
+- `POST /v1/documents/{document_id}/native-document`: extracción nativa sin
+  retransmitir el PDF por lote.
+- `POST /v1/documents/{document_id}/native-background`: fondo limpio por página
+  sin retransmitir el PDF.
+- `DELETE /v1/documents/{document_id}`: elimina anticipadamente un registro.
 - `POST /v1/layout`: formulario multipart con `image`, `page_width`,
   `page_height` y `coordinate_space`.
 - `POST /v1/native-document`: formulario multipart con `pdf`, `pages` e
@@ -66,6 +73,14 @@ documento pague todo el tiempo de inicialización sin información visible.
 
 La respuesta normalizada incluye dimensiones, proveedor, modelo y regiones con
 tipo, confianza, caja, texto, HTML de tablas, celdas y LaTeX de fórmulas.
+
+Desde la versión 1.16, `/health` también publica las colas OCR/fondos, el uso del
+registro de documentos y los presupuestos de RAM/VRAM. Una cola saturada devuelve
+HTTP 429 y un trabajo que excede su plazo devuelve HTTP 504. Los valores se
+configuran con `NOVAPDF_OCR_WORKERS`, `NOVAPDF_OCR_QUEUE_SIZE`,
+`NOVAPDF_BACKGROUND_WORKERS`, `NOVAPDF_BACKGROUND_QUEUE_SIZE`,
+`NOVAPDF_DOCUMENT_STORE_BYTES`, `NOVAPDF_RAM_BUDGET_MB` y
+`NOVAPDF_VRAM_BUDGET_MB`.
 
 ## Instalación preparada en este proyecto
 
@@ -148,6 +163,34 @@ La procedencia de subrayados y tachados vectoriales se transporta hasta Word:
 no se vuelven a dibujar cuando ya están en el fondo limpio visible. Sin ese
 fondo, se conservan como formato Word. La caché del cliente cambia a
 `3.19.0-sparse-vector-artwork` para invalidar conversiones anteriores.
+
+## Tipografías de extremo a extremo (versión 1.15)
+
+`POST /v1/native-document` acepta `font_scope=document`. Con ese alcance el
+servicio inventaría las fuentes de todas las páginas del PDF una sola vez,
+aunque el contenido se extraiga por lotes. La respuesta incluye el nombre
+interno real, los alias BaseFont y de recurso usados por el PDF, las variantes
+regular/negrita/cursiva/negrita-cursiva y métricas OpenType normalizadas
+(`units_per_em`, ascenso, descenso, interlínea, altura de mayúsculas, altura x,
+avances por carácter y presencia de kerning).
+
+Las fuentes con permiso de edición se consolidan por familia y variante antes
+de incrustarlas en Word. Las fuentes restringidas nunca transportan sus bytes
+ni se mezclan con una cara editable: solo entregan alias y métricas para elegir
+una sustitución reproducible. El cliente conserva el inventario tipográfico en
+una caché documental independiente de la caché de páginas, evitando que una
+segunda conversión pierda las fuentes cuando todas las páginas ya estaban
+procesadas.
+
+La auditoría de un DOCX generado puede ejecutarse con:
+
+```powershell
+npm run audit:docx-fonts -- "C:\ruta\resultado.docx"
+```
+
+El informe relaciona cada familia y variante declarada en `fontTable.xml` con
+su archivo `word/fonts/fontN.odttf`, desofusca la cabecera y calcula huellas
+SHA-256 para detectar sustituciones o pérdidas entre versiones.
 
 La prueba PDF de regresión recorre `render_clean_background` con dos reglas,
 un rectángulo coloreado y texto. Comprueba píxeles de los trazos, eliminación

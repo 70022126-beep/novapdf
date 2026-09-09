@@ -1,0 +1,5716 @@
+{
+  "schemaVersion": 1,
+  "runId": "1-14-0-gate-1-2026-09-05T02-25-59-922Z",
+  "createdAt": "2026-09-05T02:26:06.835Z",
+  "version": "1.14.0-gate-1",
+  "gitCommit": "34e6a2d",
+  "service": {
+    "version": "1.14.0",
+    "status": "loading",
+    "device": "gpu:0",
+    "modelLoaded": false,
+    "nativeDocxConverter": {
+      "available": true,
+      "converter": "pdf2docx",
+      "version": "0.5.13",
+      "pymupdf_version": "1.28.2"
+    },
+    "documentRenderer": {
+      "available": true,
+      "renderer": "libreoffice",
+      "version": "LibreOffice 26.2.5.2 cd7284b4cbbfeb507e630c1aac019f4157393acb",
+      "path": "C:\\Program Files\\LibreOffice\\program\\soffice.com"
+    }
+  },
+  "thresholds": {
+    "maximumPageRegression": 0.25,
+    "minimumTextCoverage": 99.9,
+    "minimumTableCellCoverage": 100,
+    "requirePageCountMatch": true
+  },
+  "documents": [
+    {
+      "id": "fencyt",
+      "source": {
+        "sha256": "b74c3ef86c82aa238033e250d74d84764c94fdf038d5f6805784baca2ad15376",
+        "bytes": 15595106,
+        "pageRange": "all",
+        "mode": "editable",
+        "ocrMode": "auto"
+      },
+      "current": {
+        "sha256": "cc1b80b94021ccd332fb3735f0a6c205a59797e2378109fb87b22471b9e87a70",
+        "docx": {
+          "textProfile": {
+            "characters": 94138,
+            "codePoints": {
+              "40": 214,
+              "41": 233,
+              "42": 2,
+              "44": 900,
+              "45": 39,
+              "46": 814,
+              "47": 97,
+              "48": 53,
+              "49": 188,
+              "50": 146,
+              "51": 52,
+              "52": 48,
+              "53": 27,
+              "54": 35,
+              "55": 33,
+              "56": 43,
+              "57": 50,
+              "58": 198,
+              "59": 21,
+              "63": 13,
+              "64": 4,
+              "95": 2206,
+              "97": 9923,
+              "98": 962,
+              "99": 5367,
+              "100": 4553,
+              "101": 11497,
+              "102": 872,
+              "103": 1250,
+              "104": 323,
+              "105": 6810,
+              "106": 191,
+              "107": 43,
+              "108": 4829,
+              "109": 1938,
+              "110": 6594,
+              "111": 7253,
+              "112": 2670,
+              "113": 371,
+              "114": 5750,
+              "115": 6108,
+              "116": 4180,
+              "117": 2808,
+              "118": 637,
+              "119": 14,
+              "120": 294,
+              "121": 801,
+              "122": 235,
+              "171": 1,
+              "176": 19,
+              "186": 15,
+              "187": 1,
+              "191": 13,
+              "225": 279,
+              "233": 93,
+              "237": 361,
+              "239": 4,
+              "241": 61,
+              "243": 1215,
+              "250": 71,
+              "8203": 22,
+              "8211": 15,
+              "8220": 68,
+              "8221": 68,
+              "8226": 5,
+              "9642": 48,
+              "9679": 88,
+              "10003": 2
+            }
+          },
+          "characters": 110955,
+          "words": 16818,
+          "paragraphs": 2091,
+          "tables": 18,
+          "cells": 213,
+          "nonEmptyCells": 173,
+          "sections": 62,
+          "frames": 1072,
+          "drawings": 21,
+          "images": 20,
+          "embeddedFonts": 6,
+          "fontFamilies": [
+            "Arial",
+            "Calibri",
+            "Courier New",
+            "Quicksand",
+            "Symbol",
+            "Times New Roman",
+            "Wingdings"
+          ]
+        },
+        "visual": {
+          "status": "completed",
+          "provider": "libreoffice",
+          "providerVersion": "LibreOffice 26.2.5.2 cd7284b4cbbfeb507e630c1aac019f4157393acb",
+          "serviceVersion": "1.14.0",
+          "visualScore": 20.81,
+          "targetScore": 85,
+          "passed": false,
+          "pageCountMatch": false,
+          "sourcePageCount": 62,
+          "outputPageCount": 76,
+          "comparedPageCount": 62,
+          "dpi": 120,
+          "durationMs": 12106,
+          "issues": [
+            "extra_output_pages",
+            "visual_fidelity_below_target",
+            "content_shift",
+            "low_content_overlap",
+            "layout_mismatch",
+            "page_geometry_changed"
+          ],
+          "pages": [
+            {
+              "sourcePageNumber": 1,
+              "outputPageNumber": 1,
+              "visualScore": 89.17,
+              "pixelSimilarity": 99.14,
+              "inkOverlap": 82.15,
+              "edgeSimilarity": 92.5,
+              "horizontalShiftPoints": 0.17,
+              "verticalShiftPoints": -0.24,
+              "aspectRatioDelta": 0,
+              "issues": []
+            },
+            {
+              "sourcePageNumber": 2,
+              "outputPageNumber": 2,
+              "visualScore": 96.52,
+              "pixelSimilarity": 99.9,
+              "inkOverlap": 92.63,
+              "edgeSimilarity": 99.58,
+              "horizontalShiftPoints": 0.2,
+              "verticalShiftPoints": 0.01,
+              "aspectRatioDelta": 0,
+              "issues": []
+            },
+            {
+              "sourcePageNumber": 3,
+              "outputPageNumber": 3,
+              "visualScore": 49.06,
+              "pixelSimilarity": 91.77,
+              "inkOverlap": 23.13,
+              "edgeSimilarity": 57.99,
+              "horizontalShiftPoints": 0.67,
+              "verticalShiftPoints": 8.75,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 4,
+              "outputPageNumber": 4,
+              "visualScore": 38.83,
+              "pixelSimilarity": 88.12,
+              "inkOverlap": 13.87,
+              "edgeSimilarity": 42.74,
+              "horizontalShiftPoints": 0.07,
+              "verticalShiftPoints": 13.19,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 5,
+              "outputPageNumber": 5,
+              "visualScore": 18.77,
+              "pixelSimilarity": 93.62,
+              "inkOverlap": 0.03,
+              "edgeSimilarity": 0.09,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 6,
+              "outputPageNumber": 6,
+              "visualScore": 34.8,
+              "pixelSimilarity": 88.26,
+              "inkOverlap": 10.54,
+              "edgeSimilarity": 35.43,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 7,
+              "outputPageNumber": 7,
+              "visualScore": 18.41,
+              "pixelSimilarity": 92.03,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 8,
+              "outputPageNumber": 8,
+              "visualScore": 32.32,
+              "pixelSimilarity": 86.94,
+              "inkOverlap": 8.95,
+              "edgeSimilarity": 31.17,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 9,
+              "outputPageNumber": 9,
+              "visualScore": 19.09,
+              "pixelSimilarity": 95.46,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 10,
+              "outputPageNumber": 10,
+              "visualScore": 33.71,
+              "pixelSimilarity": 88.73,
+              "inkOverlap": 10.13,
+              "edgeSimilarity": 32.59,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 11,
+              "outputPageNumber": 11,
+              "visualScore": 36.28,
+              "pixelSimilarity": 88.66,
+              "inkOverlap": 11.86,
+              "edgeSimilarity": 37.74,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 12,
+              "outputPageNumber": 12,
+              "visualScore": 29.2,
+              "pixelSimilarity": 90.85,
+              "inkOverlap": 7.11,
+              "edgeSimilarity": 22.37,
+              "horizontalShiftPoints": -0.78,
+              "verticalShiftPoints": -82.87,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 13,
+              "outputPageNumber": 13,
+              "visualScore": 33.66,
+              "pixelSimilarity": 90.23,
+              "inkOverlap": 10.28,
+              "edgeSimilarity": 31.39,
+              "horizontalShiftPoints": 68.19,
+              "verticalShiftPoints": -16.41,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 14,
+              "outputPageNumber": 14,
+              "visualScore": 31.38,
+              "pixelSimilarity": 89.32,
+              "inkOverlap": 8.33,
+              "edgeSimilarity": 27.91,
+              "horizontalShiftPoints": 52.73,
+              "verticalShiftPoints": -88.38,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 15,
+              "outputPageNumber": 15,
+              "visualScore": 32.51,
+              "pixelSimilarity": 90.74,
+              "inkOverlap": 8.76,
+              "edgeSimilarity": 29.77,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 16,
+              "outputPageNumber": 16,
+              "visualScore": 21.74,
+              "pixelSimilarity": 94.57,
+              "inkOverlap": 2.06,
+              "edgeSimilarity": 5.42,
+              "horizontalShiftPoints": -50.96,
+              "verticalShiftPoints": -98.71,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 17,
+              "outputPageNumber": 17,
+              "visualScore": 35.68,
+              "pixelSimilarity": 90.06,
+              "inkOverlap": 11.04,
+              "edgeSimilarity": 36.29,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 18,
+              "outputPageNumber": 18,
+              "visualScore": 19.36,
+              "pixelSimilarity": 94.16,
+              "inkOverlap": 0.33,
+              "edgeSimilarity": 1.07,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 19,
+              "outputPageNumber": 19,
+              "visualScore": 31.19,
+              "pixelSimilarity": 89.08,
+              "inkOverlap": 7.88,
+              "edgeSimilarity": 28.09,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 20,
+              "outputPageNumber": 20,
+              "visualScore": 18.64,
+              "pixelSimilarity": 93.22,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 21,
+              "outputPageNumber": 21,
+              "visualScore": 35.78,
+              "pixelSimilarity": 91.13,
+              "inkOverlap": 11.28,
+              "edgeSimilarity": 35.65,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 22,
+              "outputPageNumber": 22,
+              "visualScore": 33.21,
+              "pixelSimilarity": 89.56,
+              "inkOverlap": 9.49,
+              "edgeSimilarity": 31.52,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 23,
+              "outputPageNumber": 23,
+              "visualScore": 20.99,
+              "pixelSimilarity": 92.64,
+              "inkOverlap": 1.49,
+              "edgeSimilarity": 5.12,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 24,
+              "outputPageNumber": 24,
+              "visualScore": 32.32,
+              "pixelSimilarity": 90.34,
+              "inkOverlap": 8.44,
+              "edgeSimilarity": 29.86,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 25,
+              "outputPageNumber": 25,
+              "visualScore": 18.73,
+              "pixelSimilarity": 93.63,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 26,
+              "outputPageNumber": 26,
+              "visualScore": 31.16,
+              "pixelSimilarity": 89.3,
+              "inkOverlap": 7.91,
+              "edgeSimilarity": 27.83,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 27,
+              "outputPageNumber": 27,
+              "visualScore": 18.88,
+              "pixelSimilarity": 94.38,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 28,
+              "outputPageNumber": 28,
+              "visualScore": 32.01,
+              "pixelSimilarity": 91.81,
+              "inkOverlap": 8.88,
+              "edgeSimilarity": 27.59,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 29,
+              "outputPageNumber": 29,
+              "visualScore": 19.03,
+              "pixelSimilarity": 95.16,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 30,
+              "outputPageNumber": 30,
+              "visualScore": 22.49,
+              "pixelSimilarity": 92.23,
+              "inkOverlap": 2.6,
+              "edgeSimilarity": 8.21,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 31,
+              "outputPageNumber": 31,
+              "visualScore": 19.47,
+              "pixelSimilarity": 97.63,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0.029,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 32,
+              "outputPageNumber": 32,
+              "visualScore": 30.33,
+              "pixelSimilarity": 91.33,
+              "inkOverlap": 7.56,
+              "edgeSimilarity": 24.91,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0.029,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 33,
+              "outputPageNumber": 33,
+              "visualScore": 29.44,
+              "pixelSimilarity": 90.42,
+              "inkOverlap": 6.68,
+              "edgeSimilarity": 23.85,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 34,
+              "outputPageNumber": 34,
+              "visualScore": 19.23,
+              "pixelSimilarity": 96.15,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 35,
+              "outputPageNumber": 35,
+              "visualScore": 27.59,
+              "pixelSimilarity": 91.46,
+              "inkOverlap": 5.92,
+              "edgeSimilarity": 18.95,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 36,
+              "outputPageNumber": 36,
+              "visualScore": 38.16,
+              "pixelSimilarity": 91.5,
+              "inkOverlap": 13.16,
+              "edgeSimilarity": 39.83,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 37,
+              "outputPageNumber": 37,
+              "visualScore": 28.21,
+              "pixelSimilarity": 90.81,
+              "inkOverlap": 5.49,
+              "edgeSimilarity": 21.66,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 38,
+              "outputPageNumber": 38,
+              "visualScore": 36.37,
+              "pixelSimilarity": 91.54,
+              "inkOverlap": 11.64,
+              "edgeSimilarity": 36.65,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 39,
+              "outputPageNumber": 39,
+              "visualScore": 26.67,
+              "pixelSimilarity": 93.14,
+              "inkOverlap": 4.87,
+              "edgeSimilarity": 16.71,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 40,
+              "outputPageNumber": 40,
+              "visualScore": 0.87,
+              "pixelSimilarity": 94.35,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 49.978,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 41,
+              "outputPageNumber": 41,
+              "visualScore": 11.77,
+              "pixelSimilarity": 92.5,
+              "inkOverlap": 6.72,
+              "edgeSimilarity": 23.57,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 49.978,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 42,
+              "outputPageNumber": 42,
+              "visualScore": 1.25,
+              "pixelSimilarity": 96.26,
+              "inkOverlap": 0,
+              "edgeSimilarity": 0,
+              "horizontalShiftPoints": -0.02,
+              "verticalShiftPoints": -0.02,
+              "aspectRatioDelta": 49.978,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 43,
+              "outputPageNumber": 43,
+              "visualScore": 10.48,
+              "pixelSimilarity": 95.89,
+              "inkOverlap": 5.11,
+              "edgeSimilarity": 20,
+              "horizontalShiftPoints": -0.07,
+              "verticalShiftPoints": -0.06,
+              "aspectRatioDelta": 49.978,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 44,
+              "outputPageNumber": 44,
+              "visualScore": 11.84,
+              "pixelSimilarity": 95.64,
+              "inkOverlap": 6.07,
+              "edgeSimilarity": 22.79,
+              "horizontalShiftPoints": -0.28,
+              "verticalShiftPoints": 0.11,
+              "aspectRatioDelta": 49.978,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 45,
+              "outputPageNumber": 45,
+              "visualScore": 9.71,
+              "pixelSimilarity": 91.67,
+              "inkOverlap": 5.6,
+              "edgeSimilarity": 19.6,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 49.978,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 46,
+              "outputPageNumber": 46,
+              "visualScore": 14.09,
+              "pixelSimilarity": 92.86,
+              "inkOverlap": 8.91,
+              "edgeSimilarity": 27.17,
+              "horizontalShiftPoints": 0.07,
+              "verticalShiftPoints": -0.01,
+              "aspectRatioDelta": 49.978,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 47,
+              "outputPageNumber": 47,
+              "visualScore": 9.37,
+              "pixelSimilarity": 91.46,
+              "inkOverlap": 5.09,
+              "edgeSimilarity": 19.38,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 49.978,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 48,
+              "outputPageNumber": 48,
+              "visualScore": 11.71,
+              "pixelSimilarity": 94,
+              "inkOverlap": 6.08,
+              "edgeSimilarity": 23.34,
+              "horizontalShiftPoints": -90.72,
+              "verticalShiftPoints": -28.76,
+              "aspectRatioDelta": 49.978,
+              "issues": [
+                "page_geometry_changed",
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 49,
+              "outputPageNumber": 49,
+              "visualScore": 32.88,
+              "pixelSimilarity": 91.14,
+              "inkOverlap": 9.48,
+              "edgeSimilarity": 29.67,
+              "horizontalShiftPoints": -5.47,
+              "verticalShiftPoints": 4.02,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 50,
+              "outputPageNumber": 50,
+              "visualScore": 31.4,
+              "pixelSimilarity": 92.66,
+              "inkOverlap": 8.35,
+              "edgeSimilarity": 26.03,
+              "horizontalShiftPoints": 67.4,
+              "verticalShiftPoints": -4.96,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 51,
+              "outputPageNumber": 51,
+              "visualScore": 29.97,
+              "pixelSimilarity": 92.39,
+              "inkOverlap": 7.26,
+              "edgeSimilarity": 23.5,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 52,
+              "outputPageNumber": 52,
+              "visualScore": 26.61,
+              "pixelSimilarity": 94.65,
+              "inkOverlap": 4.33,
+              "edgeSimilarity": 16.37,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 53,
+              "outputPageNumber": 53,
+              "visualScore": 14.68,
+              "pixelSimilarity": 90.24,
+              "inkOverlap": 9.62,
+              "edgeSimilarity": 29.43,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 99.911,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 54,
+              "outputPageNumber": 54,
+              "visualScore": 15.27,
+              "pixelSimilarity": 92.3,
+              "inkOverlap": 10.21,
+              "edgeSimilarity": 29.18,
+              "horizontalShiftPoints": 40.92,
+              "verticalShiftPoints": -94.87,
+              "aspectRatioDelta": 99.911,
+              "issues": [
+                "page_geometry_changed",
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 55,
+              "outputPageNumber": 55,
+              "visualScore": 12.82,
+              "pixelSimilarity": 92.46,
+              "inkOverlap": 8.17,
+              "edgeSimilarity": 24.72,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 99.911,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 56,
+              "outputPageNumber": 56,
+              "visualScore": 12.78,
+              "pixelSimilarity": 92.9,
+              "inkOverlap": 8.49,
+              "edgeSimilarity": 23.94,
+              "horizontalShiftPoints": -54.25,
+              "verticalShiftPoints": 56.12,
+              "aspectRatioDelta": 99.911,
+              "issues": [
+                "page_geometry_changed",
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 57,
+              "outputPageNumber": 57,
+              "visualScore": 8.72,
+              "pixelSimilarity": 95.75,
+              "inkOverlap": 4.92,
+              "edgeSimilarity": 15.3,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 100.053,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 58,
+              "outputPageNumber": 58,
+              "visualScore": 6.83,
+              "pixelSimilarity": 93.23,
+              "inkOverlap": 3.7,
+              "edgeSimilarity": 12.93,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 100.053,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 59,
+              "outputPageNumber": 59,
+              "visualScore": 10.21,
+              "pixelSimilarity": 93.46,
+              "inkOverlap": 5.92,
+              "edgeSimilarity": 19.58,
+              "horizontalShiftPoints": -65.77,
+              "verticalShiftPoints": 23.93,
+              "aspectRatioDelta": 100.053,
+              "issues": [
+                "page_geometry_changed",
+                "content_shift",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 60,
+              "outputPageNumber": 60,
+              "visualScore": 5.43,
+              "pixelSimilarity": 93.44,
+              "inkOverlap": 4.07,
+              "edgeSimilarity": 8.33,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 99.911,
+              "issues": [
+                "page_geometry_changed",
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 61,
+              "outputPageNumber": 61,
+              "visualScore": 29.84,
+              "pixelSimilarity": 90.19,
+              "inkOverlap": 7.3,
+              "edgeSimilarity": 24.34,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            },
+            {
+              "sourcePageNumber": 62,
+              "outputPageNumber": 62,
+              "visualScore": 22.86,
+              "pixelSimilarity": 95.9,
+              "inkOverlap": 2.93,
+              "edgeSimilarity": 6.77,
+              "horizontalShiftPoints": 0,
+              "verticalShiftPoints": 0,
+              "aspectRatioDelta": 0,
+              "issues": [
+                "low_content_overlap",
+                "layout_mismatch"
+              ]
+            }
+          ],
+          "error": null
+        },
+        "performance": {
+          "wallDurationMs": 96202,
+          "peakBrowserHeapMB": 784.24,
+          "engineDurationMs": 82090.80000001192,
+          "pagesPerMinute": 45.3,
+          "peakCanvasMegapixels": 2.01,
+          "outputBytes": 998692
+        },
+        "extraction": [
+          {
+            "pageNumber": 1,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.9,
+              "reason": "La estructura PDF confirma texto y gráficos vectoriales sin imágenes rasterizadas.",
+              "itemCount": 4,
+              "characterCount": 41,
+              "textDensity": 0.03000773562794561
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 303,
+              "nativeCharacters": 41,
+              "ocrCharacters": 0,
+              "wordCount": 6,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 6,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 89,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 2,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.9,
+              "reason": "La estructura PDF confirma texto y gráficos vectoriales sin imágenes rasterizadas.",
+              "itemCount": 4,
+              "characterCount": 55,
+              "textDensity": 0.03484526539064988
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 24,
+              "nativeCharacters": 55,
+              "ocrCharacters": 0,
+              "wordCount": 11,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 11,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 4,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 89,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 3,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 94,
+              "characterCount": 2445,
+              "textDensity": 0.24301893106466785
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 51,
+              "nativeCharacters": 2445,
+              "ocrCharacters": 0,
+              "wordCount": 446,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 446,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 7,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 4,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 59,
+              "characterCount": 2602,
+              "textDensity": 0.3328068839128832
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 37,
+              "nativeCharacters": 2602,
+              "ocrCharacters": 0,
+              "wordCount": 469,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 469,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 5,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 107,
+              "characterCount": 2285,
+              "textDensity": 0.267313706476991
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 37,
+              "nativeCharacters": 2285,
+              "ocrCharacters": 0,
+              "wordCount": 389,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 389,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 4,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 6,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 89,
+              "characterCount": 2736,
+              "textDensity": 0.34629275251966396
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 30,
+              "nativeCharacters": 2736,
+              "ocrCharacters": 0,
+              "wordCount": 451,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 451,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 2,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 7,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 96,
+              "characterCount": 3005,
+              "textDensity": 0.3773721285405106
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 224,
+              "nativeCharacters": 3005,
+              "ocrCharacters": 0,
+              "wordCount": 521,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 521,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 2,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 521,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 8,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 82,
+              "characterCount": 2799,
+              "textDensity": 0.3601373267368852
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 29,
+              "nativeCharacters": 2799,
+              "ocrCharacters": 0,
+              "wordCount": 481,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 481,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 2,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 9,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 119,
+              "characterCount": 1538,
+              "textDensity": 0.14128096843140306
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 187,
+              "nativeCharacters": 1538,
+              "ocrCharacters": 0,
+              "wordCount": 344,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 2,
+              "vectorTableCount": 2,
+              "secondaryNativeTableCount": 2,
+              "secondaryNativeWordCount": 344,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 5,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 344,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 10,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 88,
+              "characterCount": 2035,
+              "textDensity": 0.1857075762842873
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 32,
+              "nativeCharacters": 2035,
+              "ocrCharacters": 0,
+              "wordCount": 408,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 2,
+              "vectorTableCount": 2,
+              "secondaryNativeTableCount": 2,
+              "secondaryNativeWordCount": 408,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 4,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 11,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 128,
+              "characterCount": 2894,
+              "textDensity": 0.2480022029190293
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 221,
+              "nativeCharacters": 2894,
+              "ocrCharacters": 0,
+              "wordCount": 538,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 538,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 538,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 12,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 85,
+              "characterCount": 2528,
+              "textDensity": 0.26988858931542087
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 30,
+              "nativeCharacters": 2528,
+              "ocrCharacters": 0,
+              "wordCount": 494,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 494,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 13,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 59,
+              "characterCount": 2426,
+              "textDensity": 0.30618700174845737
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 27,
+              "nativeCharacters": 2426,
+              "ocrCharacters": 0,
+              "wordCount": 410,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 410,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 14,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 71,
+              "characterCount": 2353,
+              "textDensity": 0.29957862832438004
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 35,
+              "nativeCharacters": 2353,
+              "ocrCharacters": 0,
+              "wordCount": 411,
+              "imageCount": 1,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 411,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 2,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 15,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 82,
+              "characterCount": 1721,
+              "textDensity": 0.22046376900603915
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 16,
+              "nativeCharacters": 1721,
+              "ocrCharacters": 0,
+              "wordCount": 311,
+              "imageCount": 1,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 311,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 9,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 16,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 62,
+              "characterCount": 2020,
+              "textDensity": 0.25065462511990116
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 15,
+              "nativeCharacters": 2020,
+              "ocrCharacters": 0,
+              "wordCount": 357,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 357,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 9,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 17,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 88,
+              "characterCount": 1997,
+              "textDensity": 0.2497935803168976
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 13,
+              "nativeCharacters": 1997,
+              "ocrCharacters": 0,
+              "wordCount": 353,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 353,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 6,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 18,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 108,
+              "characterCount": 2065,
+              "textDensity": 0.25628159615741797
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 12,
+              "nativeCharacters": 2065,
+              "ocrCharacters": 0,
+              "wordCount": 350,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 350,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 7,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 19,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 83,
+              "characterCount": 2116,
+              "textDensity": 0.2702287408086536
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 13,
+              "nativeCharacters": 2116,
+              "ocrCharacters": 0,
+              "wordCount": 380,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 380,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 5,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 20,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 129,
+              "characterCount": 2463,
+              "textDensity": 0.31275418694127244
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 12,
+              "nativeCharacters": 2463,
+              "ocrCharacters": 0,
+              "wordCount": 452,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 452,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 4,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 21,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 72,
+              "characterCount": 2107,
+              "textDensity": 0.26867495327584484
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 168,
+              "nativeCharacters": 2107,
+              "ocrCharacters": 0,
+              "wordCount": 386,
+              "imageCount": 1,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 386,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 9,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 386,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 22,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 90,
+              "characterCount": 2562,
+              "textDensity": 0.33044143857065594
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 19,
+              "nativeCharacters": 2562,
+              "ocrCharacters": 0,
+              "wordCount": 494,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 494,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 4,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 23,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 95,
+              "characterCount": 2676,
+              "textDensity": 0.34095499611552166
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 12,
+              "nativeCharacters": 2676,
+              "ocrCharacters": 0,
+              "wordCount": 481,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 481,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 24,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 66,
+              "characterCount": 2015,
+              "textDensity": 0.25782509494579836
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 163,
+              "nativeCharacters": 2015,
+              "ocrCharacters": 0,
+              "wordCount": 366,
+              "imageCount": 1,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 366,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 6,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 366,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 25,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 69,
+              "characterCount": 2262,
+              "textDensity": 0.29715856907309485
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 13,
+              "nativeCharacters": 2262,
+              "ocrCharacters": 0,
+              "wordCount": 441,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 441,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 6,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 26,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 55,
+              "characterCount": 2235,
+              "textDensity": 0.2954174121799334
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 178,
+              "nativeCharacters": 2235,
+              "ocrCharacters": 0,
+              "wordCount": 428,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 428,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 7,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 428,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 27,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 89,
+              "characterCount": 2039,
+              "textDensity": 0.2626153499573627
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 15,
+              "nativeCharacters": 2039,
+              "ocrCharacters": 0,
+              "wordCount": 370,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 370,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 4,
+              "formFieldCount": 1,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 28,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.85,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 34,
+              "characterCount": 1268,
+              "textDensity": 0.1643969821881784
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 11,
+              "nativeCharacters": 1268,
+              "ocrCharacters": 0,
+              "wordCount": 234,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 234,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 2,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 29,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.95,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 61,
+              "characterCount": 641,
+              "textDensity": 0.08237590413050498
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 18,
+              "nativeCharacters": 641,
+              "ocrCharacters": 0,
+              "wordCount": 103,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 103,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 30,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.75,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 15,
+              "characterCount": 320,
+              "textDensity": 0.04052297723363584
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 65,
+              "nativeCharacters": 320,
+              "ocrCharacters": 0,
+              "wordCount": 55,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 55,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 95,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 55,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 31,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.85,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 24,
+              "characterCount": 860,
+              "textDensity": 0.11217162469931752
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 22,
+              "nativeCharacters": 860,
+              "ocrCharacters": 0,
+              "wordCount": 145,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 145,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 9,
+              "formFieldCount": 6,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 32,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.95,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 54,
+              "characterCount": 1240,
+              "textDensity": 0.16093843002531988
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 118,
+              "nativeCharacters": 1240,
+              "ocrCharacters": 0,
+              "wordCount": 227,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 227,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 10,
+              "formFieldCount": 5,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 227,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 33,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.9,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 46,
+              "characterCount": 1502,
+              "textDensity": 0.1956645011624949
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 22,
+              "nativeCharacters": 1502,
+              "ocrCharacters": 0,
+              "wordCount": 259,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 259,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 14,
+              "formFieldCount": 7,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 34,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.95,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 56,
+              "characterCount": 1421,
+              "textDensity": 0.18652539950631333
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 129,
+              "nativeCharacters": 1421,
+              "ocrCharacters": 0,
+              "wordCount": 268,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 268,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 14,
+              "formFieldCount": 4,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 268,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 35,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.75,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 27,
+              "characterCount": 398,
+              "textDensity": 0.05154907302034701
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 22,
+              "nativeCharacters": 398,
+              "ocrCharacters": 0,
+              "wordCount": 66,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 2,
+              "vectorTableCount": 2,
+              "secondaryNativeTableCount": 2,
+              "secondaryNativeWordCount": 66,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 7,
+              "formFieldCount": 1,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 97,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 36,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 79,
+              "characterCount": 1724,
+              "textDensity": 0.21605284584175838
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 147,
+              "nativeCharacters": 1724,
+              "ocrCharacters": 0,
+              "wordCount": 326,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 326,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 10,
+              "formFieldCount": 2,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 326,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 37,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.85,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 42,
+              "characterCount": 1295,
+              "textDensity": 0.16719362037225635
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 21,
+              "nativeCharacters": 1295,
+              "ocrCharacters": 0,
+              "wordCount": 218,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 218,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 10,
+              "formFieldCount": 4,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 38,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.95,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 59,
+              "characterCount": 1263,
+              "textDensity": 0.16298075551907967
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 25,
+              "nativeCharacters": 1263,
+              "ocrCharacters": 0,
+              "wordCount": 250,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 250,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 7,
+              "formFieldCount": 1,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 39,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.85,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 20,
+              "characterCount": 587,
+              "textDensity": 0.0746826099600862
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 22,
+              "nativeCharacters": 587,
+              "ocrCharacters": 0,
+              "wordCount": 104,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 104,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 11,
+              "formFieldCount": 1,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 40,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 105,
+              "characterCount": 2192,
+              "textDensity": 0.19999331063631148
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 33,
+              "nativeCharacters": 2192,
+              "ocrCharacters": 0,
+              "wordCount": 381,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 381,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 6,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 41,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 87,
+              "characterCount": 2258,
+              "textDensity": 0.19067095965897932
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 170,
+              "nativeCharacters": 2258,
+              "ocrCharacters": 0,
+              "wordCount": 394,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 394,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 4,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 394,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 42,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.95,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 50,
+              "characterCount": 1095,
+              "textDensity": 0.11089431099130026
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 26,
+              "nativeCharacters": 1095,
+              "ocrCharacters": 0,
+              "wordCount": 187,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 187,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 6,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 43,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.95,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 63,
+              "characterCount": 1467,
+              "textDensity": 0.11906260866016194
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 123,
+              "nativeCharacters": 1467,
+              "ocrCharacters": 0,
+              "wordCount": 244,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 244,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 2,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 244,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 44,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.85,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 40,
+              "characterCount": 1114,
+              "textDensity": 0.09814070007118415
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 104,
+              "nativeCharacters": 1114,
+              "ocrCharacters": 0,
+              "wordCount": 201,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 201,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 201,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 45,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 95,
+              "characterCount": 2188,
+              "textDensity": 0.20308158355725708
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 209,
+              "nativeCharacters": 2188,
+              "ocrCharacters": 0,
+              "wordCount": 389,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 389,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 7,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 389,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 46,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 108,
+              "characterCount": 2012,
+              "textDensity": 0.1691742831570119
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 168,
+              "nativeCharacters": 2012,
+              "ocrCharacters": 0,
+              "wordCount": 358,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 358,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 4,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 358,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 47,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 95,
+              "characterCount": 2205,
+              "textDensity": 0.20274779029268272
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 174,
+              "nativeCharacters": 2205,
+              "ocrCharacters": 0,
+              "wordCount": 386,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 386,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 5,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 386,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 48,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 65,
+              "characterCount": 2191,
+              "textDensity": 0.20379574028772604
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 172,
+              "nativeCharacters": 2191,
+              "ocrCharacters": 0,
+              "wordCount": 379,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 379,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 4,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 379,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 49,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 157,
+              "characterCount": 2132,
+              "textDensity": 0.1806929234856724
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 16,
+              "nativeCharacters": 2132,
+              "ocrCharacters": 0,
+              "wordCount": 391,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 391,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 5,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 50,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 153,
+              "characterCount": 1887,
+              "textDensity": 0.1550920404826018
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 18,
+              "nativeCharacters": 1887,
+              "ocrCharacters": 0,
+              "wordCount": 347,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 2,
+              "vectorTableCount": 2,
+              "secondaryNativeTableCount": 2,
+              "secondaryNativeWordCount": 347,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 6,
+              "formFieldCount": 3,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 51,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 179,
+              "characterCount": 2134,
+              "textDensity": 0.17895809099525442
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 15,
+              "nativeCharacters": 2134,
+              "ocrCharacters": 0,
+              "wordCount": 366,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 366,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 5,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 52,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 111,
+              "characterCount": 1587,
+              "textDensity": 0.13587491632822896
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 15,
+              "nativeCharacters": 1587,
+              "ocrCharacters": 0,
+              "wordCount": 295,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 2,
+              "vectorTableCount": 2,
+              "secondaryNativeTableCount": 2,
+              "secondaryNativeWordCount": 295,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 6,
+              "formFieldCount": 3,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 53,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 151,
+              "characterCount": 2331,
+              "textDensity": 0.20480958833369847
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 16,
+              "nativeCharacters": 2331,
+              "ocrCharacters": 0,
+              "wordCount": 429,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 429,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 5,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 54,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 142,
+              "characterCount": 1709,
+              "textDensity": 0.1443844947341227
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 17,
+              "nativeCharacters": 1709,
+              "ocrCharacters": 0,
+              "wordCount": 304,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 2,
+              "vectorTableCount": 2,
+              "secondaryNativeTableCount": 2,
+              "secondaryNativeWordCount": 304,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 6,
+              "formFieldCount": 3,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 55,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 143,
+              "characterCount": 2002,
+              "textDensity": 0.17657777714392708
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 15,
+              "nativeCharacters": 2002,
+              "ocrCharacters": 0,
+              "wordCount": 360,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 360,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 7,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 56,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 124,
+              "characterCount": 2131,
+              "textDensity": 0.18183831775242032
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 17,
+              "nativeCharacters": 2131,
+              "ocrCharacters": 0,
+              "wordCount": 386,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 2,
+              "vectorTableCount": 2,
+              "secondaryNativeTableCount": 2,
+              "secondaryNativeWordCount": 386,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 6,
+              "formFieldCount": 3,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 57,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.75,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 32,
+              "characterCount": 429,
+              "textDensity": 0.05329855389110904
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 14,
+              "nativeCharacters": 429,
+              "ocrCharacters": 0,
+              "wordCount": 79,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 79,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 10,
+              "formFieldCount": 2,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 97,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 58,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.85,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 49,
+              "characterCount": 881,
+              "textDensity": 0.11546651893020202
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 10,
+              "nativeCharacters": 881,
+              "ocrCharacters": 0,
+              "wordCount": 113,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 113,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 2,
+              "regionCount": 8,
+              "formFieldCount": 9,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 59,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.9,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 44,
+              "characterCount": 1574,
+              "textDensity": 0.20685712757703814
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 107,
+              "nativeCharacters": 1574,
+              "ocrCharacters": 0,
+              "wordCount": 180,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 180,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 3,
+              "regionCount": 12,
+              "formFieldCount": 17,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 180,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 60,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.9,
+              "reason": "La estructura PDF confirma texto y gráficos vectoriales sin imágenes rasterizadas.",
+              "itemCount": 5,
+              "characterCount": 98,
+              "textDensity": 0.05798886059581805
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 68,
+              "nativeCharacters": 98,
+              "ocrCharacters": 0,
+              "wordCount": 18,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 0,
+              "vectorTableCount": 0,
+              "secondaryNativeTableCount": 0,
+              "secondaryNativeWordCount": 18,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 90,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 18,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          },
+          {
+            "pageNumber": 61,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.99,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 242,
+              "characterCount": 2132,
+              "textDensity": 0.17071630549840822
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 40,
+              "nativeCharacters": 2132,
+              "ocrCharacters": 0,
+              "wordCount": 494,
+              "imageCount": 0,
+              "embeddedImageCount": 0,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 494,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 0,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0
+            }
+          },
+          {
+            "pageNumber": 62,
+            "pageType": {
+              "type": "digital",
+              "confidence": 0.85,
+              "reason": "La página contiene una cantidad significativa de texto extraíble.",
+              "itemCount": 40,
+              "characterCount": 965,
+              "textDensity": 0.10596294719088327
+            },
+            "extractionMethod": "native-cross-validated",
+            "ocr": {
+              "language": "unknown",
+              "attempts": [],
+              "correctionCount": 0,
+              "selectedVariants": []
+            },
+            "metrics": {
+              "durationMs": 115,
+              "nativeCharacters": 965,
+              "ocrCharacters": 0,
+              "wordCount": 204,
+              "imageCount": 0,
+              "embeddedImageCount": 1,
+              "tableCount": 1,
+              "vectorTableCount": 1,
+              "secondaryNativeTableCount": 1,
+              "secondaryNativeWordCount": 204,
+              "nativeExtractor": "pdfplumber",
+              "nativeExtractorStatus": "cross-validated",
+              "columnCount": 1,
+              "regionCount": 3,
+              "formFieldCount": 0,
+              "lowConfidenceRegions": 0,
+              "averageConfidence": 100,
+              "qualityScore": 99,
+              "cacheHit": false,
+              "ocrAttemptCount": 0,
+              "visualRegionCount": 0,
+              "protectedVisualRegionCount": 0,
+              "cleanedBackgroundWords": 204,
+              "visionProvider": "none",
+              "neuralVisionStatus": "local",
+              "neuralFormulaRegions": 0,
+              "neuralTableRegions": 0,
+              "handwritingRegions": 0,
+              "qualityRetry": true
+            }
+          }
+        ],
+        "consoleErrors": []
+      },
+      "comparisons": {
+        "previous": {
+          "cerPercent": 19.31,
+          "werPercent": 21.56,
+          "characterCoverage": {
+            "referenceCharacters": 109007,
+            "missingCharacters": 14890,
+            "coverage": 86.3403
+          },
+          "tableCellCoverage": 13.8043
+        },
+        "professional": {
+          "text": {
+            "cerPercent": 20.56,
+            "werPercent": 23.65,
+            "characterCoverage": {
+              "referenceCharacters": 108450,
+              "missingCharacters": 14642,
+              "coverage": 86.4988
+            },
+            "tableCellCoverage": 20.0565
+          },
+          "docx": {
+            "textProfile": {
+              "characters": 108450,
+              "codePoints": {
+                "40": 255,
+                "41": 257,
+                "42": 2,
+                "44": 1001,
+                "45": 31,
+                "46": 898,
+                "47": 109,
+                "48": 56,
+                "49": 199,
+                "50": 176,
+                "51": 71,
+                "52": 89,
+                "53": 34,
+                "54": 35,
+                "55": 33,
+                "56": 52,
+                "57": 38,
+                "58": 216,
+                "59": 22,
+                "63": 15,
+                "64": 4,
+                "95": 2061,
+                "97": 11477,
+                "98": 1202,
+                "99": 6162,
+                "100": 5239,
+                "101": 13283,
+                "102": 1024,
+                "103": 1445,
+                "104": 370,
+                "105": 7905,
+                "106": 242,
+                "107": 46,
+                "108": 5619,
+                "109": 2305,
+                "110": 7684,
+                "111": 8398,
+                "112": 3090,
+                "113": 398,
+                "114": 6599,
+                "115": 7146,
+                "116": 4979,
+                "117": 3246,
+                "118": 755,
+                "119": 15,
+                "120": 332,
+                "121": 901,
+                "122": 269,
+                "171": 1,
+                "176": 21,
+                "186": 15,
+                "187": 1,
+                "191": 15,
+                "225": 308,
+                "233": 107,
+                "237": 419,
+                "239": 4,
+                "241": 68,
+                "243": 1467,
+                "250": 84,
+                "8211": 15,
+                "8220": 70,
+                "8221": 70
+              }
+            },
+            "characters": 127690,
+            "words": 19241,
+            "paragraphs": 3312,
+            "tables": 42,
+            "cells": 1062,
+            "nonEmptyCells": 762,
+            "sections": 62,
+            "frames": 0,
+            "drawings": 42,
+            "images": 16,
+            "embeddedFonts": 0,
+            "fontFamilies": [
+              "Arial",
+              "Arial MT",
+              "Calibri",
+              "Courier New",
+              "Symbol",
+              "Times New Roman",
+              "Verdana",
+              "Wingdings"
+            ]
+          },
+          "visual": {
+            "status": "completed",
+            "provider": "libreoffice",
+            "providerVersion": "LibreOffice 26.2.5.2 cd7284b4cbbfeb507e630c1aac019f4157393acb",
+            "serviceVersion": "1.14.0",
+            "visualScore": 32.39,
+            "targetScore": 85,
+            "passed": false,
+            "pageCountMatch": false,
+            "sourcePageCount": 62,
+            "outputPageCount": 69,
+            "comparedPageCount": 62,
+            "dpi": 120,
+            "durationMs": 7947,
+            "issues": [
+              "extra_output_pages",
+              "visual_fidelity_below_target",
+              "low_content_overlap",
+              "content_shift",
+              "layout_mismatch",
+              "page_geometry_changed"
+            ],
+            "pages": [
+              {
+                "sourcePageNumber": 1,
+                "outputPageNumber": 1,
+                "visualScore": 82.93,
+                "pixelSimilarity": 98.72,
+                "inkOverlap": 73.66,
+                "edgeSimilarity": 85.83,
+                "horizontalShiftPoints": 0.15,
+                "verticalShiftPoints": -0.75,
+                "aspectRatioDelta": 0,
+                "issues": []
+              },
+              {
+                "sourcePageNumber": 2,
+                "outputPageNumber": 2,
+                "visualScore": 97.06,
+                "pixelSimilarity": 99.93,
+                "inkOverlap": 93.51,
+                "edgeSimilarity": 99.99,
+                "horizontalShiftPoints": 0.04,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": []
+              },
+              {
+                "sourcePageNumber": 3,
+                "outputPageNumber": 3,
+                "visualScore": 74.36,
+                "pixelSimilarity": 95.13,
+                "inkOverlap": 53.52,
+                "edgeSimilarity": 89.29,
+                "horizontalShiftPoints": 0.11,
+                "verticalShiftPoints": -0.33,
+                "aspectRatioDelta": 0,
+                "issues": []
+              },
+              {
+                "sourcePageNumber": 4,
+                "outputPageNumber": 4,
+                "visualScore": 73.89,
+                "pixelSimilarity": 93.9,
+                "inkOverlap": 52.63,
+                "edgeSimilarity": 89.8,
+                "horizontalShiftPoints": 0.01,
+                "verticalShiftPoints": -0.67,
+                "aspectRatioDelta": 0,
+                "issues": []
+              },
+              {
+                "sourcePageNumber": 5,
+                "outputPageNumber": 5,
+                "visualScore": 61.86,
+                "pixelSimilarity": 93.4,
+                "inkOverlap": 39.49,
+                "edgeSimilarity": 72.6,
+                "horizontalShiftPoints": -0.08,
+                "verticalShiftPoints": -0.32,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap"
+                ]
+              },
+              {
+                "sourcePageNumber": 6,
+                "outputPageNumber": 6,
+                "visualScore": 71.69,
+                "pixelSimilarity": 93.78,
+                "inkOverlap": 50.83,
+                "edgeSimilarity": 85.9,
+                "horizontalShiftPoints": -0.06,
+                "verticalShiftPoints": 13.45,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "content_shift"
+                ]
+              },
+              {
+                "sourcePageNumber": 7,
+                "outputPageNumber": 7,
+                "visualScore": 73.67,
+                "pixelSimilarity": 93.3,
+                "inkOverlap": 52.4,
+                "edgeSimilarity": 89.81,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": -0.97,
+                "aspectRatioDelta": 0,
+                "issues": []
+              },
+              {
+                "sourcePageNumber": 8,
+                "outputPageNumber": 8,
+                "visualScore": 58.72,
+                "pixelSimilarity": 91.04,
+                "inkOverlap": 33.86,
+                "edgeSimilarity": 72.2,
+                "horizontalShiftPoints": -0.09,
+                "verticalShiftPoints": -0.1,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap"
+                ]
+              },
+              {
+                "sourcePageNumber": 9,
+                "outputPageNumber": 9,
+                "visualScore": 71.2,
+                "pixelSimilarity": 95.55,
+                "inkOverlap": 52.62,
+                "edgeSimilarity": 81.17,
+                "horizontalShiftPoints": 0.36,
+                "verticalShiftPoints": 8.2,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "content_shift"
+                ]
+              },
+              {
+                "sourcePageNumber": 10,
+                "outputPageNumber": 10,
+                "visualScore": 80.22,
+                "pixelSimilarity": 95.83,
+                "inkOverlap": 62.09,
+                "edgeSimilarity": 94.61,
+                "horizontalShiftPoints": 0.21,
+                "verticalShiftPoints": -3.38,
+                "aspectRatioDelta": 0,
+                "issues": []
+              },
+              {
+                "sourcePageNumber": 11,
+                "outputPageNumber": 11,
+                "visualScore": 62.79,
+                "pixelSimilarity": 93.41,
+                "inkOverlap": 39.9,
+                "edgeSimilarity": 74.73,
+                "horizontalShiftPoints": 0.42,
+                "verticalShiftPoints": 10.24,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "content_shift",
+                  "low_content_overlap"
+                ]
+              },
+              {
+                "sourcePageNumber": 12,
+                "outputPageNumber": 12,
+                "visualScore": 67.19,
+                "pixelSimilarity": 93.67,
+                "inkOverlap": 44.63,
+                "edgeSimilarity": 81.05,
+                "horizontalShiftPoints": 0.26,
+                "verticalShiftPoints": -3.39,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap"
+                ]
+              },
+              {
+                "sourcePageNumber": 13,
+                "outputPageNumber": 13,
+                "visualScore": 71.77,
+                "pixelSimilarity": 94.15,
+                "inkOverlap": 49.38,
+                "edgeSimilarity": 87.77,
+                "horizontalShiftPoints": -0.03,
+                "verticalShiftPoints": -0.38,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap"
+                ]
+              },
+              {
+                "sourcePageNumber": 14,
+                "outputPageNumber": 14,
+                "visualScore": 73.51,
+                "pixelSimilarity": 94.48,
+                "inkOverlap": 51.46,
+                "edgeSimilarity": 89.87,
+                "horizontalShiftPoints": 0.05,
+                "verticalShiftPoints": -0.02,
+                "aspectRatioDelta": 0,
+                "issues": []
+              },
+              {
+                "sourcePageNumber": 15,
+                "outputPageNumber": 15,
+                "visualScore": 63.96,
+                "pixelSimilarity": 95.19,
+                "inkOverlap": 41.18,
+                "edgeSimilarity": 75.41,
+                "horizontalShiftPoints": 0.03,
+                "verticalShiftPoints": 0.15,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap"
+                ]
+              },
+              {
+                "sourcePageNumber": 16,
+                "outputPageNumber": 16,
+                "visualScore": 53.49,
+                "pixelSimilarity": 93.39,
+                "inkOverlap": 29.4,
+                "edgeSimilarity": 61.65,
+                "horizontalShiftPoints": 0.01,
+                "verticalShiftPoints": -0.12,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap"
+                ]
+              },
+              {
+                "sourcePageNumber": 17,
+                "outputPageNumber": 17,
+                "visualScore": 21.06,
+                "pixelSimilarity": 94.6,
+                "inkOverlap": 1.82,
+                "edgeSimilarity": 3.78,
+                "horizontalShiftPoints": -67.89,
+                "verticalShiftPoints": -62.42,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "content_shift",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 18,
+                "outputPageNumber": 18,
+                "visualScore": 36.66,
+                "pixelSimilarity": 90.82,
+                "inkOverlap": 12.73,
+                "edgeSimilarity": 36.48,
+                "horizontalShiftPoints": 45.34,
+                "verticalShiftPoints": -66.52,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "content_shift",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 19,
+                "outputPageNumber": 19,
+                "visualScore": 38.32,
+                "pixelSimilarity": 90.58,
+                "inkOverlap": 13.87,
+                "edgeSimilarity": 39.89,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 20,
+                "outputPageNumber": 20,
+                "visualScore": 31,
+                "pixelSimilarity": 88.74,
+                "inkOverlap": 7.7,
+                "edgeSimilarity": 27.97,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 21,
+                "outputPageNumber": 21,
+                "visualScore": 26.67,
+                "pixelSimilarity": 88.59,
+                "inkOverlap": 4.44,
+                "edgeSimilarity": 19.86,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 22,
+                "outputPageNumber": 22,
+                "visualScore": 19.99,
+                "pixelSimilarity": 92.93,
+                "inkOverlap": 0.83,
+                "edgeSimilarity": 2.96,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 23,
+                "outputPageNumber": 23,
+                "visualScore": 28.29,
+                "pixelSimilarity": 88.39,
+                "inkOverlap": 5.89,
+                "edgeSimilarity": 22.76,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 24,
+                "outputPageNumber": 24,
+                "visualScore": 20.57,
+                "pixelSimilarity": 94.39,
+                "inkOverlap": 0.96,
+                "edgeSimilarity": 3.6,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 25,
+                "outputPageNumber": 25,
+                "visualScore": 26.79,
+                "pixelSimilarity": 87.63,
+                "inkOverlap": 4.21,
+                "edgeSimilarity": 21.06,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 26,
+                "outputPageNumber": 26,
+                "visualScore": 42.99,
+                "pixelSimilarity": 89.72,
+                "inkOverlap": 17.53,
+                "edgeSimilarity": 49.02,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 27,
+                "outputPageNumber": 27,
+                "visualScore": 19.82,
+                "pixelSimilarity": 94.16,
+                "inkOverlap": 0.62,
+                "edgeSimilarity": 2.02,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 28,
+                "outputPageNumber": 28,
+                "visualScore": 28.63,
+                "pixelSimilarity": 91.87,
+                "inkOverlap": 6.04,
+                "edgeSimilarity": 21.53,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 29,
+                "outputPageNumber": 29,
+                "visualScore": 33.33,
+                "pixelSimilarity": 89.99,
+                "inkOverlap": 10,
+                "edgeSimilarity": 30.95,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 30,
+                "outputPageNumber": 30,
+                "visualScore": 24.8,
+                "pixelSimilarity": 92.54,
+                "inkOverlap": 4,
+                "edgeSimilarity": 12.84,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 31,
+                "outputPageNumber": 31,
+                "visualScore": 26.99,
+                "pixelSimilarity": 92.67,
+                "inkOverlap": 4.76,
+                "edgeSimilarity": 18.2,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0.029,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 32,
+                "outputPageNumber": 32,
+                "visualScore": 19.18,
+                "pixelSimilarity": 95.93,
+                "inkOverlap": 0.02,
+                "edgeSimilarity": 0.11,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0.029,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 33,
+                "outputPageNumber": 33,
+                "visualScore": 30.36,
+                "pixelSimilarity": 93.59,
+                "inkOverlap": 7.16,
+                "edgeSimilarity": 24.05,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 34,
+                "outputPageNumber": 34,
+                "visualScore": 30.31,
+                "pixelSimilarity": 92.2,
+                "inkOverlap": 6.81,
+                "edgeSimilarity": 25.16,
+                "horizontalShiftPoints": 0.04,
+                "verticalShiftPoints": -0.07,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 35,
+                "outputPageNumber": 35,
+                "visualScore": 24.77,
+                "pixelSimilarity": 96.94,
+                "inkOverlap": 3.19,
+                "edgeSimilarity": 11.28,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 36,
+                "outputPageNumber": 36,
+                "visualScore": 28.15,
+                "pixelSimilarity": 93.47,
+                "inkOverlap": 6.23,
+                "edgeSimilarity": 19.02,
+                "horizontalShiftPoints": 0.18,
+                "verticalShiftPoints": 0.13,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 37,
+                "outputPageNumber": 37,
+                "visualScore": 32.74,
+                "pixelSimilarity": 93.58,
+                "inkOverlap": 9.38,
+                "edgeSimilarity": 28,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 38,
+                "outputPageNumber": 38,
+                "visualScore": 35.68,
+                "pixelSimilarity": 93.84,
+                "inkOverlap": 11.58,
+                "edgeSimilarity": 33.44,
+                "horizontalShiftPoints": 0.11,
+                "verticalShiftPoints": 0.01,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 39,
+                "outputPageNumber": 39,
+                "visualScore": 30.99,
+                "pixelSimilarity": 94.99,
+                "inkOverlap": 7.75,
+                "edgeSimilarity": 24.29,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 40,
+                "outputPageNumber": 40,
+                "visualScore": 6.45,
+                "pixelSimilarity": 92.74,
+                "inkOverlap": 2.99,
+                "edgeSimilarity": 13.02,
+                "horizontalShiftPoints": -0.07,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 49.978,
+                "issues": [
+                  "page_geometry_changed",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 41,
+                "outputPageNumber": 41,
+                "visualScore": 13.69,
+                "pixelSimilarity": 91.47,
+                "inkOverlap": 8.26,
+                "edgeSimilarity": 27.66,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 49.978,
+                "issues": [
+                  "page_geometry_changed",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 42,
+                "outputPageNumber": 42,
+                "visualScore": 12.33,
+                "pixelSimilarity": 93.42,
+                "inkOverlap": 6.63,
+                "edgeSimilarity": 24.75,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 49.978,
+                "issues": [
+                  "page_geometry_changed",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 43,
+                "outputPageNumber": 43,
+                "visualScore": 14.65,
+                "pixelSimilarity": 93.91,
+                "inkOverlap": 8.87,
+                "edgeSimilarity": 28.22,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 49.978,
+                "issues": [
+                  "page_geometry_changed",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 44,
+                "outputPageNumber": 44,
+                "visualScore": 10.19,
+                "pixelSimilarity": 96.15,
+                "inkOverlap": 5.61,
+                "edgeSimilarity": 18.39,
+                "horizontalShiftPoints": -0.05,
+                "verticalShiftPoints": -0.03,
+                "aspectRatioDelta": 49.978,
+                "issues": [
+                  "page_geometry_changed",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 45,
+                "outputPageNumber": 45,
+                "visualScore": 41.06,
+                "pixelSimilarity": 91.84,
+                "inkOverlap": 16.62,
+                "edgeSimilarity": 43.47,
+                "horizontalShiftPoints": -0.02,
+                "verticalShiftPoints": -13.23,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "content_shift",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 46,
+                "outputPageNumber": 46,
+                "visualScore": 21.72,
+                "pixelSimilarity": 95.46,
+                "inkOverlap": 1.66,
+                "edgeSimilarity": 5.37,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 47,
+                "outputPageNumber": 47,
+                "visualScore": 30.66,
+                "pixelSimilarity": 91.03,
+                "inkOverlap": 7.99,
+                "edgeSimilarity": 25.3,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 48,
+                "outputPageNumber": 48,
+                "visualScore": 19.65,
+                "pixelSimilarity": 95.17,
+                "inkOverlap": 0.31,
+                "edgeSimilarity": 1.36,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 49,
+                "outputPageNumber": 49,
+                "visualScore": 9.59,
+                "pixelSimilarity": 91.83,
+                "inkOverlap": 5.96,
+                "edgeSimilarity": 18.69,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 99.911,
+                "issues": [
+                  "page_geometry_changed",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 50,
+                "outputPageNumber": 50,
+                "visualScore": 13.22,
+                "pixelSimilarity": 93.01,
+                "inkOverlap": 8.66,
+                "edgeSimilarity": 24.9,
+                "horizontalShiftPoints": 25.29,
+                "verticalShiftPoints": 54.13,
+                "aspectRatioDelta": 99.911,
+                "issues": [
+                  "page_geometry_changed",
+                  "content_shift",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 51,
+                "outputPageNumber": 51,
+                "visualScore": 9.63,
+                "pixelSimilarity": 93.28,
+                "inkOverlap": 6.15,
+                "edgeSimilarity": 17.74,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 99.911,
+                "issues": [
+                  "page_geometry_changed",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 52,
+                "outputPageNumber": 52,
+                "visualScore": 12.62,
+                "pixelSimilarity": 91.62,
+                "inkOverlap": 7.95,
+                "edgeSimilarity": 24.9,
+                "horizontalShiftPoints": -15.78,
+                "verticalShiftPoints": 67.27,
+                "aspectRatioDelta": 99.911,
+                "issues": [
+                  "page_geometry_changed",
+                  "content_shift",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 53,
+                "outputPageNumber": 53,
+                "visualScore": 16.46,
+                "pixelSimilarity": 91.59,
+                "inkOverlap": 11.23,
+                "edgeSimilarity": 31.69,
+                "horizontalShiftPoints": 24.02,
+                "verticalShiftPoints": 3.47,
+                "aspectRatioDelta": 99.911,
+                "issues": [
+                  "page_geometry_changed",
+                  "content_shift",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 54,
+                "outputPageNumber": 54,
+                "visualScore": 13.67,
+                "pixelSimilarity": 91.51,
+                "inkOverlap": 9.16,
+                "edgeSimilarity": 26.41,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 99.911,
+                "issues": [
+                  "page_geometry_changed",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 55,
+                "outputPageNumber": 55,
+                "visualScore": 13.85,
+                "pixelSimilarity": 91.48,
+                "inkOverlap": 8.98,
+                "edgeSimilarity": 27.18,
+                "horizontalShiftPoints": 47.78,
+                "verticalShiftPoints": -94.15,
+                "aspectRatioDelta": 99.911,
+                "issues": [
+                  "page_geometry_changed",
+                  "content_shift",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 56,
+                "outputPageNumber": 56,
+                "visualScore": 31.66,
+                "pixelSimilarity": 91.05,
+                "inkOverlap": 8.7,
+                "edgeSimilarity": 27.25,
+                "horizontalShiftPoints": -56.95,
+                "verticalShiftPoints": 96.57,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "content_shift",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 57,
+                "outputPageNumber": 57,
+                "visualScore": 27.61,
+                "pixelSimilarity": 93.5,
+                "inkOverlap": 6.02,
+                "edgeSimilarity": 18.08,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0.071,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 58,
+                "outputPageNumber": 58,
+                "visualScore": 25.57,
+                "pixelSimilarity": 92.99,
+                "inkOverlap": 4.38,
+                "edgeSimilarity": 14.65,
+                "horizontalShiftPoints": 0.18,
+                "verticalShiftPoints": 0.24,
+                "aspectRatioDelta": 0.071,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 59,
+                "outputPageNumber": 59,
+                "visualScore": 26.23,
+                "pixelSimilarity": 93.48,
+                "inkOverlap": 4.42,
+                "edgeSimilarity": 16.2,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0.071,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 60,
+                "outputPageNumber": 60,
+                "visualScore": 25.01,
+                "pixelSimilarity": 93.2,
+                "inkOverlap": 4.96,
+                "edgeSimilarity": 11.83,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 61,
+                "outputPageNumber": 61,
+                "visualScore": 11.29,
+                "pixelSimilarity": 90.36,
+                "inkOverlap": 6.62,
+                "edgeSimilarity": 23.53,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 49.978,
+                "issues": [
+                  "page_geometry_changed",
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              },
+              {
+                "sourcePageNumber": 62,
+                "outputPageNumber": 62,
+                "visualScore": 31.51,
+                "pixelSimilarity": 92.29,
+                "inkOverlap": 8.57,
+                "edgeSimilarity": 26.29,
+                "horizontalShiftPoints": 0,
+                "verticalShiftPoints": 0,
+                "aspectRatioDelta": 0,
+                "issues": [
+                  "low_content_overlap",
+                  "layout_mismatch"
+                ]
+              }
+            ],
+            "error": null
+          },
+          "visualScoreGap": -11.58
+        },
+        "reference": null
+      },
+      "gate": {
+        "passed": false,
+        "thresholds": {
+          "maximumPageRegression": 0.25,
+          "minimumTextCoverage": 99.9,
+          "minimumTableCellCoverage": 100,
+          "requirePageCountMatch": true
+        },
+        "failures": [
+          {
+            "code": "page_count_changed",
+            "expected": 62,
+            "actual": 76
+          },
+          {
+            "code": "page_visual_regression",
+            "pages": [
+              {
+                "pageNumber": 2,
+                "baseline": 96.92,
+                "current": 96.52,
+                "delta": -0.4
+              },
+              {
+                "pageNumber": 4,
+                "baseline": 59.59,
+                "current": 38.83,
+                "delta": -20.76
+              },
+              {
+                "pageNumber": 5,
+                "baseline": 38.03,
+                "current": 18.77,
+                "delta": -19.26
+              },
+              {
+                "pageNumber": 6,
+                "baseline": 61.98,
+                "current": 34.8,
+                "delta": -27.18
+              },
+              {
+                "pageNumber": 7,
+                "baseline": 56.94,
+                "current": 18.41,
+                "delta": -38.53
+              },
+              {
+                "pageNumber": 8,
+                "baseline": 61.94,
+                "current": 32.32,
+                "delta": -29.62
+              },
+              {
+                "pageNumber": 9,
+                "baseline": 41.99,
+                "current": 19.09,
+                "delta": -22.9
+              },
+              {
+                "pageNumber": 10,
+                "baseline": 61.83,
+                "current": 33.71,
+                "delta": -28.12
+              },
+              {
+                "pageNumber": 11,
+                "baseline": 49.07,
+                "current": 36.28,
+                "delta": -12.79
+              },
+              {
+                "pageNumber": 12,
+                "baseline": 32.08,
+                "current": 29.2,
+                "delta": -2.88
+              },
+              {
+                "pageNumber": 15,
+                "baseline": 33.12,
+                "current": 32.51,
+                "delta": -0.61
+              },
+              {
+                "pageNumber": 18,
+                "baseline": 38.57,
+                "current": 19.36,
+                "delta": -19.21
+              },
+              {
+                "pageNumber": 19,
+                "baseline": 33.66,
+                "current": 31.19,
+                "delta": -2.47
+              },
+              {
+                "pageNumber": 22,
+                "baseline": 43.57,
+                "current": 33.21,
+                "delta": -10.36
+              },
+              {
+                "pageNumber": 23,
+                "baseline": 33.24,
+                "current": 20.99,
+                "delta": -12.25
+              },
+              {
+                "pageNumber": 24,
+                "baseline": 38.47,
+                "current": 32.32,
+                "delta": -6.15
+              },
+              {
+                "pageNumber": 25,
+                "baseline": 40.44,
+                "current": 18.73,
+                "delta": -21.71
+              },
+              {
+                "pageNumber": 27,
+                "baseline": 42.91,
+                "current": 18.88,
+                "delta": -24.03
+              },
+              {
+                "pageNumber": 29,
+                "baseline": 31.68,
+                "current": 19.03,
+                "delta": -12.65
+              },
+              {
+                "pageNumber": 30,
+                "baseline": 24.33,
+                "current": 22.49,
+                "delta": -1.84
+              },
+              {
+                "pageNumber": 31,
+                "baseline": 25.95,
+                "current": 19.47,
+                "delta": -6.48
+              },
+              {
+                "pageNumber": 33,
+                "baseline": 29.77,
+                "current": 29.44,
+                "delta": -0.33
+              },
+              {
+                "pageNumber": 34,
+                "baseline": 23.16,
+                "current": 19.23,
+                "delta": -3.93
+              },
+              {
+                "pageNumber": 37,
+                "baseline": 35.09,
+                "current": 28.21,
+                "delta": -6.88
+              },
+              {
+                "pageNumber": 39,
+                "baseline": 27.54,
+                "current": 26.67,
+                "delta": -0.87
+              },
+              {
+                "pageNumber": 40,
+                "baseline": 5.92,
+                "current": 0.87,
+                "delta": -5.05
+              },
+              {
+                "pageNumber": 41,
+                "baseline": 13.04,
+                "current": 11.77,
+                "delta": -1.27
+              },
+              {
+                "pageNumber": 42,
+                "baseline": 11.25,
+                "current": 1.25,
+                "delta": -10
+              },
+              {
+                "pageNumber": 43,
+                "baseline": 14.21,
+                "current": 10.48,
+                "delta": -3.73
+              },
+              {
+                "pageNumber": 45,
+                "baseline": 38.23,
+                "current": 9.71,
+                "delta": -28.52
+              },
+              {
+                "pageNumber": 46,
+                "baseline": 37.85,
+                "current": 14.09,
+                "delta": -23.76
+              },
+              {
+                "pageNumber": 47,
+                "baseline": 33.66,
+                "current": 9.37,
+                "delta": -24.29
+              },
+              {
+                "pageNumber": 48,
+                "baseline": 34.88,
+                "current": 11.71,
+                "delta": -23.17
+              },
+              {
+                "pageNumber": 53,
+                "baseline": 15.06,
+                "current": 14.68,
+                "delta": -0.38
+              },
+              {
+                "pageNumber": 55,
+                "baseline": 30.68,
+                "current": 12.82,
+                "delta": -17.86
+              },
+              {
+                "pageNumber": 56,
+                "baseline": 28.56,
+                "current": 12.78,
+                "delta": -15.78
+              },
+              {
+                "pageNumber": 57,
+                "baseline": 26.75,
+                "current": 8.72,
+                "delta": -18.03
+              },
+              {
+                "pageNumber": 58,
+                "baseline": 25.42,
+                "current": 6.83,
+                "delta": -18.59
+              },
+              {
+                "pageNumber": 59,
+                "baseline": 23.78,
+                "current": 10.21,
+                "delta": -13.57
+              },
+              {
+                "pageNumber": 60,
+                "baseline": 23.88,
+                "current": 5.43,
+                "delta": -18.45
+              }
+            ]
+          },
+          {
+            "code": "text_loss",
+            "referenceCharacters": 109007,
+            "missingCharacters": 14890,
+            "coverage": 86.3403
+          },
+          {
+            "code": "table_cell_loss",
+            "coverage": 13.8043
+          }
+        ],
+        "textComparison": {
+          "cerPercent": 19.31,
+          "werPercent": 21.56,
+          "characterCoverage": {
+            "referenceCharacters": 109007,
+            "missingCharacters": 14890,
+            "coverage": 86.3403
+          },
+          "tableCellCoverage": 13.8043
+        },
+        "pageRegressions": [
+          {
+            "pageNumber": 2,
+            "baseline": 96.92,
+            "current": 96.52,
+            "delta": -0.4
+          },
+          {
+            "pageNumber": 4,
+            "baseline": 59.59,
+            "current": 38.83,
+            "delta": -20.76
+          },
+          {
+            "pageNumber": 5,
+            "baseline": 38.03,
+            "current": 18.77,
+            "delta": -19.26
+          },
+          {
+            "pageNumber": 6,
+            "baseline": 61.98,
+            "current": 34.8,
+            "delta": -27.18
+          },
+          {
+            "pageNumber": 7,
+            "baseline": 56.94,
+            "current": 18.41,
+            "delta": -38.53
+          },
+          {
+            "pageNumber": 8,
+            "baseline": 61.94,
+            "current": 32.32,
+            "delta": -29.62
+          },
+          {
+            "pageNumber": 9,
+            "baseline": 41.99,
+            "current": 19.09,
+            "delta": -22.9
+          },
+          {
+            "pageNumber": 10,
+            "baseline": 61.83,
+            "current": 33.71,
+            "delta": -28.12
+          },
+          {
+            "pageNumber": 11,
+            "baseline": 49.07,
+            "current": 36.28,
+            "delta": -12.79
+          },
+          {
+            "pageNumber": 12,
+            "baseline": 32.08,
+            "current": 29.2,
+            "delta": -2.88
+          },
+          {
+            "pageNumber": 15,
+            "baseline": 33.12,
+            "current": 32.51,
+            "delta": -0.61
+          },
+          {
+            "pageNumber": 18,
+            "baseline": 38.57,
+            "current": 19.36,
+            "delta": -19.21
+          },
+          {
+            "pageNumber": 19,
+            "baseline": 33.66,
+            "current": 31.19,
+            "delta": -2.47
+          },
+          {
+            "pageNumber": 22,
+            "baseline": 43.57,
+            "current": 33.21,
+            "delta": -10.36
+          },
+          {
+            "pageNumber": 23,
+            "baseline": 33.24,
+            "current": 20.99,
+            "delta": -12.25
+          },
+          {
+            "pageNumber": 24,
+            "baseline": 38.47,
+            "current": 32.32,
+            "delta": -6.15
+          },
+          {
+            "pageNumber": 25,
+            "baseline": 40.44,
+            "current": 18.73,
+            "delta": -21.71
+          },
+          {
+            "pageNumber": 27,
+            "baseline": 42.91,
+            "current": 18.88,
+            "delta": -24.03
+          },
+          {
+            "pageNumber": 29,
+            "baseline": 31.68,
+            "current": 19.03,
+            "delta": -12.65
+          },
+          {
+            "pageNumber": 30,
+            "baseline": 24.33,
+            "current": 22.49,
+            "delta": -1.84
+          },
+          {
+            "pageNumber": 31,
+            "baseline": 25.95,
+            "current": 19.47,
+            "delta": -6.48
+          },
+          {
+            "pageNumber": 33,
+            "baseline": 29.77,
+            "current": 29.44,
+            "delta": -0.33
+          },
+          {
+            "pageNumber": 34,
+            "baseline": 23.16,
+            "current": 19.23,
+            "delta": -3.93
+          },
+          {
+            "pageNumber": 37,
+            "baseline": 35.09,
+            "current": 28.21,
+            "delta": -6.88
+          },
+          {
+            "pageNumber": 39,
+            "baseline": 27.54,
+            "current": 26.67,
+            "delta": -0.87
+          },
+          {
+            "pageNumber": 40,
+            "baseline": 5.92,
+            "current": 0.87,
+            "delta": -5.05
+          },
+          {
+            "pageNumber": 41,
+            "baseline": 13.04,
+            "current": 11.77,
+            "delta": -1.27
+          },
+          {
+            "pageNumber": 42,
+            "baseline": 11.25,
+            "current": 1.25,
+            "delta": -10
+          },
+          {
+            "pageNumber": 43,
+            "baseline": 14.21,
+            "current": 10.48,
+            "delta": -3.73
+          },
+          {
+            "pageNumber": 45,
+            "baseline": 38.23,
+            "current": 9.71,
+            "delta": -28.52
+          },
+          {
+            "pageNumber": 46,
+            "baseline": 37.85,
+            "current": 14.09,
+            "delta": -23.76
+          },
+          {
+            "pageNumber": 47,
+            "baseline": 33.66,
+            "current": 9.37,
+            "delta": -24.29
+          },
+          {
+            "pageNumber": 48,
+            "baseline": 34.88,
+            "current": 11.71,
+            "delta": -23.17
+          },
+          {
+            "pageNumber": 53,
+            "baseline": 15.06,
+            "current": 14.68,
+            "delta": -0.38
+          },
+          {
+            "pageNumber": 55,
+            "baseline": 30.68,
+            "current": 12.82,
+            "delta": -17.86
+          },
+          {
+            "pageNumber": 56,
+            "baseline": 28.56,
+            "current": 12.78,
+            "delta": -15.78
+          },
+          {
+            "pageNumber": 57,
+            "baseline": 26.75,
+            "current": 8.72,
+            "delta": -18.03
+          },
+          {
+            "pageNumber": 58,
+            "baseline": 25.42,
+            "current": 6.83,
+            "delta": -18.59
+          },
+          {
+            "pageNumber": 59,
+            "baseline": 23.78,
+            "current": 10.21,
+            "delta": -13.57
+          },
+          {
+            "pageNumber": 60,
+            "baseline": 23.88,
+            "current": 5.43,
+            "delta": -18.45
+          }
+        ]
+      },
+      "passed": false
+    }
+  ],
+  "passed": false
+}

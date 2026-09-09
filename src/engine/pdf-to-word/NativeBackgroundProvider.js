@@ -1,3 +1,5 @@
+import { authorizedLocalFetch } from "../service/LocalServiceSession.js";
+
 const DEFAULT_LAYOUT_ENDPOINT = "http://127.0.0.1:8765/v1/layout";
 
 function number(value, fallback = 0) {
@@ -22,6 +24,62 @@ export function deriveNativeBackgroundEndpoint(endpoint = DEFAULT_LAYOUT_ENDPOIN
     return new URL("/v1/native-background", endpoint).toString();
 }
 
+export function deriveDocumentRegistryEndpoint(endpoint = DEFAULT_LAYOUT_ENDPOINT) {
+    if (!isLoopbackEndpoint(endpoint)) return null;
+    return new URL("/v1/documents", endpoint).toString();
+}
+
+export async function registerNativeDocument(
+    file,
+    {
+        endpoint = DEFAULT_LAYOUT_ENDPOINT,
+        timeoutMs = 60_000,
+        signal,
+    } = {}
+) {
+    const registryEndpoint = deriveDocumentRegistryEndpoint(endpoint);
+    if (!registryEndpoint) {
+        throw new Error("El PDF solo puede registrarse en este equipo.");
+    }
+    if (!file) throw new Error("Falta el PDF que se debe registrar.");
+
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    const timeout = setTimeout(abort, timeoutMs);
+    signal?.addEventListener("abort", abort, { once: true });
+    try {
+        const body = new FormData();
+        body.append("pdf", file, file.name || "document.pdf");
+        const response = await authorizedLocalFetch(registryEndpoint, {
+            method: "POST",
+            body,
+            signal: controller.signal,
+        });
+        if (!response.ok) {
+            let detail = `El registro del PDF respondió ${response.status}.`;
+            try {
+                detail = (await response.json()).detail || detail;
+            } catch {
+                // El proxy local puede devolver un cuerpo sin JSON.
+            }
+            throw new Error(detail);
+        }
+        const payload = await response.json();
+        if (!payload.document_id) throw new Error("El servicio no devolvió un id de documento.");
+        return {
+            documentId: payload.document_id,
+            pageCount: number(payload.page_count),
+            sizeBytes: number(payload.size_bytes),
+            reused: payload.reused === true,
+            expiresAt: number(payload.expires_at),
+            version: payload.version || null,
+        };
+    } finally {
+        clearTimeout(timeout);
+        signal?.removeEventListener("abort", abort);
+    }
+}
+
 export async function fetchNativeCleanBackground(
     file,
     {
@@ -31,13 +89,17 @@ export async function fetchNativeCleanBackground(
         paddingPoints = 1.25,
         timeoutMs = 45_000,
         signal,
+        documentId,
     } = {}
 ) {
-    const backgroundEndpoint = deriveNativeBackgroundEndpoint(endpoint);
+    const registryEndpoint = deriveDocumentRegistryEndpoint(endpoint);
+    const backgroundEndpoint = documentId && registryEndpoint
+        ? `${registryEndpoint}/${encodeURIComponent(documentId)}/native-background`
+        : deriveNativeBackgroundEndpoint(endpoint);
     if (!backgroundEndpoint) {
         throw new Error("El fondo nativo debe generarse en este equipo.");
     }
-    if (!file || !Number.isInteger(Number(pageNumber)) || Number(pageNumber) < 1) {
+    if ((!file && !documentId) || !Number.isInteger(Number(pageNumber)) || Number(pageNumber) < 1) {
         throw new Error("Falta una página válida para generar el fondo.");
     }
 
@@ -47,11 +109,11 @@ export async function fetchNativeCleanBackground(
     signal?.addEventListener("abort", abort, { once: true });
     try {
         const body = new FormData();
-        body.append("pdf", file, file.name || "document.pdf");
+        if (!documentId) body.append("pdf", file, file.name || "document.pdf");
         body.append("page", String(pageNumber));
         body.append("dpi", String(Math.round(number(dpi, 144))));
         body.append("padding_points", String(number(paddingPoints, 1.25)));
-        const response = await fetch(backgroundEndpoint, {
+        const response = await authorizedLocalFetch(backgroundEndpoint, {
             method: "POST",
             body,
             signal: controller.signal,

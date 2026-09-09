@@ -17,7 +17,15 @@ import {
     isNativeDocxCandidateEligible,
     shouldApplyNativeDocxCandidate,
 } from "../../engine/pdf-to-word/NativeDocxCandidate";
-import { renderWordDocument } from "../../engine/pdf-to-word/WordDocumentRenderer";
+import {
+    releaseWordDocumentResources,
+    renderWordDocument,
+} from "../../engine/pdf-to-word/WordDocumentRenderer";
+import {
+    listResumableConversionSessions,
+    loadConversionSource,
+    updateConversionSession,
+} from "../../engine/pdf-to-word/PersistentConversionStore.js";
 import PDFReviewWorkspace from "./PDFReviewWorkspace";
 import "./PDFToWord.css";
 
@@ -87,6 +95,8 @@ const DEFAULT_OPTIONS = {
     maximumQualityRetryPages: 32,
     maximumCanvasMegapixels: 20,
     cacheMemoryMB: 96,
+    persistentProcessing: true,
+    persistentStorageMB: 1024,
     ocrDictionary: "",
     experimentalHandwriting: false,
     advancedVision: true,
@@ -112,6 +122,10 @@ function formatDuration(milliseconds) {
     return seconds < 60
         ? `${seconds.toFixed(seconds < 10 ? 1 : 0)} s`
         : `${Math.floor(seconds / 60)} min ${Math.round(seconds % 60)} s`;
+}
+
+function monotonicNow() {
+    return globalThis.performance?.now?.() ?? Date.now();
 }
 
 function parseOCRDictionary(value) {
@@ -165,6 +179,8 @@ function PDFToWord() {
     const [pendingModel, setPendingModel] = useState(null);
     const [options, setOptions] = useState(DEFAULT_OPTIONS);
     const [serviceHealth, setServiceHealth] = useState({ status: "checking" });
+    const [resumableSessions, setResumableSessions] = useState([]);
+    const [resumeSessionId, setResumeSessionId] = useState(null);
     const downloadUrlRef = useRef("");
     const runIdRef = useRef(0);
     const abortControllerRef = useRef(null);
@@ -181,6 +197,13 @@ function PDFToWord() {
     );
 
     useEffect(() => {
+        if (new URLSearchParams(window.location.search).get("e2e") !== "1") return;
+        window.__NOVAPDF_E2E_RESULT__ = result
+            ? JSON.parse(JSON.stringify(result))
+            : null;
+    }, [result]);
+
+    useEffect(() => {
         let active = true;
         const refreshServiceHealth = () => {
             checkLocalDocumentService(options.visionEndpoint).then((health) => {
@@ -194,6 +217,20 @@ function PDFToWord() {
             clearInterval(refreshTimer);
         };
     }, [options.visionEndpoint]);
+
+    useEffect(() => {
+        let active = true;
+        listResumableConversionSessions()
+            .then((sessions) => {
+                if (active) setResumableSessions(sessions.slice(0, 3));
+            })
+            .catch(() => {
+                if (active) setResumableSessions([]);
+            });
+        return () => {
+            active = false;
+        };
+    }, []);
 
     const revokeDownload = () => {
         if (downloadUrlRef.current) {
@@ -251,12 +288,40 @@ function PDFToWord() {
         }
 
         revokeDownload();
+        setResumeSessionId(null);
         setFile(selectedFile);
         setOptions((current) => ({ ...current, ocrMode: "" }));
         setResult(null);
         setPendingModel(null);
         setError("");
         setProgress({ percent: 0, detail: "Listo para convertir." });
+    };
+
+    const resumePersistedConversion = async (session) => {
+        try {
+            const source = await loadConversionSource(session.id);
+            if (!source) throw new Error("El PDF de origen ya no está disponible.");
+            revokeDownload();
+            setFile(source);
+            setMode(session.options?.mode || "editable");
+            setOptions((current) => ({
+                ...current,
+                ...session.options,
+                ocrDictionary: (session.options?.ocrDictionary || []).join(", "),
+                ocrMode: session.options?.ocrMode || "auto",
+                persistentProcessing: true,
+            }));
+            setResumeSessionId(session.id);
+            setResult(null);
+            setPendingModel(null);
+            setError("");
+            setProgress({
+                percent: 0,
+                detail: `${session.completedPages?.length || 0} página(s) recuperadas; listo para continuar.`,
+            });
+        } catch (resumeError) {
+            setError(resumeError?.message || "No se pudo reanudar la conversión.");
+        }
     };
 
     const handleInputChange = (event) => {
@@ -276,6 +341,7 @@ function PDFToWord() {
         runIdRef.current += 1;
         revokeDownload();
         setFile(null);
+        setResumeSessionId(null);
         setResult(null);
         setPendingModel(null);
         setError("");
@@ -336,7 +402,7 @@ function PDFToWord() {
                 maximumPages: Number(options.maximumQualityRetryPages),
             });
             if (retryPages.length) {
-                const retryStartedAt = performance.now();
+                const retryStartedAt = monotonicNow();
                 try {
                     setProgress({
                         percent: 98,
@@ -367,6 +433,7 @@ function PDFToWord() {
                             });
                         },
                         isCancelled: () => runIdRef.current !== runId,
+                        persistentProcessing: false,
                     });
                     if (runIdRef.current !== runId) return;
 
@@ -483,7 +550,7 @@ function PDFToWord() {
                         pageDecisions: reportedDecisions,
                         initialQuality,
                         candidateQuality: proposedQuality,
-                        durationMs: performance.now() - retryStartedAt,
+                        durationMs: monotonicNow() - retryStartedAt,
                         reason: applied
                             ? acceptedPages.length === retryPages.length
                                 ? "quality-improved-per-page"
@@ -500,7 +567,7 @@ function PDFToWord() {
                         attempted: true,
                         pages: retryPages,
                         initialQuality,
-                        durationMs: performance.now() - retryStartedAt,
+                        durationMs: monotonicNow() - retryStartedAt,
                         reason: "retry-failed",
                     });
                 }
@@ -534,7 +601,7 @@ function PDFToWord() {
             selectedQuality?.status === "completed" &&
             !selectedQuality.passed
         ) {
-            const nativeStartedAt = performance.now();
+            const nativeStartedAt = monotonicNow();
             const qualityBeforeNative = selectedQuality;
             try {
                 setProgress({
@@ -577,7 +644,7 @@ function PDFToWord() {
                     candidateScore: nativeQuality.status === "completed"
                         ? nativeQuality.visualScore
                         : null,
-                    durationMs: performance.now() - nativeStartedAt,
+                    durationMs: monotonicNow() - nativeStartedAt,
                     reason: applied ? "native-candidate-improved" : "native-candidate-rejected",
                 };
             } catch (nativeError) {
@@ -586,7 +653,7 @@ function PDFToWord() {
                 nativeOptimization = {
                     ...nativeOptimization,
                     attempted: true,
-                    durationMs: performance.now() - nativeStartedAt,
+                    durationMs: monotonicNow() - nativeStartedAt,
                     reason: "native-candidate-failed",
                 };
             }
@@ -602,6 +669,7 @@ function PDFToWord() {
         downloadUrlRef.current = url;
         setDownloadUrl(url);
         setPendingModel(null);
+        const releasedBinaryBytes = releaseWordDocumentResources(selectedModel);
         setResult({
             report: {
                 ...selectedModel.report,
@@ -620,15 +688,30 @@ function PDFToWord() {
                     ((selectedModel.pages.length * 60_000) / totalDurationMs).toFixed(1)
                 ),
                 outputBytes: selectedRendered.blob.size,
+                releasedBinaryMB: Number((releasedBinaryBytes / 1024 / 1024).toFixed(2)),
             },
             pages: selectedModel.pages.map((page) => ({
                 pageNumber: page.pageNumber,
                 pageType: page.pageType,
                 extractionMethod: page.extractionMethod,
+                editableLayout: page.editableLayout,
                 ocr: page.ocr,
                 metrics: page.metrics,
             })),
         });
+        if (selectedModel.options?.persistenceSessionId) {
+            try {
+                await updateConversionSession(selectedModel.options.persistenceSessionId, {
+                    status: "completed",
+                    outputBytes: selectedRendered.blob.size,
+                });
+                setResumableSessions((sessions) =>
+                    sessions.filter((session) => session.id !== selectedModel.options.persistenceSessionId)
+                );
+            } catch (persistenceUpdateError) {
+                console.warn("No se pudo cerrar la sesión persistente:", persistenceUpdateError);
+            }
+        }
         setProgress({
             percent: 100,
             detail: nativeOptimization.applied
@@ -641,6 +724,9 @@ function PDFToWord() {
 
     const handleConversionError = (conversionError, runId) => {
         if (runIdRef.current !== runId) return;
+        listResumableConversionSessions()
+            .then((sessions) => setResumableSessions(sessions.slice(0, 3)))
+            .catch(() => {});
         if (conversionError?.name === "AbortError") {
             setProgress({ percent: 0, detail: "Conversión cancelada; el avance queda en caché." });
             return;
@@ -691,6 +777,9 @@ function PDFToWord() {
                 waitIfPaused,
                 onProgress: progressForRun(runId),
                 isCancelled: () => runIdRef.current !== runId,
+                persistentProcessing: options.persistentProcessing,
+                persistentStorageMB: Number(options.persistentStorageMB),
+                resumeSessionId,
             });
 
             if (options.reviewBeforeDownload) {
@@ -824,8 +913,41 @@ function PDFToWord() {
                         <span className={serviceHealth.rendererAvailable ? "is-ready" : ""}>
                             LibreOffice {serviceHealth.rendererAvailable ? "listo" : "no detectado"}
                         </span>
+                        {serviceHealth.queues?.ocr && (
+                            <span className="is-ready">
+                                OCR {serviceHealth.queues.ocr.workers} worker(s) · cola {serviceHealth.queues.ocr.queued}/{serviceHealth.queues.ocr.queue_capacity}
+                            </span>
+                        )}
+                        {serviceHealth.resourceBudget?.ram?.budget_bytes > 0 && (
+                            <span className="is-ready">
+                                RAM límite {(serviceHealth.resourceBudget.ram.budget_bytes / 1024 / 1024 / 1024).toFixed(1)} GB
+                            </span>
+                        )}
                     </div>
                 </div>
+
+                {!file && resumableSessions.length > 0 && (
+                    <section className="pdf-word-resume" aria-labelledby="pdf-word-resume-title">
+                        <div>
+                            <strong id="pdf-word-resume-title">Conversiones recuperables</strong>
+                            <small>
+                                El PDF y cada página terminada permanecen en este equipo aunque cierres NovaPDF.
+                            </small>
+                        </div>
+                        {resumableSessions.map((session) => (
+                            <button
+                                key={session.id}
+                                type="button"
+                                onClick={() => resumePersistedConversion(session)}
+                            >
+                                <span>{session.filename}</span>
+                                <small>
+                                    {session.completedPages?.length || 0}/{session.pageNumbers?.length || 0} páginas · Reanudar
+                                </small>
+                            </button>
+                        ))}
+                    </section>
+                )}
 
                 <div className="pdf-word-mode-section">
                     <div className="pdf-word-section-heading">
@@ -841,6 +963,7 @@ function PDFToWord() {
                             <button
                                 key={option.id}
                                 type="button"
+                                data-testid={`pdf-word-mode-${option.id}`}
                                 className={`pdf-word-mode ${
                                     mode === option.id ? "pdf-word-mode-active" : ""
                                 }`}
@@ -897,6 +1020,7 @@ function PDFToWord() {
                             Seleccionar PDF
                             <input
                                 type="file"
+                                data-testid="pdf-word-input"
                                 accept=".pdf,application/pdf"
                                 onChange={handleInputChange}
                                 disabled={converting}
@@ -940,6 +1064,7 @@ function PDFToWord() {
                             <label>
                                 ¿Quieres usar OCR para reconocer el texto?
                                 <select
+                                    data-testid="pdf-word-ocr-mode"
                                     value={options.ocrMode}
                                     required={mode !== "visual"}
                                     disabled={converting || mode === "visual"}
@@ -967,6 +1092,7 @@ function PDFToWord() {
                             <label>
                                 Rango de páginas
                                 <input
+                                    data-testid="pdf-word-page-range"
                                     value={options.pageRange}
                                     onChange={(event) =>
                                         setOptions((current) => ({
@@ -982,6 +1108,7 @@ function PDFToWord() {
                             <label>
                                 Límite de render
                                 <select
+                                    data-testid="pdf-word-render-limit"
                                     value={options.maximumCanvasMegapixels}
                                     onChange={(event) =>
                                         setOptions((current) => ({
@@ -999,6 +1126,7 @@ function PDFToWord() {
                             <label>
                                 Motor de visión documental
                                 <select
+                                    data-testid="pdf-word-vision-provider"
                                     value={options.visionProvider}
                                     onChange={(event) =>
                                         setOptions((current) => ({
@@ -1016,6 +1144,7 @@ function PDFToWord() {
                             <label>
                                 Servicio neuronal local
                                 <input
+                                    data-testid="pdf-word-vision-endpoint"
                                     value={options.visionEndpoint}
                                     onChange={(event) =>
                                         setOptions((current) => ({
@@ -1048,6 +1177,24 @@ function PDFToWord() {
                                     <option value="96">96 MB</option>
                                     <option value="192">192 MB</option>
                                 </select>
+                            </label>
+                            <label>
+                                Presupuesto persistente
+                                <select
+                                    value={options.persistentStorageMB}
+                                    onChange={(event) =>
+                                        setOptions((current) => ({
+                                            ...current,
+                                            persistentStorageMB: event.target.value,
+                                        }))
+                                    }
+                                    disabled={converting || !options.persistentProcessing}
+                                >
+                                    <option value="512">512 MB</option>
+                                    <option value="1024">1 GB · recomendado</option>
+                                    <option value="2048">2 GB · documentos extensos</option>
+                                </select>
+                                <small>Incluye el PDF y checkpoints de páginas en IndexedDB.</small>
                             </label>
                             <label>
                                 Diccionario OCR especializado
@@ -1117,6 +1264,21 @@ function PDFToWord() {
                             <label>
                                 <input
                                     type="checkbox"
+                                    checked={options.persistentProcessing}
+                                    onChange={(event) =>
+                                        setOptions((current) => ({
+                                            ...current,
+                                            persistentProcessing: event.target.checked,
+                                        }))
+                                    }
+                                    disabled={converting}
+                                />
+                                Guardar cada página y reanudar después de cerrar
+                            </label>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    data-testid="pdf-word-review-before-download"
                                     checked={options.reviewBeforeDownload}
                                     onChange={(event) =>
                                         setOptions((current) => ({
@@ -1131,6 +1293,7 @@ function PDFToWord() {
                             <label>
                                 <input
                                     type="checkbox"
+                                    data-testid="pdf-word-validate-quality"
                                     checked={options.validateVisualQuality}
                                     onChange={(event) =>
                                         setOptions((current) => ({
@@ -1145,6 +1308,7 @@ function PDFToWord() {
                             <label>
                                 <input
                                     type="checkbox"
+                                    data-testid="pdf-word-auto-quality-retry"
                                     checked={options.autoQualityRetry}
                                     onChange={(event) =>
                                         setOptions((current) => ({
@@ -1177,6 +1341,7 @@ function PDFToWord() {
                             <label>
                                 <input
                                     type="checkbox"
+                                    data-testid="pdf-word-advanced-vision"
                                     checked={options.advancedVision}
                                     onChange={(event) =>
                                         setOptions((current) => ({
@@ -1250,7 +1415,7 @@ function PDFToWord() {
                     </div>
                 )}
 
-                {error && <div className="pdf-word-error">{error}</div>}
+                {error && <div className="pdf-word-error" data-testid="pdf-word-error">{error}</div>}
 
                 {converting && canCancel && (
                     <div className="pdf-word-process-controls">
@@ -1275,6 +1440,7 @@ function PDFToWord() {
                     <button
                         type="button"
                         className="pdf-word-convert-button"
+                        data-testid="pdf-word-convert"
                         onClick={convertToWord}
                         disabled={converting}
                     >
@@ -1627,6 +1793,7 @@ function PDFToWord() {
 
                         <a
                             className="pdf-word-download"
+                            data-testid="pdf-word-download"
                             href={downloadUrl}
                             download={downloadName}
                         >

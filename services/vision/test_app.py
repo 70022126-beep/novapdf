@@ -56,6 +56,9 @@ class VisionNormalizationTests(unittest.TestCase):
         self.assertEqual(metrics["units_per_em"], 1000)
         self.assertEqual(metrics["space_advance_em"], 0.25)
         self.assertEqual(metrics["character_widths_em"], {"32": 0.25, "65": 0.6})
+        self.assertEqual(metrics["ascent_em"], 0.8)
+        self.assertEqual(metrics["descent_em"], 0.2)
+        self.assertFalse(metrics["has_kerning"])
         self.assertEqual(_font_character_metrics(b"not-a-font", {"A"}), {})
 
     def test_overprinted_letters_keep_last_colour_without_removing_real_repetitions(self):
@@ -154,6 +157,43 @@ class VisionNormalizationTests(unittest.TestCase):
         self.assertEqual(merged[0]["name"], "Display Light")
         self.assertEqual(merged[0]["style"], "Light")
         self.assertEqual(merged[0]["data"], b"merged-font-bytes")
+
+    def test_font_subset_merge_keeps_restricted_faces_separate(self):
+        fonts = [
+            {
+                "name": "Licensed Sans",
+                "style": "Regular",
+                "extension": "ttf",
+                "embedding": "editable",
+                "data": b"editable-subset",
+            },
+            {
+                "name": "Licensed Sans",
+                "style": "Regular",
+                "extension": "ttf",
+                "embedding": "restricted",
+                "data": b"restricted-subset-a",
+            },
+            {
+                "name": "Licensed Sans",
+                "style": "Regular",
+                "extension": "ttf",
+                "embedding": "restricted",
+                "data": b"restricted-subset-b",
+            },
+        ]
+
+        merged = _merge_font_subsets(fonts)
+
+        self.assertEqual(len(merged), 3)
+        self.assertEqual(
+            [font["embedding"] for font in merged],
+            ["editable", "restricted", "restricted"],
+        )
+        self.assertEqual(
+            [font["data"] for font in merged],
+            [b"editable-subset", b"restricted-subset-a", b"restricted-subset-b"],
+        )
 
     def test_clean_background_masks_only_the_requested_word_boxes(self):
         mask = build_text_mask(

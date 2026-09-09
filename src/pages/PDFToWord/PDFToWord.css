@@ -133,6 +133,59 @@
     margin: 0 auto;
 }
 
+.pdf-word-resume {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(150px, 0.8fr));
+    gap: 10px;
+    margin: 0 0 18px;
+    padding: 16px;
+    border: 1px solid #bfdbfe;
+    border-radius: 15px;
+    background: #eff6ff;
+}
+
+.pdf-word-resume > div,
+.pdf-word-resume button {
+    display: grid;
+    gap: 4px;
+}
+
+.pdf-word-resume strong,
+.pdf-word-resume button span {
+    overflow: hidden;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pdf-word-resume small {
+    color: #64748b;
+    font-size: 10px;
+}
+
+.pdf-word-resume button {
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid #93c5fd;
+    border-radius: 10px;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pdf-word-resume button:hover {
+    border-color: #2563eb;
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.1);
+}
+
+@media (max-width: 900px) {
+    .pdf-word-resume {
+        grid-template-columns: 1fr;
+    }
+}
+
 .pdf-word-service-status {
     display: flex;
     align-items: center;

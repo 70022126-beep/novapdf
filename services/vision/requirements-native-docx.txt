@@ -1,5 +1,5 @@
-# Instalar después de requirements.txt. Se usa --no-deps para conservar
-# opencv-contrib-python, requerido por el pipeline documental de PaddleOCR.
+# Instalar únicamente dentro de .venv-pdf2docx. El aislamiento permite que
+# pdf2docx resuelva su propio PyMuPDF/OpenCV sin modificar el entorno PaddleOCR.
 PyMuPDF>=1.28,<2
 python-docx>=1.2,<2
 fonttools>=4.63,<5

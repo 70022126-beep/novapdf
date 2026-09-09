@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://novapdf.local/schemas/ocr-corpus-annotation-v1.json",
+  "title": "NovaPDF human OCR annotation",
+  "type": "object",
+  "required": ["schemaVersion", "sampleId", "status", "image", "regions"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "sampleId": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["draft", "human_verified"] },
+    "annotator": { "type": "string" },
+    "reviewer": { "type": "string" },
+    "image": {
+      "type": "object",
+      "required": ["sha256", "width", "height", "dpi", "rotation"],
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "dpi": { "type": "integer", "minimum": 96, "maximum": 600 },
+        "rotation": { "enum": [0, 90, 180, 270] }
+      }
+    },
+    "regions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "coordinateSpace", "bbox", "text", "ignore"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "type": { "type": "string", "minLength": 1 },
+          "coordinateSpace": { "const": "normalized" },
+          "bbox": {
+            "type": "object",
+            "required": ["x", "y", "width", "height"],
+            "properties": {
+              "x": { "type": "number", "minimum": 0, "maximum": 1 },
+              "y": { "type": "number", "minimum": 0, "maximum": 1 },
+              "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+              "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+            }
+          },
+          "text": { "type": "string" },
+          "ignore": { "type": "boolean" },
+          "cells": { "type": "array" }
+        }
+      }
+    }
+  }
+}

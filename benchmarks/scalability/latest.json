@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-09T00:25:37.405Z",
+  "node": "v24.19.0",
+  "platform": "win32-x64",
+  "thresholds": {
+    "maximumPeakRssMB": 1536,
+    "maximumMillisecondsPerPage": 250
+  },
+  "passed": true,
+  "failures": [],
+  "results": [
+    {
+      "pageCount": 100,
+      "sectionCount": 100,
+      "paginationMatch": true,
+      "durationMs": 152,
+      "millisecondsPerPage": 1.52,
+      "outputBytes": 153405,
+      "rssBeforeMB": 52.8,
+      "peakRssMB": 104.61,
+      "rssDeltaMB": 51.82
+    },
+    {
+      "pageCount": 400,
+      "sectionCount": 400,
+      "paginationMatch": true,
+      "durationMs": 448,
+      "millisecondsPerPage": 1.12,
+      "outputBytes": 588619,
+      "rssBeforeMB": 91.5,
+      "peakRssMB": 210.39,
+      "rssDeltaMB": 118.89
+    },
+    {
+      "pageCount": 1000,
+      "sectionCount": 1000,
+      "paginationMatch": true,
+      "durationMs": 912,
+      "millisecondsPerPage": 0.91,
+      "outputBytes": 1458788,
+      "rssBeforeMB": 138.71,
+      "peakRssMB": 344.55,
+      "rssDeltaMB": 205.84
+    }
+  ]
+}

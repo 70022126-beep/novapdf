@@ -1,7 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { createPageCacheKey } from "../src/engine/pdf-to-word/ConversionCache.js";
+import {
+    clearConversionCache,
+    createDocumentResourceCacheKey,
+    createPageCacheKey,
+    getCachedDocumentResources,
+    setCachedDocumentResources,
+} from "../src/engine/pdf-to-word/ConversionCache.js";
 
 test("la caché cambia cuando cambia la arquitectura de visión o fondo", () => {
     const file = { name: "documento.pdf", size: 1200, lastModified: 10 };
@@ -26,4 +32,23 @@ test("la caché cambia cuando cambia la arquitectura de visión o fondo", () => 
 
     assert.notEqual(first, second);
     assert.notEqual(first, withoutBackground);
+});
+
+test("conserva recursos tipográficos de documento aunque las páginas salgan de caché", () => {
+    const file = { name: "extenso.pdf", size: 9000, lastModified: 20 };
+    const key = createDocumentResourceCacheKey(file, {
+        visionEndpoint: "http://127.0.0.1:8765/v1/layout",
+        visionVersion: "3.27.0-font-resources",
+    });
+    const resources = {
+        fontScope: "document",
+        fontPageCount: 235,
+        embeddedFonts: [{ id: "font-1", data: new Uint8Array(64) }],
+    };
+
+    setCachedDocumentResources(key, resources);
+    assert.equal(getCachedDocumentResources(key).fontPageCount, 235);
+    assert.equal(getCachedDocumentResources(key).embeddedFonts[0].data.length, 64);
+    clearConversionCache(file);
+    assert.equal(getCachedDocumentResources(key), null);
 });

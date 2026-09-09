@@ -11,6 +11,14 @@ function estimatePageBytes(page) {
     return imageBytes + renderedBytes + wordBytes + 16_384;
 }
 
+function enforceLimit(maximumBytes) {
+    while (totalBytes > maximumBytes && entries.size) {
+        const oldestKey = entries.keys().next().value;
+        totalBytes -= entries.get(oldestKey).size;
+        entries.delete(oldestKey);
+    }
+}
+
 export function createFileSignature(file) {
     return [file?.name, file?.size, file?.lastModified].join(":");
 }
@@ -28,6 +36,16 @@ export function createPageCacheKey(file, pageNumber, options = {}) {
         options.extractImages !== false ? "images" : "no-images",
         options.advancedVision !== false ? "advanced-vision" : "basic-vision",
         options.cleanEditableBackground !== false ? "clean-background" : "plain-background",
+        options.visionProvider || "auto",
+        options.visionEndpoint || "local-default",
+        options.visionVersion || "vision-v1",
+    ].join("|");
+}
+
+export function createDocumentResourceCacheKey(file, options = {}) {
+    return [
+        createFileSignature(file),
+        "document-resources",
         options.visionProvider || "auto",
         options.visionEndpoint || "local-default",
         options.visionVersion || "vision-v1",
@@ -54,11 +72,35 @@ export function setCachedPage(key, page, maximumBytes = 96 * 1024 * 1024) {
     entries.set(key, { page, size, lastAccess: Date.now() });
     totalBytes += size;
 
-    while (totalBytes > maximumBytes && entries.size) {
-        const oldestKey = entries.keys().next().value;
-        totalBytes -= entries.get(oldestKey).size;
-        entries.delete(oldestKey);
+    enforceLimit(maximumBytes);
+}
+
+export function getCachedDocumentResources(key) {
+    const entry = entries.get(key);
+    if (!entry?.documentResources) return null;
+    entries.delete(key);
+    entries.set(key, { ...entry, lastAccess: Date.now() });
+    return entry.documentResources;
+}
+
+export function setCachedDocumentResources(
+    key,
+    documentResources,
+    maximumBytes = 96 * 1024 * 1024
+) {
+    const fonts = documentResources?.embeddedFonts || [];
+    const size = fonts.reduce(
+        (total, font) => total + (font.data?.byteLength || 0) + 1024,
+        4096
+    );
+    if (size > maximumBytes * 0.45) return;
+    if (entries.has(key)) {
+        totalBytes -= entries.get(key).size;
+        entries.delete(key);
     }
+    entries.set(key, { documentResources, size, lastAccess: Date.now() });
+    totalBytes += size;
+    enforceLimit(maximumBytes);
 }
 
 export function clearConversionCache(file) {
@@ -74,6 +116,8 @@ export function clearConversionCache(file) {
 export function getConversionCacheStats() {
     return {
         entries: entries.size,
+        pages: [...entries.values()].filter((entry) => entry.page).length,
+        documents: [...entries.values()].filter((entry) => entry.documentResources).length,
         megabytes: Number((totalBytes / 1024 / 1024).toFixed(2)),
     };
 }

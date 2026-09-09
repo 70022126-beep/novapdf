@@ -18,28 +18,42 @@ import numpy as np
 import cv2
 import pypdfium2 as pdfium
 import truststore
-from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from PIL import Image, UnidentifiedImageError
 
 try:
+    from .document_store import DocumentNotFoundError, DocumentStore
+    from .device_selector import select_device
     from .docx_quality import soffice_status, validate_docx_visual_quality
+    from .job_pool import BoundedJobPool, JobTimeoutError, QueueFullError
     from .native_background import render_clean_background
     from .native_docx import convert_native_pdf_to_docx, native_docx_status
     from .native_pdf import extract_native_document, parse_page_selection
+    from .resource_budget import resource_budget
+    from .session_security import SessionManager, is_allowed_origin
 except ImportError:  # uvicorn iniciado desde services/vision
+    from document_store import DocumentNotFoundError, DocumentStore
+    from device_selector import select_device
     from docx_quality import soffice_status, validate_docx_visual_quality
+    from job_pool import BoundedJobPool, JobTimeoutError, QueueFullError
     from native_background import render_clean_background
     from native_docx import convert_native_pdf_to_docx, native_docx_status
     from native_pdf import extract_native_document, parse_page_selection
+    from resource_budget import resource_budget
+    from session_security import SessionManager, is_allowed_origin
 
 
-APP_VERSION = "1.14.0"
+APP_VERSION = "1.16.0"
 MAX_IMAGE_PIXELS = int(os.getenv("NOVAPDF_VISION_MAX_PIXELS", "50000000"))
 MAX_PDF_BYTES = int(os.getenv("NOVAPDF_VISION_MAX_PDF_BYTES", str(256 * 1024 * 1024)))
 MAX_DOCX_BYTES = int(os.getenv("NOVAPDF_QUALITY_MAX_DOCX_BYTES", str(256 * 1024 * 1024)))
-MAX_NATIVE_PAGES = int(os.getenv("NOVAPDF_VISION_MAX_NATIVE_PAGES", "400"))
-DEVICE = os.getenv("NOVAPDF_VISION_DEVICE", "gpu:0")
+MAX_NATIVE_PAGES = int(os.getenv("NOVAPDF_VISION_MAX_NATIVE_PAGES", "1000"))
+MAX_QUALITY_PAGES = int(os.getenv("NOVAPDF_QUALITY_MAX_PAGES", "400"))
+DEVICE_REQUESTED = os.getenv("NOVAPDF_VISION_DEVICE", "auto")
+DEVICE_DECISION = select_device(DEVICE_REQUESTED)
+DEVICE = DEVICE_DECISION.selected
 LANGUAGE = os.getenv("NOVAPDF_VISION_LANGUAGE", "es")
 PRELOAD_MODELS = os.getenv("NOVAPDF_VISION_PRELOAD", "true").lower() not in {
     "0",
@@ -47,6 +61,25 @@ PRELOAD_MODELS = os.getenv("NOVAPDF_VISION_PRELOAD", "true").lower() not in {
     "no",
 }
 SERVICE_ROOT = Path(__file__).resolve().parent
+RUNTIME_ROOT = Path(
+    os.getenv("NOVAPDF_VISION_RUNTIME", str(SERVICE_ROOT / ".runtime"))
+).resolve()
+DOCUMENT_STORE_BYTES = int(
+    os.getenv("NOVAPDF_DOCUMENT_STORE_BYTES", str(2 * 1024 * 1024 * 1024))
+)
+DOCUMENT_TTL_SECONDS = int(os.getenv("NOVAPDF_DOCUMENT_TTL_SECONDS", str(24 * 60 * 60)))
+OCR_WORKERS = int(os.getenv("NOVAPDF_OCR_WORKERS", "1"))
+OCR_QUEUE_SIZE = int(os.getenv("NOVAPDF_OCR_QUEUE_SIZE", "4"))
+BACKGROUND_WORKERS = int(os.getenv("NOVAPDF_BACKGROUND_WORKERS", "2"))
+BACKGROUND_QUEUE_SIZE = int(os.getenv("NOVAPDF_BACKGROUND_QUEUE_SIZE", "8"))
+OCR_JOB_TIMEOUT_SECONDS = float(os.getenv("NOVAPDF_OCR_JOB_TIMEOUT_SECONDS", "180"))
+BACKGROUND_JOB_TIMEOUT_SECONDS = float(
+    os.getenv("NOVAPDF_BACKGROUND_JOB_TIMEOUT_SECONDS", "90")
+)
+SESSION_AUTH_ENABLED = os.getenv("NOVAPDF_SESSION_AUTH", "true").lower() not in {
+    "0", "false", "no"
+}
+SESSION_TTL_SECONDS = int(os.getenv("NOVAPDF_SESSION_TTL_SECONDS", "1800"))
 MODEL_CACHE_ROOT = Path(
     os.getenv("NOVAPDF_VISION_MODEL_CACHE", str(SERVICE_ROOT / ".models"))
 ).resolve()
@@ -60,6 +93,17 @@ _pipeline: Any | None = None
 _pipeline_error: str | None = None
 _pipeline_loading = False
 _pipeline_lock = threading.Lock()
+_device_fallback_reason: str | None = None
+document_store = DocumentStore(
+    RUNTIME_ROOT,
+    maximum_bytes=DOCUMENT_STORE_BYTES,
+    ttl_seconds=DOCUMENT_TTL_SECONDS,
+)
+ocr_jobs = BoundedJobPool("ocr", OCR_WORKERS, OCR_QUEUE_SIZE)
+background_jobs = BoundedJobPool(
+    "background", BACKGROUND_WORKERS, BACKGROUND_QUEUE_SIZE
+)
+session_manager = SessionManager(ttl_seconds=SESSION_TTL_SECONDS)
 
 
 def _plain(value: Any) -> Any:
@@ -75,30 +119,44 @@ def _plain(value: Any) -> Any:
 
 
 def _get_pipeline() -> Any:
-    global _pipeline, _pipeline_error
+    global _pipeline, _pipeline_error, DEVICE, _device_fallback_reason
     if _pipeline is not None:
         return _pipeline
     with _pipeline_lock:
         if _pipeline is not None:
             return _pipeline
-        try:
-            from paddleocr import PPStructureV3
+        from paddleocr import PPStructureV3
 
-            _pipeline = PPStructureV3(
-                lang=LANGUAGE,
-                device=DEVICE,
-                use_doc_orientation_classify=True,
-                use_doc_unwarping=True,
-                use_textline_orientation=True,
-                use_seal_recognition=True,
-                use_table_recognition=True,
-                use_formula_recognition=True,
-                use_region_detection=True,
-            )
-            _pipeline_error = None
-        except Exception as error:  # pragma: no cover - depende del runtime neuronal
-            _pipeline_error = f"{type(error).__name__}: {error}"
-            raise
+        attempted_devices = [DEVICE]
+        if DEVICE.startswith("gpu"):
+            attempted_devices.append("cpu")
+        last_error: Exception | None = None
+        for candidate in attempted_devices:
+            try:
+                _pipeline = PPStructureV3(
+                    lang=LANGUAGE,
+                    device=candidate,
+                    use_doc_orientation_classify=True,
+                    use_doc_unwarping=True,
+                    use_textline_orientation=True,
+                    use_seal_recognition=True,
+                    use_table_recognition=True,
+                    use_formula_recognition=True,
+                    use_region_detection=True,
+                )
+                if candidate != DEVICE:
+                    _device_fallback_reason = (
+                        f"{DEVICE} falló ({type(last_error).__name__}); se activó CPU."
+                    )
+                DEVICE = candidate
+                _pipeline_error = None
+                break
+            except Exception as error:  # pragma: no cover - depende del runtime neuronal
+                last_error = error
+                _pipeline = None
+        if _pipeline is None and last_error is not None:
+            _pipeline_error = f"{type(last_error).__name__}: {last_error}"
+            raise last_error
     return _pipeline
 
 
@@ -129,9 +187,30 @@ app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"https?://(127\.0\.0\.1|localhost)(:\d+)?",
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Accept", "Content-Type"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Accept", "Content-Type", "X-NovaPDF-Session"],
 )
+
+
+@app.middleware("http")
+async def protect_local_api(request: Request, call_next):
+    protected = request.url.path.startswith("/v1/") and request.url.path != "/v1/session"
+    if (
+        SESSION_AUTH_ENABLED
+        and protected
+        and request.method != "OPTIONS"
+        and not session_manager.validate(request.headers.get("X-NovaPDF-Session"))
+    ):
+        response = JSONResponse(
+            status_code=401,
+            content={"detail": "Sesión local ausente o expirada."},
+        )
+        origin = request.headers.get("Origin")
+        if origin and is_allowed_origin(origin):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Vary"] = "Origin"
+        return response
+    return await call_next(request)
 
 
 def _bbox_from_polygon(polygon: Any) -> list[float] | None:
@@ -362,6 +441,13 @@ def _normalize_result(raw: dict[str, Any], width: int, height: int) -> dict[str,
     }
 
 
+@app.post("/v1/session")
+def create_local_session(request: Request) -> dict[str, Any]:
+    if not is_allowed_origin(request.headers.get("Origin")):
+        raise HTTPException(status_code=403, detail="Origen no autorizado.")
+    return {**session_manager.issue(), "version": APP_VERSION}
+
+
 @app.get("/health")
 def health(load: bool = False) -> dict[str, Any]:
     if load and _pipeline is None:
@@ -377,6 +463,11 @@ def health(load: bool = False) -> dict[str, Any]:
         ),
         "version": APP_VERSION,
         "device": DEVICE,
+        "device_selection": {
+            **DEVICE_DECISION.as_dict(),
+            "active": DEVICE,
+            "fallback_reason": _device_fallback_reason,
+        },
         "language": LANGUAGE,
         "model_loaded": _pipeline is not None,
         "model_loading": _pipeline_loading,
@@ -387,8 +478,65 @@ def health(load: bool = False) -> dict[str, Any]:
             "ready" if document_renderer["available"] else "unavailable"
         ),
         "document_renderer": document_renderer,
+        "queues": {
+            "ocr": ocr_jobs.stats(),
+            "background": background_jobs.stats(),
+        },
+        "document_store": document_store.stats(),
+        "resource_budget": resource_budget(),
+        "session_auth": {
+            "enabled": SESSION_AUTH_ENABLED,
+            **session_manager.stats(),
+        },
         "error": _pipeline_error,
     }
+
+
+def _read_pdf_upload(pdf: UploadFile) -> bytes:
+    content = pdf.file.read(MAX_PDF_BYTES + 1)
+    if not content or len(content) > MAX_PDF_BYTES:
+        raise HTTPException(status_code=413, detail="El PDF supera el limite permitido.")
+    if not content.startswith(b"%PDF-"):
+        raise HTTPException(status_code=400, detail="Archivo PDF no valido.")
+    return content
+
+
+def _pdf_page_count(content: bytes) -> int:
+    try:
+        document = pdfium.PdfDocument(content)
+        page_total = len(document)
+        document.close()
+        return page_total
+    except Exception as error:
+        raise HTTPException(status_code=400, detail="No se pudo abrir el PDF de origen.") from error
+
+
+def _registered_pdf(document_id: str) -> bytes:
+    try:
+        return document_store.read(document_id)
+    except DocumentNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@app.post("/v1/documents")
+def register_document(pdf: UploadFile = File(...)) -> dict[str, Any]:
+    """Registra el PDF una sola vez y devuelve un id de contenido estable."""
+    content = _read_pdf_upload(pdf)
+    metadata = document_store.register(
+        content,
+        filename=pdf.filename or "document.pdf",
+        page_count=_pdf_page_count(content),
+    )
+    return {**metadata, "version": APP_VERSION}
+
+
+@app.delete("/v1/documents/{document_id}")
+def delete_document(document_id: str) -> dict[str, Any]:
+    try:
+        deleted = document_store.delete(document_id)
+    except DocumentNotFoundError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return {"document_id": document_id, "deleted": deleted, "version": APP_VERSION}
 
 
 @app.post("/v1/convert/native-docx")
@@ -396,20 +544,11 @@ def native_docx(
     pdf: UploadFile = File(...),
     pages: str = Form("all"),
 ) -> Response:
-    content = pdf.file.read(MAX_PDF_BYTES + 1)
-    if not content or len(content) > MAX_PDF_BYTES:
-        raise HTTPException(status_code=413, detail="El PDF supera el limite permitido.")
-    if not content.startswith(b"%PDF-"):
-        raise HTTPException(status_code=400, detail="Archivo PDF no valido.")
+    content = _read_pdf_upload(pdf)
     if not native_docx_status()["available"]:
         raise HTTPException(status_code=503, detail="El candidato DOCX nativo no esta instalado.")
 
-    try:
-        document = pdfium.PdfDocument(content)
-        page_total = len(document)
-        document.close()
-    except Exception as error:
-        raise HTTPException(status_code=400, detail="No se pudo abrir el PDF de origen.") from error
+    page_total = _pdf_page_count(content)
 
     page_indices = parse_page_selection(pages, page_total, MAX_NATIVE_PAGES)
     if not page_indices:
@@ -435,24 +574,20 @@ def native_docx(
     )
 
 
-@app.post("/v1/native-document")
-def native_document(
-    pdf: UploadFile = File(...),
-    pages: str = Form("all"),
-    include_tables: bool = Form(True),
-    include_fonts: bool = Form(True),
+def _native_document_result(
+    content: bytes,
+    pages: str = "all",
+    include_tables: bool = True,
+    include_fonts: bool = True,
+    font_scope: str = "document",
 ) -> dict[str, Any]:
-    content = pdf.file.read(MAX_PDF_BYTES + 1)
-    if not content or len(content) > MAX_PDF_BYTES:
-        raise HTTPException(status_code=413, detail="El PDF supera el limite permitido.")
-    if not content.startswith(b"%PDF-"):
-        raise HTTPException(status_code=400, detail="Archivo PDF no valido.")
     try:
         result = extract_native_document(
             content,
             pages=pages,
             include_tables=include_tables,
             include_fonts=include_fonts,
+            font_scope="document" if font_scope == "document" else "selection",
             maximum_pages=MAX_NATIVE_PAGES,
         )
         return {**result, "version": APP_VERSION}
@@ -463,18 +598,38 @@ def native_document(
         ) from error
 
 
-@app.post("/v1/native-background")
-def native_background(
+@app.post("/v1/native-document")
+def native_document(
     pdf: UploadFile = File(...),
-    page: int = Form(...),
-    dpi: int = Form(144),
-    padding_points: float = Form(1.25),
+    pages: str = Form("all"),
+    include_tables: bool = Form(True),
+    include_fonts: bool = Form(True),
+    font_scope: str = Form("document"),
+) -> dict[str, Any]:
+    return _native_document_result(
+        _read_pdf_upload(pdf), pages, include_tables, include_fonts, font_scope
+    )
+
+
+@app.post("/v1/documents/{document_id}/native-document")
+def registered_native_document(
+    document_id: str,
+    pages: str = Form("all"),
+    include_tables: bool = Form(True),
+    include_fonts: bool = Form(True),
+    font_scope: str = Form("document"),
+) -> dict[str, Any]:
+    return _native_document_result(
+        _registered_pdf(document_id), pages, include_tables, include_fonts, font_scope
+    )
+
+
+def _native_background_response(
+    content: bytes,
+    page: int,
+    dpi: int,
+    padding_points: float,
 ) -> Response:
-    content = pdf.file.read(MAX_PDF_BYTES + 1)
-    if not content or len(content) > MAX_PDF_BYTES:
-        raise HTTPException(status_code=413, detail="El PDF supera el limite permitido.")
-    if not content.startswith(b"%PDF-"):
-        raise HTTPException(status_code=400, detail="Archivo PDF no valido.")
     if page < 1:
         raise HTTPException(status_code=400, detail="La pagina debe ser mayor que cero.")
     if dpi < 96 or dpi > 180:
@@ -482,12 +637,18 @@ def native_background(
     if padding_points < 0 or padding_points > 4:
         raise HTTPException(status_code=400, detail="El margen de limpieza no es valido.")
     try:
-        result, metadata = render_clean_background(
+        result, metadata = background_jobs.run(
+            render_clean_background,
             content,
             page - 1,
             dpi=dpi,
             padding_points=padding_points,
+            timeout_seconds=BACKGROUND_JOB_TIMEOUT_SECONDS,
         )
+    except QueueFullError as error:
+        raise HTTPException(status_code=429, detail=str(error)) from error
+    except JobTimeoutError as error:
+        raise HTTPException(status_code=504, detail=str(error)) from error
     except IndexError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     except ValueError as error:
@@ -511,6 +672,31 @@ def native_background(
             "X-NovaPDF-Masked-Ratio": str(metadata["masked_pixel_ratio"]),
             "X-NovaPDF-Background-Strategy": str(metadata["strategy"]),
         },
+    )
+
+
+@app.post("/v1/native-background")
+def native_background(
+    pdf: UploadFile = File(...),
+    page: int = Form(...),
+    dpi: int = Form(144),
+    padding_points: float = Form(1.25),
+) -> Response:
+    """Compatibilidad: recibe el PDF completo cuando el cliente no usa registro."""
+    return _native_background_response(
+        _read_pdf_upload(pdf), page, dpi, padding_points
+    )
+
+
+@app.post("/v1/documents/{document_id}/native-background")
+def registered_native_background(
+    document_id: str,
+    page: int = Form(...),
+    dpi: int = Form(144),
+    padding_points: float = Form(1.25),
+) -> Response:
+    return _native_background_response(
+        _registered_pdf(document_id), page, dpi, padding_points
     )
 
 
@@ -544,7 +730,7 @@ def docx_quality(
     source_page_indices = parse_page_selection(pages, source_page_total)
     if not source_page_indices:
         raise HTTPException(status_code=400, detail="El rango de paginas esta vacio.")
-    if len(source_page_indices) > MAX_NATIVE_PAGES:
+    if len(source_page_indices) > MAX_QUALITY_PAGES:
         raise HTTPException(status_code=413, detail="Demasiadas paginas para validar.")
     try:
         result = validate_docx_visual_quality(
@@ -580,23 +766,29 @@ def layout(
         raise HTTPException(status_code=413, detail="La pagina supera el limite de pixeles.")
 
     try:
-        pipeline = _get_pipeline()
-        with _pipeline_lock:
-            results = pipeline.predict(
-                np.asarray(pil_image),
-                use_doc_orientation_classify=True,
-                use_doc_unwarping=True,
-                use_textline_orientation=True,
-                use_seal_recognition=True,
-                use_table_recognition=True,
-                use_formula_recognition=True,
-                use_region_detection=True,
-                format_block_content=True,
-                use_wired_table_cells_trans_to_html=True,
-                use_wireless_table_cells_trans_to_html=True,
-                use_ocr_results_with_table_cells=True,
-            )
-            result = next(iter(results), None)
+        def predict() -> Any:
+            pipeline = _get_pipeline()
+            with _pipeline_lock:
+                results = pipeline.predict(
+                    np.asarray(pil_image),
+                    use_doc_orientation_classify=True,
+                    use_doc_unwarping=True,
+                    use_textline_orientation=True,
+                    use_seal_recognition=True,
+                    use_table_recognition=True,
+                    use_formula_recognition=True,
+                    use_region_detection=True,
+                    format_block_content=True,
+                    use_wired_table_cells_trans_to_html=True,
+                    use_wireless_table_cells_trans_to_html=True,
+                    use_ocr_results_with_table_cells=True,
+                )
+                return next(iter(results), None)
+
+        result = ocr_jobs.run(
+            predict,
+            timeout_seconds=OCR_JOB_TIMEOUT_SECONDS,
+        )
         if result is None:
             raise RuntimeError("El modelo no devolvio resultados.")
         raw = _plain(result.json)
@@ -622,6 +814,10 @@ def layout(
             [region for region in normalized["regions"] if region["id"].startswith("visual-mark-")]
         )
         return normalized
+    except QueueFullError as error:
+        raise HTTPException(status_code=429, detail=str(error)) from error
+    except JobTimeoutError as error:
+        raise HTTPException(status_code=504, detail=str(error)) from error
     except HTTPException:
         raise
     except Exception as error:  # pragma: no cover - depende del runtime neuronal

@@ -164,6 +164,19 @@ if (!files.length) {
         requestedLayout,
         cleanBackgrounds,
         cleanBackgroundPageCount: pages.filter((page) => page.renderedPage).length,
+        typography: {
+            scope: extracted.fontScope || null,
+            analyzedPageCount: extracted.fontPageCount || 0,
+            resourceCount: (extracted.embeddedFonts || []).length,
+            embeddableFaceCount: (extracted.embeddedFonts || []).filter(
+                (font) => font.embedding === "editable" && font.data?.length
+            ).length,
+            metricSubstitutionFaceCount: (extracted.embeddedFonts || []).filter(
+                (font) => font.embedding !== "editable" || !font.data?.length
+            ).length,
+            families: [...new Set((extracted.embeddedFonts || []).map((font) => font.name))].sort(),
+            variants: [...new Set((extracted.embeddedFonts || []).map((font) => font.style || "Regular"))].sort(),
+        },
         generationMs: rendered.generationMs,
         outputBytes: rendered.blob.size,
         quality,
@@ -211,6 +224,7 @@ if (!files.length) {
         pages: report.pages.length,
         generationMs: report.generationMs,
         outputBytes: report.outputBytes,
+        typography: report.typography,
         visualScore: report.quality.visualScore,
         pageCountMatch: report.quality.pageCountMatch,
         sourcePageCount: report.quality.sourcePageCount,

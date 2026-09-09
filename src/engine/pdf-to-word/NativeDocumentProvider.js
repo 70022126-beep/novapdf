@@ -1,4 +1,5 @@
 import { buildLinesFromWords, countCharacters } from "./PageContentNormalizer.js";
+import { authorizedLocalFetch } from "../service/LocalServiceSession.js";
 
 const DEFAULT_LAYOUT_ENDPOINT = "http://127.0.0.1:8765/v1/layout";
 
@@ -112,7 +113,7 @@ function decodeBase64Bytes(value) {
 function normalizeEmbeddedFont(font = {}, index = 0) {
     const data = decodeBase64Bytes(font.data_base64 ?? font.dataBase64);
     const name = cleanText(font.name || font.source_name || font.sourceName);
-    if (!name || !data?.length || data.length > 2 * 1024 * 1024) return null;
+    if (!name || (data?.length || 0) > 2 * 1024 * 1024) return null;
     const rawWidths = font.character_widths_em ?? font.characterWidthsEm;
     const characterWidthsEm = Object.fromEntries(Object.entries(
         rawWidths && typeof rawWidths === "object" ? rawWidths : {}
@@ -120,18 +121,44 @@ function normalizeEmbeddedFont(font = {}, index = 0) {
         Number.isFinite(Number(width)) && Number(width) >= 0.02 && Number(width) <= 4
     ).slice(0, 512).map(([codePoint, width]) => [codePoint, Number(width)]));
     const spaceAdvanceEm = Number(font.space_advance_em ?? font.spaceAdvanceEm);
+    const metric = (snakeName, camelName) => {
+        const value = Number(font[snakeName] ?? font[camelName]);
+        return Number.isFinite(value) && value >= 0 && value <= 4 ? value : undefined;
+    };
+    const aliases = [...new Set([
+        name,
+        font.source_name ?? font.sourceName,
+        ...(Array.isArray(font.aliases) ? font.aliases : []),
+    ].map(cleanText).filter(Boolean))];
+    const embedding = cleanText(font.embedding || (data?.length ? "editable" : "restricted"));
+    const hasMetrics = Object.keys(characterWidthsEm).length > 0 ||
+        [
+            font.ascent_em ?? font.ascentEm,
+            font.descent_em ?? font.descentEm,
+            font.line_gap_em ?? font.lineGapEm,
+            font.cap_height_em ?? font.capHeightEm,
+            font.x_height_em ?? font.xHeightEm,
+        ].some((value) => Number.isFinite(Number(value)));
+    if (!data?.length && !hasMetrics) return null;
     return {
         id: font.sha256 || `embedded-font-${index + 1}`,
         name,
         sourceName: cleanText(font.source_name ?? font.sourceName),
+        aliases,
         style: cleanText(font.style || "Regular"),
         unitsPerEm: Number.isFinite(Number(font.units_per_em ?? font.unitsPerEm))
             ? Number(font.units_per_em ?? font.unitsPerEm) : undefined,
         spaceAdvanceEm: Number.isFinite(spaceAdvanceEm) && spaceAdvanceEm >= 0.02 && spaceAdvanceEm <= 4
             ? spaceAdvanceEm : undefined,
         characterWidthsEm,
+        ascentEm: metric("ascent_em", "ascentEm"),
+        descentEm: metric("descent_em", "descentEm"),
+        lineGapEm: metric("line_gap_em", "lineGapEm"),
+        capHeightEm: metric("cap_height_em", "capHeightEm"),
+        xHeightEm: metric("x_height_em", "xHeightEm"),
+        hasKerning: Boolean(font.has_kerning ?? font.hasKerning),
         extension: cleanText(font.extension || "ttf").toLowerCase(),
-        embedding: cleanText(font.embedding || "editable"),
+        embedding,
         data,
     };
 }
@@ -388,7 +415,8 @@ export function normalizeStructuredNativePage(page = {}, dimensions = {}) {
             direction: word.direction || "ltr",
             embeddedFont: Boolean(word.embedded_font ?? word.embeddedFont),
             characterSpacing: number(word.character_spacing ?? word.characterSpacing) * scaleX,
-            kerning: number(word.kerning),
+            kerning: word.kerning === undefined || word.kerning === null
+                ? undefined : number(word.kerning),
             sourceOrder: number(word.source_order ?? word.sourceOrder, index),
         };
     }).filter(Boolean);
@@ -476,23 +504,31 @@ export async function extractNativeDocumentStructure(
         pages = [],
         endpoint = DEFAULT_LAYOUT_ENDPOINT,
         includeFonts = true,
+        fontScope = "document",
         signal,
         timeoutMs = 45_000,
+        documentId,
     } = {}
 ) {
-    if (!file || !isLoopbackEndpoint(endpoint)) return null;
-    const nativeEndpoint = new URL("/v1/native-document", endpoint).toString();
+    if ((!file && !documentId) || !isLoopbackEndpoint(endpoint)) return null;
+    const nativeEndpoint = documentId
+        ? new URL(
+            `/v1/documents/${encodeURIComponent(documentId)}/native-document`,
+            endpoint
+        ).toString()
+        : new URL("/v1/native-document", endpoint).toString();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     const abort = () => controller.abort();
     signal?.addEventListener("abort", abort, { once: true });
     try {
         const form = new FormData();
-        form.append("pdf", file, file.name || "document.pdf");
+        if (!documentId) form.append("pdf", file, file.name || "document.pdf");
         form.append("pages", pages.length ? pages.join(",") : "all");
         form.append("include_tables", "true");
         form.append("include_fonts", includeFonts ? "true" : "false");
-        const response = await fetch(nativeEndpoint, {
+        form.append("font_scope", fontScope === "selection" ? "selection" : "document");
+        const response = await authorizedLocalFetch(nativeEndpoint, {
             method: "POST",
             body: form,
             headers: { Accept: "application/json" },
@@ -506,6 +542,8 @@ export async function extractNativeDocumentStructure(
             provider: payload.provider || "pdfplumber",
             version: payload.version || null,
             pageCount: number(payload.page_count),
+            fontScope: payload.font_scope || null,
+            fontPageCount: number(payload.font_page_count),
             embeddedFonts: (payload.fonts || [])
                 .map(normalizeEmbeddedFont)
                 .filter(Boolean),

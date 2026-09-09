@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NovaPDF - Corpus OCR privado</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; background:#0a1020; color:#e7ecff; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; }
+    button,input,select,textarea { font:inherit; }
+    button { border:1px solid #4d63a8; background:#182650; color:#fff; border-radius:8px; padding:8px 12px; cursor:pointer; }
+    button.primary { background:#3267f6; border-color:#3267f6; }
+    button.danger { background:#401a27; border-color:#8f3650; }
+    header { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:12px; padding:10px 16px; background:#0e1730; border-bottom:1px solid #25345e; }
+    header h1 { margin:0; font-size:17px; }
+    .progress { margin-left:auto; color:#aab9e8; }
+    main { display:grid; grid-template-columns:minmax(480px,1fr) 440px; min-height:calc(100vh - 58px); }
+    .viewer { padding:18px; overflow:auto; background:#070b14; }
+    .canvas { position:relative; width:min(100%,1100px); margin:auto; line-height:0; user-select:none; }
+    .canvas img { width:100%; height:auto; display:block; box-shadow:0 10px 40px #000a; }
+    .overlay { position:absolute; inset:0; cursor:crosshair; }
+    .box { position:absolute; border:2px solid #37d6ff; background:#37d6ff17; pointer-events:auto; cursor:pointer; }
+    .box.selected { border-color:#ffcc44; background:#ffcc4425; }
+    .box span { position:absolute; top:-22px; left:-2px; padding:2px 5px; color:#05101c; background:#37d6ff; font-size:11px; line-height:16px; white-space:nowrap; }
+    .box.selected span { background:#ffcc44; }
+    aside { border-left:1px solid #25345e; padding:14px; overflow:auto; max-height:calc(100vh - 58px); }
+    .panel { background:#111b37; border:1px solid #283964; border-radius:12px; padding:12px; margin-bottom:12px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    label { display:grid; gap:5px; margin-bottom:9px; color:#aab9e8; font-size:12px; }
+    input,select,textarea { width:100%; border:1px solid #334675; border-radius:7px; padding:8px; color:#fff; background:#0a1227; }
+    textarea { min-height:170px; resize:vertical; line-height:1.45; }
+    .regions { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+    .regions button { padding:5px 8px; }
+    .regions button.active { background:#795b00; border-color:#ffcc44; }
+    .muted { color:#8796c3; font-size:12px; line-height:1.4; }
+    .status { min-height:20px; color:#7ee3a5; font-size:13px; }
+    .status.error { color:#ff8ca6; }
+    .toolbar { display:flex; gap:7px; flex-wrap:wrap; }
+    @media (max-width:1000px) { main { grid-template-columns:1fr; } aside { max-height:none; border-left:0; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NovaPDF - Anotación OCR privada</h1>
+    <button id="previous">Anterior</button><button id="next">Siguiente</button>
+    <select id="samplePicker" aria-label="Muestra"></select>
+    <span class="progress" id="progress"></span>
+  </header>
+  <main>
+    <section class="viewer"><div class="canvas" id="canvas"><img id="pageImage" alt="Página del corpus"><div class="overlay" id="overlay"></div></div></section>
+    <aside>
+      <div class="panel">
+        <div class="row">
+          <label>Categoría<select id="category"><option value="clean_scan">Escaneo limpio</option><option value="noisy_scan">Ruido/manchas/sellos</option><option value="form_table">Formulario/tabla</option><option value="hybrid">Híbrida</option></select></label>
+          <label>Revisión de categoría<select id="categoryReview"><option value="pending">Pendiente</option><option value="human_verified">Confirmada por persona</option></select></label>
+        </div>
+        <label>Etiquetas separadas por coma<input id="tags" placeholder="rotated, photo, stamp"></label>
+        <p class="muted">Arrastra sobre la imagen para crear una región. Divide encabezado, cuerpo, tabla, sello o texto rotado cuando necesiten estrategias distintas.</p>
+      </div>
+      <div class="panel">
+        <div class="toolbar"><button id="addFull">Región completa</button><button id="deleteRegion" class="danger">Eliminar región</button></div>
+        <div class="regions" id="regionTabs"></div>
+        <div class="row">
+          <label>Tipo<select id="regionType"><option>text</option><option>clean_text</option><option>table</option><option>form</option><option>stamp</option><option>seal</option><option>rotated</option><option>photo</option><option>handwriting</option></select></label>
+          <label>Idioma<input id="language" value="spa"></label>
+        </div>
+        <div class="row"><label>Orden<input id="readingOrder" type="number" min="1"></label><label><span>Excluir</span><input id="ignore" type="checkbox"></label></div>
+        <label>Transcripción humana literal<textarea id="text" spellcheck="false" placeholder="Escribe exactamente lo visible; no corrijas errores del documento."></textarea></label>
+      </div>
+      <div class="panel">
+        <div class="row"><label>Anotador<input id="annotator"></label><label>Revisor<input id="reviewer"></label></div>
+        <label>Estado<select id="annotationStatus"><option value="draft">Borrador</option><option value="human_verified">Verificada por dos personas</option></select></label>
+        <div class="toolbar"><button id="save" class="primary">Guardar</button></div>
+        <p id="status" class="status"></p>
+      </div>
+    </aside>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let state, index = 0, selectedRegion = 0, dragStart = null;
+    const fields = ["regionType","language","readingOrder","ignore","text"];
+    function sample(){ return state.samples[index]; }
+    function region(){ return sample().annotation.regions[selectedRegion]; }
+    function saveRegionFields(){
+      const r=region(); if(!r)return;
+      r.type=$("regionType").value; r.language=$("language").value; r.readingOrder=Number($("readingOrder").value)||1; r.ignore=$("ignore").checked; r.text=$("text").value;
+    }
+    function loadRegionFields(){
+      const r=region(); fields.forEach(id=>$(id).disabled=!r); if(!r)return;
+      $("regionType").value=r.type||"text"; $("language").value=r.language||"spa"; $("readingOrder").value=r.readingOrder||selectedRegion+1; $("ignore").checked=!!r.ignore; $("text").value=r.text||"";
+    }
+    function renderBoxes(){
+      const overlay=$("overlay"); overlay.innerHTML="";
+      sample().annotation.regions.forEach((r,i)=>{ const b=r.bbox, el=document.createElement("div"); el.className="box"+(i===selectedRegion?" selected":""); Object.assign(el.style,{left:b.x*100+"%",top:b.y*100+"%",width:b.width*100+"%",height:b.height*100+"%"}); el.innerHTML=`<span>${i+1} · ${r.type}</span>`; el.onclick=(event)=>{event.stopPropagation(); saveRegionFields(); selectedRegion=i; render();}; overlay.append(el); });
+    }
+    function renderTabs(){ const tabs=$("regionTabs"); tabs.innerHTML=""; sample().annotation.regions.forEach((r,i)=>{const b=document.createElement("button"); b.textContent=`${i+1} ${r.type}`; b.className=i===selectedRegion?"active":""; b.onclick=()=>{saveRegionFields();selectedRegion=i;render();};tabs.append(b);}); }
+    function render(){ const s=sample(); $("samplePicker").value=String(index); $("pageImage").src=s.imageUrl; $("category").value=s.category; $("categoryReview").value=s.categoryReview; $("tags").value=(s.tags||[]).join(", "); $("annotator").value=s.annotation.annotator||""; $("reviewer").value=s.annotation.reviewer||""; $("annotationStatus").value=s.annotation.status||"draft"; $("progress").textContent=`${index+1}/${state.samples.length} · ${state.samples.filter(x=>x.annotation.status==="human_verified").length} verificadas`; renderTabs(); renderBoxes(); loadRegionFields(); }
+    function addRegion(box={x:0,y:0,width:1,height:1}){saveRegionFields(); const list=sample().annotation.regions; list.push({id:`region-${String(list.length+1).padStart(3,"0")}`,type:"text",coordinateSpace:"normalized",bbox:box,language:"spa",readingOrder:list.length+1,text:"",ignore:false,cells:[]});selectedRegion=list.length-1;render();}
+    async function save(){ saveRegionFields(); const s=sample(); s.category=$("category").value;s.categoryReview=$("categoryReview").value;s.tags=$("tags").value.split(",").map(x=>x.trim()).filter(Boolean);s.annotation.annotator=$("annotator").value;s.annotation.reviewer=$("reviewer").value;s.annotation.status=$("annotationStatus").value; const status=$("status");status.className="status";status.textContent="Guardando..."; const response=await fetch(`/api/save/${encodeURIComponent(s.id)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({category:s.category,categoryReview:s.categoryReview,tags:s.tags,annotation:s.annotation})});const result=await response.json();if(!response.ok){status.className="status error";status.textContent=result.error||"No se pudo guardar.";return;}status.textContent="Guardado correctamente.";render();}
+    $("previous").onclick=()=>{saveRegionFields();index=(index-1+state.samples.length)%state.samples.length;selectedRegion=0;render();}; $("next").onclick=()=>{saveRegionFields();index=(index+1)%state.samples.length;selectedRegion=0;render();}; $("samplePicker").onchange=(e)=>{saveRegionFields();index=Number(e.target.value);selectedRegion=0;render();}; $("addFull").onclick=()=>addRegion(); $("deleteRegion").onclick=()=>{const list=sample().annotation.regions;if(list.length<=1)return;list.splice(selectedRegion,1);selectedRegion=Math.max(0,selectedRegion-1);render();}; $("save").onclick=()=>save().catch(e=>{$("status").className="status error";$("status").textContent=e.message;});
+    $("overlay").onpointerdown=(e)=>{if(e.target!==$("overlay"))return;const r=e.currentTarget.getBoundingClientRect();dragStart={x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height};}; $("overlay").onpointerup=(e)=>{if(!dragStart)return;const r=e.currentTarget.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height,left=Math.max(0,Math.min(dragStart.x,x)),top=Math.max(0,Math.min(dragStart.y,y)),right=Math.min(1,Math.max(dragStart.x,x)),bottom=Math.min(1,Math.max(dragStart.y,y));dragStart=null;if(right-left>.01&&bottom-top>.01)addRegion({x:left,y:top,width:right-left,height:bottom-top});};
+    document.addEventListener("keydown",e=>{if(e.target.matches("input,textarea,select"))return;if(e.key==="ArrowRight")$("next").click();if(e.key==="ArrowLeft")$("previous").click();});
+    fetch("/api/state").then(r=>r.json()).then(data=>{state=data;data.samples.forEach((s,i)=>{const o=document.createElement("option");o.value=i;o.textContent=`${s.id} · ${s.category} · ${s.annotation.status}`;$("samplePicker").append(o);});render();}).catch(e=>{document.body.textContent=e.message;});
+  </script>
+</body>
+</html>

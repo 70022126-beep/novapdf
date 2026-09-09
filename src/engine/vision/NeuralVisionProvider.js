@@ -308,7 +308,7 @@ async function requestNeuralLayout(
         form.append("page_width", String(dimensions.width));
         form.append("page_height", String(dimensions.height));
         form.append("coordinate_space", "page-points");
-        const response = await fetch(endpoint, {
+        const response = await authorizedLocalFetch(endpoint, {
             method: "POST",
             body: form,
             signal: controller.signal,
@@ -379,3 +379,4 @@ export function resetVisionProviderCircuit() {
 }
 
 export { DEFAULT_ENDPOINT as DEFAULT_NEURAL_VISION_ENDPOINT };
+import { authorizedLocalFetch } from "../service/LocalServiceSession.js";

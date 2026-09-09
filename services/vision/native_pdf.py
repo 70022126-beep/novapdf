@@ -56,7 +56,7 @@ def _font_style_name(data: bytes) -> str:
 
 
 def _font_character_metrics(data: bytes, characters: set[str] | None = None) -> dict[str, Any]:
-    """Return portable horizontal advances from the embedded OpenType face."""
+    """Return portable horizontal and vertical metrics from an OpenType face."""
     try:
         from fontTools.ttLib import TTFont
 
@@ -80,6 +80,36 @@ def _font_character_metrics(data: bytes, characters: set[str] | None = None) -> 
                 "units_per_em": units_per_em,
                 "character_widths_em": widths,
             }
+            hhea = font.get("hhea")
+            os2 = font.get("OS/2")
+            ascent = int(
+                getattr(os2, "sTypoAscender", 0)
+                or getattr(hhea, "ascent", 0)
+                or 0
+            )
+            descent = abs(int(
+                getattr(os2, "sTypoDescender", 0)
+                or getattr(hhea, "descent", 0)
+                or 0
+            ))
+            line_gap = int(
+                getattr(os2, "sTypoLineGap", 0)
+                or getattr(hhea, "lineGap", 0)
+                or 0
+            )
+            cap_height = int(getattr(os2, "sCapHeight", 0) or 0)
+            x_height = int(getattr(os2, "sxHeight", 0) or 0)
+            for key, value in (
+                ("ascent_em", ascent),
+                ("descent_em", descent),
+                ("line_gap_em", line_gap),
+                ("cap_height_em", cap_height),
+                ("x_height_em", x_height),
+            ):
+                normalized = float(value) / units_per_em if value else 0.0
+                if 0 < normalized <= 4:
+                    result[key] = round(normalized, 6)
+            result["has_kerning"] = bool(font.get("kern") or font.get("GPOS"))
             if str(ord(" ")) in widths:
                 result["space_advance_em"] = widths[str(ord(" "))]
             return result
@@ -110,18 +140,24 @@ def _font_allows_editable_embedding(data: bytes) -> bool:
 
 def _merge_font_subsets(fonts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Merge compatible PDF subsets so Word receives the complete glyph set."""
-    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
     for font in fonts:
         key = (
             str(font.get("name") or "").casefold(),
             str(font.get("style") or "Regular").casefold(),
             str(font.get("extension") or "").lower(),
+            str(font.get("embedding") or "editable").lower(),
         )
         grouped.setdefault(key, []).append(font)
 
     merged_fonts: list[dict[str, Any]] = []
-    for (_name, _style, extension), candidates in grouped.items():
+    for (_name, _style, extension, embedding), candidates in grouped.items():
         if len(candidates) < 2 or extension != "ttf":
+            merged_fonts.extend(candidates)
+            continue
+        if embedding != "editable":
+            # Restricted subsets are never merged into an embeddable face.
+            # Their metrics remain available independently for substitution.
             merged_fonts.extend(candidates)
             continue
         try:
@@ -146,6 +182,12 @@ def _merge_font_subsets(fonts: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "data": data,
                 "source_name": ",".join(dict.fromkeys(
                     str(font.get("source_name") or "") for font in candidates
+                )),
+                "aliases": list(dict.fromkeys(
+                    alias
+                    for font in candidates
+                    for alias in list(font.get("aliases") or [])
+                    if alias
                 )),
                 "merged_subset_count": len(candidates),
             })
@@ -175,12 +217,19 @@ def _extract_embeddable_fonts(
                 used_characters.update(document[page_index].get_text("text"))
             except Exception:
                 continue
-        xrefs = sorted({
-            int(font[0])
-            for page_index in page_indices
-            for font in document.get_page_fonts(page_index, full=True)
-            if font and int(font[0]) > 0
-        })
+        xref_aliases: dict[int, set[str]] = {}
+        for page_index in page_indices:
+            for font in document.get_page_fonts(page_index, full=True):
+                if not font or int(font[0]) <= 0:
+                    continue
+                xref = int(font[0])
+                aliases = xref_aliases.setdefault(xref, set())
+                aliases.update(
+                    str(value).strip()
+                    for value in font[3:5]
+                    if str(value or "").strip()
+                )
+        xrefs = sorted(xref_aliases)
         for xref in xrefs:
             try:
                 source_name, extension, _font_type, data = document.extract_font(xref)
@@ -193,17 +242,17 @@ def _extract_embeddable_fonts(
             digest = hashlib.sha256(data).hexdigest()
             if digest in seen or total_bytes + len(data) > maximum_total_bytes:
                 continue
-            if not _font_allows_editable_embedding(data):
-                continue
+            embedding = "editable" if _font_allows_editable_embedding(data) else "restricted"
             seen.add(digest)
             total_bytes += len(data)
             fonts.append({
                 "name": _font_family_name(data, source_name),
                 "source_name": source_name,
+                "aliases": sorted({source_name, *xref_aliases.get(xref, set())}),
                 "extension": extension,
                 "style": _font_style_name(data),
                 "data": data,
-                "embedding": "editable",
+                "embedding": embedding,
             })
     finally:
         document.close()
@@ -212,13 +261,17 @@ def _extract_embeddable_fonts(
         data = bytes(font.pop("data", b""))
         if not data:
             continue
-        result.append({
+        payload = {
             **font,
             **_font_character_metrics(data, used_characters),
             "sha256": hashlib.sha256(data).hexdigest(),
-            "data_base64": base64.b64encode(data).decode("ascii"),
             "byte_length": len(data),
-        })
+        }
+        # Restricted faces may be measured locally for substitution, but their
+        # bytes must never leave the extractor or be embedded in the DOCX.
+        if font.get("embedding") == "editable":
+            payload["data_base64"] = base64.b64encode(data).decode("ascii")
+        result.append(payload)
     return result
 
 
@@ -1127,6 +1180,7 @@ def extract_native_document(
     pages: str = "all",
     include_tables: bool = True,
     include_fonts: bool = True,
+    font_scope: str = "document",
     maximum_pages: int = 400,
 ) -> dict[str, Any]:
     import pdfplumber
@@ -1142,11 +1196,10 @@ def extract_native_document(
             "page_count": len(document.pages),
             "processed_page_count": len(results),
             "pages": results,
-            # Fonts are a document-level resource. Scan every page once so a
-            # batched conversion receives complete PDF subsets, including
-            # glyphs that only appear in later batches.
+            "font_scope": "document" if font_scope == "document" else "selection",
+            "font_page_count": len(document.pages) if font_scope == "document" else len(selected),
             "fonts": _extract_embeddable_fonts(
                 content,
-                list(range(len(document.pages))),
+                list(range(len(document.pages))) if font_scope == "document" else selected,
             ) if include_fonts else [],
         }

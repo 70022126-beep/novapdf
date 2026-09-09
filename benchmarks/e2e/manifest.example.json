@@ -1,0 +1,32 @@
+{
+  "version": "development",
+  "frontendUrl": "http://127.0.0.1:4173/pdf-to-word?e2e=1",
+  "visionEndpoint": "http://127.0.0.1:8765/v1/layout",
+  "startFrontend": true,
+  "startVision": true,
+  "headless": true,
+  "timeoutMs": 1800000,
+  "historyDirectory": "benchmarks/e2e/history",
+  "artifactsDirectory": "tmp/e2e",
+  "thresholds": {
+    "maximumPageRegression": 0.25,
+    "minimumTextCoverage": 99.9,
+    "minimumTableCellCoverage": 100,
+    "requirePageCountMatch": true,
+    "requireVisualValidation": true
+  },
+  "documents": [
+    {
+      "id": "digital-complex",
+      "pdf": "C:/path/to/document.pdf",
+      "previousDocx": "C:/path/to/previous-novapdf.docx",
+      "professionalDocx": "C:/path/to/professional-conversion.docx",
+      "mode": "editable",
+      "ocrMode": "auto",
+      "pageRange": "all",
+      "advancedVision": true,
+      "validateVisualQuality": true,
+      "autoQualityRetry": true
+    }
+  ]
+}

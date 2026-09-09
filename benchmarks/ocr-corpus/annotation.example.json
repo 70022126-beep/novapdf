@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "sampleId": "clean-001",
+  "status": "draft",
+  "annotator": "",
+  "reviewer": "",
+  "reviewedAt": null,
+  "sourceFingerprint": "sha256-del-pdf",
+  "image": {
+    "sha256": "sha256-de-la-imagen",
+    "width": 1819,
+    "height": 2572,
+    "dpi": 220,
+    "rotation": 0
+  },
+  "regions": [
+    {
+      "id": "region-001",
+      "type": "text",
+      "coordinateSpace": "normalized",
+      "bbox": { "x": 0.1, "y": 0.1, "width": 0.8, "height": 0.2 },
+      "language": "spa",
+      "readingOrder": 1,
+      "text": "Transcripción humana literal",
+      "ignore": false,
+      "cells": []
+    }
+  ]
+}

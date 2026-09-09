@@ -1,3 +1,5 @@
+import { authorizedLocalFetch } from "../service/LocalServiceSession.js";
+
 const DEFAULT_LAYOUT_ENDPOINT = "http://127.0.0.1:8765/v1/layout";
 
 function number(value, fallback = 0) {
@@ -56,6 +58,9 @@ export async function checkLocalDocumentService(
         const payload = await response.json();
         const renderer = payload.document_renderer || {};
         const nativeDocx = payload.native_docx_converter || {};
+        const queues = payload.queues || {};
+        const budget = payload.resource_budget || {};
+        const documentStore = payload.document_store || {};
         return {
             status:
                 payload.model_loaded || payload.status === "ready"
@@ -74,6 +79,17 @@ export async function checkLocalDocumentService(
             rendererAvailable: Boolean(renderer.available),
             renderer: cleanText(renderer.renderer) || "libreoffice",
             rendererVersion: cleanText(renderer.version) || null,
+            queues: {
+                ocr: queues.ocr || null,
+                background: queues.background || null,
+            },
+            resourceBudget: budget,
+            documentStore: {
+                documents: number(documentStore.documents),
+                bytes: number(documentStore.bytes),
+                maximumBytes: number(documentStore.maximum_bytes),
+                ttlSeconds: number(documentStore.ttl_seconds),
+            },
             error: cleanText(payload.error) || null,
         };
     } catch (error) {
@@ -150,7 +166,7 @@ export async function validateRenderedWordDocument(
         form.append("docx", docxBlob, "novapdf-output.docx");
         form.append("pages", pageNumbers.length ? pageNumbers.join(",") : "all");
         form.append("dpi", String(dpi));
-        const response = await fetch(qualityEndpoint, {
+        const response = await authorizedLocalFetch(qualityEndpoint, {
             method: "POST",
             body: form,
             headers: { Accept: "application/json" },

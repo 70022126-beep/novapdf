@@ -1,3 +1,5 @@
+import { authorizedLocalFetch } from "../service/LocalServiceSession.js";
+
 const DEFAULT_LAYOUT_ENDPOINT = "http://127.0.0.1:8765/v1/layout";
 
 function number(value, fallback = 0) {
@@ -109,7 +111,7 @@ export async function convertWithNativeDocxCandidate(
         const form = new FormData();
         form.append("pdf", sourcePDF, sourcePDF.name || "source.pdf");
         form.append("pages", pageNumbers.length ? pageNumbers.join(",") : "all");
-        const response = await fetch(candidateEndpoint, {
+        const response = await authorizedLocalFetch(candidateEndpoint, {
             method: "POST",
             body: form,
             headers: { Accept: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },

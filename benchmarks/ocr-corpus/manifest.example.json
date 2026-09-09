@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "corpusId": "novapdf-ocr-private-v1",
+  "renderDpi": 220,
+  "languages": ["spa", "eng"],
+  "historyDirectory": "../history",
+  "quotas": {
+    "clean_scan": 30,
+    "noisy_scan": 30,
+    "form_table": 20,
+    "hybrid": 20
+  },
+  "samples": [
+    {
+      "id": "clean-001",
+      "category": "clean_scan",
+      "categoryReview": "pending",
+      "sourcePdf": "C:/ruta/privada/documento.pdf",
+      "page": 1,
+      "rotation": 0,
+      "tags": ["clean", "printed"],
+      "image": "images/clean-001.png",
+      "annotation": "annotations/clean-001.json"
+    }
+  ]
+}

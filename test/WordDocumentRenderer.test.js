@@ -11,10 +11,25 @@ import {
     __parsePageNumberPartsForTests,
     __planNativeCellLinesForTests,
     __startsNumberedListForTests,
+    releaseWordDocumentResources,
     renderWordDocument,
     splitLineByComplexTableCells,
     splitLineByLargeMeasuredGaps,
 } from "../src/engine/pdf-to-word/WordDocumentRenderer.js";
+
+test("libera imágenes y fuentes pesadas después del empaquetado definitivo", () => {
+    const model = {
+        pages: [{
+            renderedPage: { data: new Uint8Array(8) },
+            images: [{ data: new Uint8Array(5) }],
+        }],
+        embeddedFonts: [{ data: new Uint8Array(7) }],
+    };
+    assert.equal(releaseWordDocumentResources(model), 20);
+    assert.equal(model.pages[0].renderedPage.data, null);
+    assert.equal(model.pages[0].images[0].data, null);
+    assert.equal(model.embeddedFonts[0].data, null);
+});
 
 test("separa una línea horizontal por celdas de una tabla compleja", () => {
     const words = [
@@ -970,6 +985,80 @@ test("consolida variantes regular y negrita en una sola familia Word", async () 
     assert.match(documentXml, /<w:b\/>/);
 });
 
+test("asocia alias PDF con la familia interna y conserva las cuatro variantes", async () => {
+    const variants = [
+        { text: "Regular", style: "Regular" },
+        { text: "Negrita", style: "Bold", bold: true },
+        { text: "Cursiva", style: "Italic", italic: true },
+        { text: "Mixta", style: "Bold Italic", bold: true, italic: true },
+    ];
+    const words = variants.map((variant, index) => ({
+        ...variant,
+        x: 60 + index * 75,
+        y: 100,
+        width: 65,
+        height: 14,
+        fontSize: 12,
+        fontFamily: "DocumentoDisplay",
+        source: "native-secondary",
+    }));
+    const embeddedFonts = variants.map((variant, index) => ({
+        name: "Familia Interna",
+        sourceName: `AAAAAA+DocumentoDisplay-${variant.style.replace(/\s/g, "")}`,
+        aliases: ["DocumentoDisplay"],
+        style: variant.style,
+        embedding: "editable",
+        data: new Uint8Array(64 + index * 32),
+    }));
+    const result = await renderWordDocument({
+        title: "Variantes tipográficas", mode: "editable", embeddedFonts,
+        pages: [{ pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+            content: { words, lines: [{ words, text: "Regular Negrita Cursiva Mixta", bbox: { x: 60, y: 100, width: 290, height: 14 } }] },
+            images: [], review: {}, analysis: { zones: [], tables: [], spatial: {}, statistics: {} } }],
+    });
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const fontTable = await archive.file("word/fontTable.xml").async("string");
+    const documentXml = await archive.file("word/document.xml").async("string");
+    const familyNode = fontTable.match(/<w:font w:name="Familia Interna">[\s\S]*?<\/w:font>/)?.[0] || "";
+
+    assert.match(familyNode, /w:embedRegular/);
+    assert.match(familyNode, /w:embedBold/);
+    assert.match(familyNode, /w:embedItalic/);
+    assert.match(familyNode, /w:embedBoldItalic/);
+    assert.equal(Object.keys(archive.files).filter((name) => /^word\/fonts\/font\d+\.odttf$/.test(name)).length, 4);
+    assert.ok((documentXml.match(/w:ascii="Familia Interna"/g) || []).length >= 4);
+    assert.match(documentXml, /<w:b\/>/);
+    assert.match(documentXml, /<w:i\/>/);
+});
+
+test("aplica kerning válido sin alterar la altura de línea calibrada", async () => {
+    const word = { text: "AVATAR", x: 80, y: 100, width: 39, height: 12, fontSize: 10,
+        fontFamily: "KerningAlias", source: "native-secondary" };
+    const renderXml = async (font) => {
+        const result = await renderWordDocument({
+            title: "Métricas verticales", mode: "editable", embeddedFonts: [font],
+            pages: [{ pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+                content: { words: [word], lines: [{ words: [word], text: word.text, bbox: word }] },
+                images: [], review: {}, analysis: { zones: [], tables: [], spatial: {}, statistics: {} } }],
+        });
+        const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+        return archive.file("word/document.xml").async("string");
+    };
+    const baseFont = {
+        name: "Familia Kerning Interna", aliases: ["KerningAlias"], style: "Regular",
+        embedding: "editable", data: new Uint8Array(64),
+        characterWidthsEm: { 65: 0.6, 86: 0.6, 84: 0.6, 82: 0.6 },
+        ascentEm: 0.8, descentEm: 0.2, lineGapEm: 0.2,
+    };
+    const measuredXml = await renderXml({ ...baseFont, hasKerning: true });
+    assert.match(measuredXml, /<w:kern w:val="20"\/>/);
+    assert.match(measuredXml, /<w:spacing[^>]*w:line="230"[^>]*w:lineRule="exact"/);
+
+    const neutralXml = await renderXml({ ...baseFont, hasKerning: false });
+    assert.doesNotMatch(neutralXml, /<w:kern/);
+    assert.doesNotMatch(neutralXml, /<w:kern w:val="0"\/>/);
+});
+
 test("no interpreta como estilo las sílabas internas del nombre de una fuente", async () => {
     const word = { text: "Nombre", x: 80, y: 100, width: 55, height: 16, fontSize: 12,
         fontFamily: "Blackadder ITC", source: "native-secondary" };
@@ -1153,6 +1242,28 @@ test("usa una sustitución métrica probada para Quicksand pequeña sin fuente i
     assert.match(documentXml, /w:w w:val="97"/);
 });
 
+test("una fuente restringida usa una sustitución determinista sin incrustar bytes", async () => {
+    const word = { text: "Contrato", x: 80, y: 100, width: 54, height: 12, fontSize: 10,
+        fontFamily: "FuentePrivada", source: "native-secondary" };
+    const result = await renderWordDocument({
+        title: "Sustitución restringida", mode: "editable",
+        embeddedFonts: [{
+            name: "Familia Interna Privada", aliases: ["FuentePrivada"],
+            embedding: "restricted", data: null,
+            characterWidthsEm: { 67: 0.62, 111: 0.5 },
+        }],
+        pages: [{ pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+            content: { words: [word], lines: [{ words: [word], text: word.text, bbox: word }] },
+            images: [], review: {}, analysis: { zones: [], tables: [], spatial: {}, statistics: {} } }],
+    });
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const documentXml = await archive.file("word/document.xml").async("string");
+
+    assert.equal(Object.keys(archive.files).filter((name) => /^word\/fonts\//.test(name)).length, 0);
+    assert.match(documentXml, /w:ascii="Arial"/);
+    assert.doesNotMatch(documentXml, /w:ascii="FuentePrivada"/);
+});
+
 test("une palabras cortadas con guion entre renglones consecutivos (dehyphenation)", () => {
     const lines = [
         {
@@ -1324,4 +1435,3 @@ test("emite líneas vectoriales horizontales como bordes de párrafo nativos", a
     assert.match(documentXml, /w:bottom w:val="single"/);
     assert.match(documentXml, /1E293B/);
 });
-

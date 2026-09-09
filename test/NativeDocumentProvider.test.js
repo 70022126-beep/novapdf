@@ -8,6 +8,9 @@ import {
     repairNativeTableText,
     selectBestNativeContent,
 } from "../src/engine/pdf-to-word/NativeDocumentProvider.js";
+import { primeLocalServiceSession } from "../src/engine/service/LocalServiceSession.js";
+
+primeLocalServiceSession("http://127.0.0.1:8765", "test-session", Date.now() + 60 * 60_000);
 
 test("conserva la necesidad de composición aunque una máscara no se pueda decodificar", () => {
     const page = normalizeStructuredNativePage({ width: 300, height: 200, images: [
@@ -32,12 +35,19 @@ test("transporta tipografías PDF autorizadas para incrustarlas en Word", async 
                 fonts: [{
                     name: "Quicksand Light",
                     source_name: "ABCDEF+Quicksand-Light",
+                    aliases: ["ABCDEF+Quicksand-Light", "TT0"],
                     extension: "ttf",
                     sha256: "font-sha",
                     style: "Bold",
                     units_per_em: 1000,
                     space_advance_em: 0.25,
                     character_widths_em: { 32: 0.25, 65: 0.6, broken: "x" },
+                    ascent_em: 0.8,
+                    descent_em: 0.2,
+                    line_gap_em: 0.1,
+                    cap_height_em: 0.7,
+                    x_height_em: 0.5,
+                    has_kerning: true,
                     embedding: "editable",
                     data_base64: "AQIDBA==",
                 }],
@@ -55,8 +65,53 @@ test("transporta tipografías PDF autorizadas para incrustarlas en Word", async 
         assert.equal(result.embeddedFonts[0].unitsPerEm, 1000);
         assert.equal(result.embeddedFonts[0].spaceAdvanceEm, 0.25);
         assert.deepEqual(result.embeddedFonts[0].characterWidthsEm, { 32: 0.25, 65: 0.6 });
+        assert.deepEqual(result.embeddedFonts[0].aliases, ["Quicksand Light", "ABCDEF+Quicksand-Light", "TT0"]);
+        assert.equal(result.embeddedFonts[0].ascentEm, 0.8);
+        assert.equal(result.embeddedFonts[0].descentEm, 0.2);
+        assert.equal(result.embeddedFonts[0].lineGapEm, 0.1);
+        assert.equal(result.embeddedFonts[0].capHeightEm, 0.7);
+        assert.equal(result.embeddedFonts[0].xHeightEm, 0.5);
+        assert.equal(result.embeddedFonts[0].hasKerning, true);
         assert.deepEqual([...result.embeddedFonts[0].data], [1, 2, 3, 4]);
         assert.equal(requestOptions.body.get("include_fonts"), "true");
+        assert.equal(requestOptions.body.get("font_scope"), "document");
+    } finally {
+        globalThis.fetch = previousFetch;
+    }
+});
+
+test("conserva métricas de sustitución sin transportar una fuente restringida", async () => {
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({
+        ok: true,
+        json: async () => ({
+            provider: "pdfplumber",
+            page_count: 1,
+            font_scope: "document",
+            font_page_count: 1,
+            pages: [],
+            fonts: [{
+                name: "Restricted Sans",
+                source_name: "AAAAAA+RestrictedSans-Regular",
+                aliases: ["F17"],
+                embedding: "restricted",
+                character_widths_em: { 65: 0.62 },
+                ascent_em: 0.82,
+                descent_em: 0.18,
+                has_kerning: true,
+            }],
+        }),
+    });
+    try {
+        const file = new Blob([new Uint8Array([1])], { type: "application/pdf" });
+        Object.defineProperty(file, "name", { value: "restringida.pdf" });
+        const result = await extractNativeDocumentStructure(file, { pages: [1] });
+        assert.equal(result.fontScope, "document");
+        assert.equal(result.fontPageCount, 1);
+        assert.equal(result.embeddedFonts.length, 1);
+        assert.equal(result.embeddedFonts[0].embedding, "restricted");
+        assert.equal(result.embeddedFonts[0].data, null);
+        assert.deepEqual(result.embeddedFonts[0].aliases, ["Restricted Sans", "AAAAAA+RestrictedSans-Regular", "F17"]);
     } finally {
         globalThis.fetch = previousFetch;
     }
@@ -77,6 +132,33 @@ test("permite omitir fuentes en lotes posteriores", async () => {
         Object.defineProperty(file, "name", { value: "prueba.pdf" });
         await extractNativeDocumentStructure(file, { pages: [2], includeFonts: false });
         assert.equal(requestOptions.body.get("include_fonts"), "false");
+    } finally {
+        globalThis.fetch = previousFetch;
+    }
+});
+
+test("reutiliza el documento registrado en todos los lotes nativos", async () => {
+    const previousFetch = globalThis.fetch;
+    let requestUrl;
+    let requestOptions;
+    globalThis.fetch = async (url, options) => {
+        requestUrl = String(url);
+        requestOptions = options;
+        return {
+            ok: true,
+            json: async () => ({ provider: "pdfplumber", page_count: 1000, pages: [] }),
+        };
+    };
+    try {
+        const documentId = "b".repeat(64);
+        const result = await extractNativeDocumentStructure(null, {
+            pages: [401, 402],
+            documentId,
+        });
+        assert.equal(result.pageCount, 1000);
+        assert.match(requestUrl, new RegExp(`/v1/documents/${documentId}/native-document$`));
+        assert.equal(requestOptions.body.has("pdf"), false);
+        assert.equal(requestOptions.body.get("pages"), "401,402");
     } finally {
         globalThis.fetch = previousFetch;
     }

@@ -11,11 +11,18 @@
     "benchmark:pdf": "node scripts/benchmark-pdf-classification.mjs",
     "benchmark:native": "node scripts/benchmark-native-extraction.mjs",
     "benchmark:docx-native": "node scripts/benchmark-native-docx.mjs",
+    "benchmark:e2e": "node scripts/benchmark-e2e.mjs",
+    "benchmark:ocr-corpus": "node scripts/benchmark-ocr-corpus.mjs",
+    "benchmark:scalability": "node --expose-gc scripts/benchmark-scalability.mjs",
+    "corpus:ocr:seed": "node scripts/create-ocr-corpus-manifest.mjs",
+    "corpus:ocr:prepare": "services\\vision\\.venv\\Scripts\\python.exe scripts/prepare_ocr_corpus.py",
+    "corpus:ocr:annotate": "node scripts/serve-ocr-corpus-annotator.mjs",
+    "audit:docx-fonts": "node scripts/audit-docx-fonts.mjs",
     "vision:start": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File services/vision/start.ps1",
     "vision:check": "node scripts/check-neural-vision.mjs",
     "vision:warmup": "node scripts/warm-neural-vision.mjs",
     "vision:runtime": "services\\vision\\.venv\\Scripts\\python.exe services/vision/check_runtime.py",
-    "vision:test": "services\\vision\\.venv\\Scripts\\python.exe -m unittest services.vision.test_app services.vision.test_table_text_audit",
+    "vision:test": "services\\vision\\.venv\\Scripts\\python.exe -m unittest services.vision.test_app services.vision.test_table_text_audit services.vision.test_scalability",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -40,6 +47,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+    "playwright-core": "^1.63.0",
     "vite": "^8.2.0"
   }
 }

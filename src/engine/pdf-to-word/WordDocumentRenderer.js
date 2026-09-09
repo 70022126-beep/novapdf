@@ -80,7 +80,8 @@ function embeddedFontFamilyFor(value) {
     const requested = canonicalFontFamily(value);
     if (!requested) return null;
     return activeEmbeddedFontFamilies.find(
-        (font) => font.family === requested
+        (font) => font.transportable &&
+            (font.family === requested || font.aliases?.includes(requested))
     )?.familyName || null;
 }
 
@@ -88,7 +89,9 @@ function embeddedFontFaceFor(value, { bold = false, italic = false } = {}) {
     const family = canonicalFontFamily(value);
     if (!family) return null;
     const requestedStyle = bold && italic ? "boldItalic" : bold ? "bold" : italic ? "italic" : "regular";
-    const faces = activeEmbeddedFontFamilies.filter((font) => font.family === family);
+    const faces = activeEmbeddedFontFamilies.filter(
+        (font) => font.family === family || font.aliases?.includes(family)
+    );
     return faces.find((font) => font.style === requestedStyle) ||
         faces.find((font) => font.style === "regular") || faces[0] || null;
 }
@@ -109,24 +112,43 @@ function normalizeEmbeddedFontsForDocument(fonts = []) {
         const name = cleanText(font?.name);
         const data = font?.data;
         const family = canonicalFontFamily(name);
+        const validData = data && Number.isFinite(Number(data.length)) &&
+            data.length >= 32 && data.length <= 2 * 1024 * 1024;
+        const transportable = Boolean(validData && (!font.embedding || font.embedding === "editable"));
+        const characterWidthsEm = font.characterWidthsEm && typeof font.characterWidthsEm === "object"
+            ? font.characterWidthsEm : {};
+        const hasPortableMetrics = Object.keys(characterWidthsEm).length > 0 ||
+            [font.ascentEm, font.descentEm, font.lineGapEm]
+                .some((value) => Number.isFinite(Number(value)));
         if (
             !name ||
             !family ||
             UNSAFE_EMBEDDED_FONT_FAMILIES.has(family) ||
-            !data ||
-            !Number.isFinite(Number(data.length)) ||
-            data.length < 32 ||
-            data.length > 2 * 1024 * 1024 ||
-            (font.embedding && font.embedding !== "editable")
+            (!transportable && !hasPortableMetrics)
         ) continue;
         const style = normalizeEmbeddedFontStyle(font);
         const key = `${family}:${style}`;
         const candidates = candidatesByFamilyAndStyle.get(key) || [];
         candidates.push({
-            name, data, family, style,
+            id: font.id || `${family}:${style}:${candidates.length}`,
+            name,
+            data: transportable ? data : null,
+            family,
+            aliases: [...new Set([
+                name,
+                font.sourceName,
+                ...(font.aliases || []),
+            ].map(canonicalFontFamily).filter(Boolean))],
+            style,
+            transportable,
             spaceAdvanceEm: Number(font.spaceAdvanceEm),
-            characterWidthsEm: font.characterWidthsEm && typeof font.characterWidthsEm === "object"
-                ? font.characterWidthsEm : {},
+            characterWidthsEm,
+            ascentEm: Number(font.ascentEm),
+            descentEm: Number(font.descentEm),
+            lineGapEm: Number(font.lineGapEm),
+            capHeightEm: Number(font.capHeightEm),
+            xHeightEm: Number(font.xHeightEm),
+            hasKerning: Boolean(font.hasKerning),
         });
         candidatesByFamilyAndStyle.set(key, candidates);
     }
@@ -134,12 +156,24 @@ function normalizeEmbeddedFontsForDocument(fonts = []) {
     // seguro aplicar uno de ellos a todos los textos: los glifos ausentes cambian
     // el ancho y pueden desplazar páginas completas. Solo incrustamos familias
     // inequívocas; las fragmentadas usan la sustitución métrica probada.
-    const unambiguous = [...candidatesByFamilyAndStyle.values()]
-        .filter((candidates) => candidates.length === 1)
-        .map(([font]) => font);
+    const unambiguous = [...candidatesByFamilyAndStyle.values()].flatMap((candidates) => {
+        const transportable = candidates.filter((font) => font.transportable);
+        if (transportable.length === 1) return transportable;
+        // Several unmerged PDF subsets cannot safely represent a complete
+        // family. Keep only their best metrics for calibrated substitution.
+        const metricCandidate = [...candidates].sort(
+            (first, second) =>
+                Object.keys(second.characterWidthsEm).length -
+                Object.keys(first.characterWidthsEm).length
+        )[0];
+        return Object.keys(metricCandidate?.characterWidthsEm || {}).length ||
+            Number.isFinite(metricCandidate?.ascentEm)
+            ? [{ ...metricCandidate, data: null, transportable: false }]
+            : [];
+    });
     const familyNames = new Map();
     for (const font of unambiguous) {
-        if (font.style === "regular" || !familyNames.has(font.family)) {
+        if (font.transportable && (font.style === "regular" || !familyNames.has(font.family))) {
             familyNames.set(font.family, font.name);
         }
     }
@@ -197,6 +231,15 @@ function nativeSpaceAdvanceFactor(word, fontFamily) {
     if (Number.isFinite(measured) && measured >= 0.12 && measured <= 0.8) return measured;
     if (/courier/i.test(fontFamily)) return 0.6;
     return /times/i.test(fontFamily) ? 0.25 : 0.278;
+}
+
+function nativeKerningThreshold(word, fontSize) {
+    const explicit = Number(word?.kerning);
+    if (Number.isFinite(explicit) && explicit > 0) return Math.round(explicit * 2);
+    const face = embeddedFontFaceFor(word?.fontFamily || word?.fontName, word);
+    return face?.transportable && face.hasKerning
+        ? Math.max(2, Math.round(fontSize * 2))
+        : undefined;
 }
 
 function embeddedFontFallback(name) {
@@ -274,6 +317,13 @@ function normalizeWordFontFamily(value, fontSize = 0) {
     if (!family) return "Arial";
     const embeddedFamily = embeddedFontFamilyFor(family);
     if (embeddedFamily) return embeddedFamily;
+    const measuredFace = embeddedFontFaceFor(family);
+    if (measuredFace && !measuredFace.transportable) {
+        // Licensing or incomplete subsets can prevent embedding. Use a
+        // deterministic Word family while retaining the source advances for
+        // horizontal calibration instead of asking Word to guess a fallback.
+        return embeddedFontFallback(family);
+    }
     if (/^quicksand/i.test(family)) {
         const sizeSpecificFallback = toNumber(fontSize) >= 30
             ? globalThis.process?.env?.NOVAPDF_QUICKSAND_FALLBACK_LARGE
@@ -520,9 +570,7 @@ function createWordRuns(words, {
             characterSpacing: Number.isFinite(Number(word.characterSpacing))
                 ? pointsToTwips(word.characterSpacing)
                 : undefined,
-            kern: Number.isFinite(Number(word.kerning))
-                ? Math.round(Number(word.kerning) * 2)
-                : undefined,
+            kern: nativeKerningThreshold(word, fontSize),
             highlight:
                 String(word.source || "").includes("ocr") &&
                 toNumber(word.confidence, 100) < 70
@@ -1841,6 +1889,10 @@ function createTextFrame(region, page) {
         words.map((word) => toNumber(word.fontSize, word.height * 0.82)).filter(Boolean)
     );
     const lineCount = Math.max(1, (region.lines || []).length);
+    // The PDF bbox and Word's exact line box do not share the same vertical
+    // origin. Keep the visually calibrated value; OpenType ascent/descent and
+    // lineGap are retained in the font resource for diagnostics, not applied
+    // blindly to paragraph height.
     const estimatedLineHeight = Math.max(7, (averageFontSize || 10) * 1.15);
     const usesSmallQuicksand =
         averageFontSize > 0 &&
@@ -2367,6 +2419,7 @@ export async function renderWordDocument(model, onProgress) {
     const embeddedFonts = globalThis.process?.env?.NOVAPDF_DISABLE_EMBEDDED_FONTS === "1"
         ? []
         : normalizeEmbeddedFontsForDocument(model.embeddedFonts);
+    const transportedFonts = embeddedFonts.filter((font) => font.transportable);
     const previousEmbeddedFontFamilies = activeEmbeddedFontFamilies;
     let document;
     activeEmbeddedFontFamilies = embeddedFonts;
@@ -2378,7 +2431,7 @@ export async function renderWordDocument(model, onProgress) {
                 model.mode === "fidelity"
                     ? "Documento convertido por NovaPDF en modo de máxima fidelidad."
                     : "Documento editable convertido por el motor híbrido de NovaPDF.",
-            fonts: embeddedFonts.map(({ transportName: name, data }) => ({ name, data })),
+            fonts: transportedFonts.map(({ transportName: name, data }) => ({ name, data })),
             styles: {
                 default: {
                     document: {
@@ -2397,13 +2450,34 @@ export async function renderWordDocument(model, onProgress) {
 
     onProgress?.({ percent: 97, stage: "packing", detail: "Empaquetando el archivo DOCX…" });
     const packedBlob = await Packer.toBlob(document);
-    const blob = await addEmbeddedFontFallbacks(packedBlob, embeddedFonts);
+    const blob = await addEmbeddedFontFallbacks(packedBlob, transportedFonts);
     const finishedAt = globalThis.performance?.now?.() ?? Date.now();
 
     return {
         blob,
         generationMs: Math.round(finishedAt - startedAt),
     };
+}
+
+export function releaseWordDocumentResources(model) {
+    let releasedBytes = 0;
+    for (const page of model?.pages || []) {
+        if (page.renderedPage?.data) {
+            releasedBytes += page.renderedPage.data.byteLength || page.renderedPage.data.length || 0;
+            page.renderedPage.data = null;
+        }
+        for (const image of page.images || []) {
+            if (!image?.data) continue;
+            releasedBytes += image.data.byteLength || image.data.length || 0;
+            image.data = null;
+        }
+    }
+    for (const font of model?.embeddedFonts || []) {
+        if (!font?.data) continue;
+        releasedBytes += font.data.byteLength || font.data.length || 0;
+        font.data = null;
+    }
+    return releasedBytes;
 }
 
 // Exportado para pruebas unitarias del renderizado de tablas.

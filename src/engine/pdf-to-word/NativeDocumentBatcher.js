@@ -9,6 +9,8 @@ export async function extractNativeDocumentInBatches(
         provider: null,
         version: null,
         pageCount: 0,
+        fontScope: null,
+        fontPageCount: 0,
         pages: new Map(),
         embeddedFonts: [],
         errors: [],
@@ -22,12 +24,20 @@ export async function extractNativeDocumentInBatches(
         onBatch?.({ completed: offset, total: uniquePages.length, batch });
         const result = await extractBatch(file, batch, {
             includeFonts: offset === 0,
+            // The first request inventories every page once. Subsequent page
+            // batches omit fonts, avoiding an O(batch count × document) scan.
+            fontScope: "document",
             batchIndex: Math.floor(offset / size),
         });
         if (result) {
             merged.provider ||= result.provider;
             merged.version ||= result.version;
             merged.pageCount = Math.max(merged.pageCount, Number(result.pageCount) || 0);
+            merged.fontScope ||= result.fontScope || null;
+            merged.fontPageCount = Math.max(
+                merged.fontPageCount,
+                Number(result.fontPageCount) || 0
+            );
             for (const [pageNumber, page] of result.pages || []) {
                 merged.pages.set(Number(pageNumber), page);
             }
