@@ -11,15 +11,29 @@ export function isComplexPositionedTable(table = {}) {
         table.structure?.raw?.length ||
         0
     );
-    // Word cannot reliably preserve dozens of very narrow columns as a native
-    // table: its minimum cell/paragraph geometry expands the page. In that
-    // case NovaPDF keeps the grid in the clean background and overlays the
-    // original text as editable positioned lines.
-    // Los formularios de muchas filas también sufren acumulación de márgenes
-    // internos y redondeos de altura en Word, aunque tengan pocas columnas.
-    // Conservar su cuadrícula como fondo y superponer texto por celda evita que
-    // el error crezca de fila en fila.
-    return columnCount > 12 || rowCount >= 24 || rowCount * columnCount >= 24;
+    // Las alturas EXACT y los anchos medidos permiten conservar como cuadrícula
+    // Word formularios de 39 x 4 y cronogramas de 10 x 19. Solo una tabla que
+    // supera límites prácticos de Word cae a placa visual con texto editable.
+    return columnCount > 31 || rowCount >= 64 || rowCount * columnCount >= 900;
+}
+
+export function isComplexFlowTable(table = {}) {
+    const columnCount = Number(
+        table.professional?.columnCount ||
+        table.structure?.columnCount ||
+        table.columnAnchors?.length ||
+        0
+    );
+    const rowCount = Number(
+        table.professional?.grid?.length ||
+        table.rows?.length ||
+        table.structure?.raw?.length ||
+        0
+    );
+
+    // En flujo se aplican los mismos límites: las tablas documentales grandes
+    // siguen siendo editables y no se degradan por un simple número de celdas.
+    return columnCount > 31 || rowCount >= 64 || rowCount * columnCount >= 900;
 }
 
 function estimatedTableCellCount(table = {}) {
@@ -44,6 +58,9 @@ export function needsCleanPositionedBackground({
     vectorObjectCount = 0,
     artworkRequiresCompositing = false,
 } = {}) {
+    if (editableLayout === "flow") {
+        return tables.some(isComplexFlowTable);
+    }
     if (editableLayout !== "positioned") return false;
     // Embedded bytes alone lose PDF transparency, clipping and stencil masks.
     // The clean plate resolves those operations while native text stays editable.
@@ -51,7 +68,7 @@ export function needsCleanPositionedBackground({
     if (tables.some(isComplexPositionedTable)) return true;
     if (
         tables.length > 1 &&
-        tables.reduce((total, table) => total + estimatedTableCellCount(table), 0) >= 18
+        tables.reduce((total, table) => total + estimatedTableCellCount(table), 0) >= 900
     ) {
         return true;
     }

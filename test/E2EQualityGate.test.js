@@ -74,3 +74,20 @@ test("la puerta no aprueba si la validación visual no está disponible", () => 
     assert.equal(result.passed, false);
     assert.equal(result.failures[0].code, "visual_validation_unavailable");
 });
+
+test("la puerta rechaza conversiones que exceden el presupuesto de memoria", () => {
+    const result = evaluateQualityGate({
+        currentVisual: { status: "completed", pageCountMatch: true, pages: [] },
+        currentDocx: { text: "texto", cells: 0 },
+        previousDocx: { text: "texto", cells: 0 },
+        performance: { peakBrowserHeapMB: 512.01 },
+        thresholds: { maximumPeakBrowserHeapMB: 512 },
+    });
+
+    assert.equal(result.passed, false);
+    assert.deepEqual(result.failures[0], {
+        code: "memory_budget_exceeded",
+        maximumPeakBrowserHeapMB: 512,
+        peakBrowserHeapMB: 512.01,
+    });
+});

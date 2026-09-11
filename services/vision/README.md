@@ -15,6 +15,48 @@ PaddleOCR indica que las GPU NVIDIA de serie 50 en Windows requieren su wheel
 adaptado. La instalación estándar de PaddlePaddle no debe usarse sin comprobar
 primero la tabla oficial de compatibilidad.
 
+## Instalación de producto (versión 1.17)
+
+Desde una consola de PowerShell normal en la raíz del proyecto:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File services/vision/install.ps1
+```
+
+El instalador copia el servicio a `%LOCALAPPDATA%\NovaPDF\Vision`, crea dos
+entornos Python aislados (PaddleOCR y `pdf2docx`), selecciona GPU o CPU, descarga
+los modelos oficiales, guarda un manifiesto SHA-256 y registra el supervisor en
+el inicio de sesión del usuario. No necesita privilegios de administrador.
+
+El supervisor escucha únicamente en `127.0.0.1`, reinicia el proceso tras una
+caída o tres comprobaciones fallidas y limita los reinicios por hora. Para
+desinstalar:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File services/vision/uninstall.ps1
+```
+
+Se puede conservar la caché de modelos con `-KeepModels`. `install.ps1 -WhatIf`
+valida el destino sin modificar el equipo. `-SkipModels` está destinado a una
+instalación sin conexión y también impide que el supervisor intente repararlos
+durante ese primer arranque.
+
+Todos los endpoints `/v1/*` requieren desde esta versión un token efímero en
+`X-NovaPDF-Session`. El cliente lo negocia en `POST /v1/session`, lo renueva una
+vez ante un `401` y solo acepta direcciones loopback. `/health` permanece público
+para permitir supervisión local sin exponer documentos.
+
+Administración manual de modelos:
+
+```powershell
+services/vision/.venv/Scripts/python.exe services/vision/model_manager.py download --device auto
+services/vision/.venv/Scripts/python.exe services/vision/model_manager.py verify
+```
+
+El segundo comando falla si falta un archivo o no coincide su tamaño o SHA-256.
+Las pruebas de navegador se ejecutan con `npm run test:e2e`; usan Chrome/Edge del
+sistema y levantan un servicio aislado sin precargar los modelos.
+
 ## Instalación aislada
 
 Desde `services/vision`:
@@ -25,9 +67,9 @@ python -m venv .venv
 # Instalar primero el wheel PaddlePaddle adecuado para Python 3.12 y RTX 50
 # siguiendo la documentación oficial vigente.
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-# Segundo candidato para PDFs digitales. --no-deps evita reemplazar el OpenCV
-# de PaddleOCR por otra distribución que expone el mismo módulo cv2.
-.\.venv\Scripts\python.exe -m pip install --no-deps -r requirements-native-docx.txt
+# Segundo candidato para PDFs digitales, aislado para no alterar NumPy/OpenCV.
+python -m venv .venv-pdf2docx
+.\.venv-pdf2docx\Scripts\python.exe -m pip install -r requirements-native-docx.txt
 ```
 
 Después:

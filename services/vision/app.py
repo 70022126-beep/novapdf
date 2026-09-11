@@ -45,7 +45,7 @@ except ImportError:  # uvicorn iniciado desde services/vision
     from session_security import SessionManager, is_allowed_origin
 
 
-APP_VERSION = "1.16.0"
+APP_VERSION = "1.17.0"
 MAX_IMAGE_PIXELS = int(os.getenv("NOVAPDF_VISION_MAX_PIXELS", "50000000"))
 MAX_PDF_BYTES = int(os.getenv("NOVAPDF_VISION_MAX_PDF_BYTES", str(256 * 1024 * 1024)))
 MAX_DOCX_BYTES = int(os.getenv("NOVAPDF_QUALITY_MAX_DOCX_BYTES", str(256 * 1024 * 1024)))
@@ -459,7 +459,10 @@ def health(load: bool = False) -> dict[str, Any]:
     native_docx_converter = native_docx_status()
     return {
         "status": (
-            "ready" if _pipeline is not None else "loading" if _pipeline_loading else "idle"
+            "ready" if _pipeline is not None
+            else "loading" if _pipeline_loading
+            else "degraded" if _pipeline_error
+            else "idle"
         ),
         "version": APP_VERSION,
         "device": DEVICE,

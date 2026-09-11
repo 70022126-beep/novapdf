@@ -258,10 +258,162 @@ test("cada sección declara encabezado y pie propios, incluso si están vacíos"
     const xml = await archive.file("word/document.xml").async("string");
     assert.equal((xml.match(/<w:footerReference /g) || []).length, 3);
     assert.equal((xml.match(/<w:headerReference /g) || []).length, 3);
+    assert.match(xml, /<w:pgNumType w:start="177"\/>/);
     const footers = await Promise.all(Object.keys(archive.files)
         .filter((name) => /^word\/footer\d+\.xml$/.test(name))
         .map((name) => archive.file(name).async("string")));
     assert.equal(footers.filter((footer) => footer.includes(">177<")).length, 1);
+});
+
+test("no duplica el pie dentro del cuerpo de una página posicionada", async () => {
+    const bodyLine = { text: "Contenido editable", bbox: { x: 80, y: 120, width: 120, height: 12 },
+        words: [{ text: "Contenido editable", x: 80, y: 120, width: 120, height: 12, fontSize: 10 }] };
+    const footerLine = { text: "170", bbox: { x: 500, y: 800, width: 20, height: 10 },
+        words: [{ text: "170", x: 500, y: 800, width: 20, height: 10, fontSize: 9 }] };
+    const result = await renderWordDocument({ title: "Pie posicionado", mode: "editable", pages: [{
+        pageNumber: 3, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+        content: { words: [...bodyLine.words, ...footerLine.words], lines: [bodyLine, footerLine] },
+        images: [], review: {}, regionAnalysis: { regions: [] },
+        analysis: { zones: [{ type: "footer", lines: [footerLine], bbox: footerLine.bbox }],
+            paragraphs: [], lines: [bodyLine, footerLine], tables: [], spatial: {}, statistics: {} },
+    }] });
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const documentXml = await archive.file("word/document.xml").async("string");
+    const footerXml = await archive.file("word/footer1.xml").async("string");
+    assert.doesNotMatch(documentXml, />170</);
+    assert.match(footerXml, />170</);
+});
+
+test("serializa título, tabla y cierre según el orden de lectura de la página", async () => {
+    const makeLine = (text, y) => ({
+        text,
+        bbox: { x: 70, y, width: 220, height: 11 },
+        words: [{ text, x: 70, y, width: 220, height: 11, fontSize: 10 }],
+    });
+    const title = makeLine("TÍTULO ANTES DE TABLA", 70);
+    const closing = makeLine("CIERRE DESPUÉS DE TABLA", 250);
+    const table = {
+        bbox: { x: 70, y: 110, width: 300, height: 80 },
+        professional: {
+            columnCount: 2,
+            headerRows: 1,
+            borderStyle: "grid",
+            grid: [
+                [
+                    { text: "CABECERA A", columnIndex: 0, bbox: { x: 70, y: 110, width: 150, height: 40 } },
+                    { text: "CABECERA B", columnIndex: 1, bbox: { x: 220, y: 110, width: 150, height: 40 } },
+                ],
+                [
+                    { text: "CELDA A", columnIndex: 0, bbox: { x: 70, y: 150, width: 150, height: 40 } },
+                    { text: "CELDA B", columnIndex: 1, bbox: { x: 220, y: 150, width: 150, height: 40 } },
+                ],
+            ],
+        },
+    };
+    const result = await renderWordDocument({
+        title: "Orden interno", mode: "editable",
+        pages: [{
+            pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+            content: { words: [...title.words, ...closing.words], lines: [title, closing] },
+            images: [], review: {},
+            analysis: { zones: [], paragraphs: [], tables: [table], spatial: {}, statistics: {} },
+            regionAnalysis: { regions: [
+                { id: "title", type: "heading", readingOrder: 0, ...title, lines: [title] },
+                { id: "table", type: "table", readingOrder: 1, bbox: table.bbox, content: table },
+                { id: "closing", type: "text", readingOrder: 2, ...closing, lines: [closing] },
+            ] },
+        }],
+    });
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const xml = await archive.file("word/document.xml").async("string");
+    assert.ok(xml.indexOf("TÍTULO ANTES DE TABLA") < xml.indexOf("CABECERA A"));
+    assert.ok(xml.indexOf("CABECERA A") < xml.indexOf("CIERRE DESPUÉS DE TABLA"));
+    assert.equal((xml.match(/<w:tbl>/g) || []).length, 1);
+});
+
+test("agrupa líneas regulares de un párrafo posicionado en un solo cuadro", async () => {
+    const lines = [0, 13, 26].map((offset, index) => ({
+        text: `Línea ${index + 1}`,
+        bbox: { x: 70, y: 100 + offset, width: 220, height: 10 },
+        words: [{ text: `Línea ${index + 1}`, x: 70, y: 100 + offset,
+            width: 50, height: 10, fontSize: 10, source: "native-secondary" }],
+    }));
+    const result = await renderWordDocument({
+        title: "Párrafo compacto", mode: "editable",
+        pages: [{
+            pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+            content: { words: lines.flatMap((line) => line.words), lines },
+            images: [], review: {},
+            analysis: { zones: [], paragraphs: [], tables: [], spatial: {}, statistics: {} },
+            regionAnalysis: { regions: [{
+                id: "paragraph", type: "text", readingOrder: 0,
+                text: lines.map((line) => line.text).join(" "),
+                bbox: { x: 70, y: 100, width: 220, height: 36 },
+                words: lines.flatMap((line) => line.words), lines,
+            }] },
+        }],
+    });
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const xml = await archive.file("word/document.xml").async("string");
+    assert.equal((xml.match(/<w:framePr /g) || []).length, 1);
+    assert.equal((xml.match(/<w:br\/>/g) || []).length, 2);
+});
+
+test("posiciona un párrafo agrupado por las cajas de línea aunque las palabras usen bbox", async () => {
+    const lines = [0, 13].map((offset, index) => ({
+        text: `Bloque ${index + 1}`,
+        bbox: { x: 90, y: 300 + offset, width: 180, height: 10 },
+        words: [{ text: `Bloque ${index + 1}`, bbox: { x: 90, y: 300 + offset, width: 60, height: 10 },
+            fontSize: 10, source: "native" }],
+    }));
+    const result = await renderWordDocument({
+        title: "Coordenadas de línea", mode: "editable",
+        pages: [{
+            pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+            content: { words: lines.flatMap((line) => line.words), lines }, images: [], review: {},
+            analysis: { zones: [], paragraphs: [], tables: [], spatial: {}, statistics: {} },
+            regionAnalysis: { regions: [{
+                id: "nested-bbox", type: "text", readingOrder: 0,
+                bbox: { x: 90, y: 300, width: 180, height: 23 },
+                text: "Bloque 1 Bloque 2", lines,
+            }] },
+        }],
+    });
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const xml = await archive.file("word/document.xml").async("string");
+    const y = Number(/<w:framePr[^>]*w:y="(\d+)"/.exec(xml)?.[1]);
+    assert.ok(y > 5_800 && y < 6_100, `posición vertical inesperada: ${y}`);
+});
+
+test("mantiene una tabla Word aunque la página requiera fondo limpio", async () => {
+    const png = new Uint8Array(Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64"
+    ));
+    const table = {
+        bbox: { x: 80, y: 120, width: 240, height: 50 },
+        professional: { columnCount: 2, headerRows: 0, borderStyle: "grid", grid: [[
+            { text: "EDITABLE A", columnIndex: 0, bbox: { x: 80, y: 120, width: 120, height: 50 } },
+            { text: "EDITABLE B", columnIndex: 1, bbox: { x: 200, y: 120, width: 120, height: 50 } },
+        ]] },
+    };
+    const result = await renderWordDocument({
+        title: "Fondo y tabla", mode: "editable",
+        pages: [{
+            pageNumber: 1, editableLayout: "positioned", dimensions: { width: 595, height: 842 },
+            renderedPage: { data: png, type: "png", role: "clean-editable-background" },
+            content: { words: [], lines: [] }, images: [], review: {},
+            analysis: { zones: [], paragraphs: [], tables: [table], spatial: {}, statistics: {} },
+            regionAnalysis: { regions: [{
+                id: "table", type: "table", readingOrder: 0, bbox: table.bbox, content: table,
+            }] },
+        }],
+    });
+    const archive = await JSZip.loadAsync(await result.blob.arrayBuffer());
+    const xml = await archive.file("word/document.xml").async("string");
+    assert.match(xml, /<w:tbl>/);
+    assert.match(xml, />EDITABLE A</);
+    assert.match(xml, /<wp:anchor/);
 });
 
 test("respeta alturas nativas y saltos de línea en tablas posicionadas", async () => {
@@ -1359,7 +1511,7 @@ test("parsePageNumberParts reconoce diversos formatos de numeración de página"
     assert.equal(nonPage, null);
 });
 
-test("emite campos dinámicos PAGE y NUMPAGES en pies de página Word", async () => {
+test("conserva PAGE y el total literal cuando el PDF es un extracto", async () => {
     const line = {
         text: "Página 1 de 5",
         bbox: { x: 250, y: 800, width: 95, height: 12 },
@@ -1390,7 +1542,7 @@ test("emite campos dinámicos PAGE y NUMPAGES en pies de página Word", async ()
     const footerXml = await archive.file("word/footer1.xml").async("string");
 
     assert.match(footerXml, /w:fldSimple w:instr="PAGE"/);
-    assert.match(footerXml, /w:fldSimple w:instr="NUMPAGES"/);
+    assert.doesNotMatch(footerXml, /w:fldSimple w:instr="NUMPAGES"/);
     assert.match(footerXml, />1</);
     assert.match(footerXml, />5</);
 });

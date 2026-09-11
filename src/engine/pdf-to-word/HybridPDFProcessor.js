@@ -915,6 +915,8 @@ export async function processPDFForWord(
                     editableLayout,
                     tables: nativeTables,
                     vectorObjectCount: secondaryNativePage?.vectorObjects?.length || 0,
+                    artworkRequiresCompositing:
+                        secondaryNativePage?.artworkRequiresCompositing === true,
                 });
                 let extractionMethod = nativeContent.source === "native-secondary"
                     ? "native-cross-validated"
@@ -1232,6 +1234,7 @@ export async function processPDFForWord(
                     if (
                         mode === "editable" &&
                         editableLayout !== "positioned" &&
+                        !needsPositionedBackground &&
                         nativeEmbeddedImages.length
                     ) {
                         reportProgress(

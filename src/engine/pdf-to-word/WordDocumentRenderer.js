@@ -34,7 +34,10 @@ import {
     WidthType,
 } from "docx";
 import { createEditableMath, normalizeFormulaText } from "./MathFormulaRenderer.js";
-import { isComplexPositionedTable } from "./TableRenderingPolicy.js";
+import {
+    isComplexFlowTable,
+    isComplexPositionedTable,
+} from "./TableRenderingPolicy.js";
 
 const POINT_TO_TWIP = 20;
 const POINT_TO_PIXEL = 96 / 72;
@@ -350,6 +353,18 @@ function average(values) {
     return values.length
         ? values.reduce((sum, value) => sum + value, 0) / values.length
         : 0;
+}
+
+function median(values = []) {
+    const sorted = values
+        .map(Number)
+        .filter(Number.isFinite)
+        .sort((first, second) => first - second);
+    if (!sorted.length) return 0;
+    const middle = Math.floor(sorted.length / 2);
+    return sorted.length % 2
+        ? sorted[middle]
+        : (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
 function boxOverlapRatio(first = {}, second = {}) {
@@ -791,6 +806,17 @@ function parsePageNumberParts(lineText, pageNumber, totalPages) {
     return null;
 }
 
+function getSectionPageNumberStart(footer, page, totalPages) {
+    for (const line of footer?.lines || []) {
+        const parts = parsePageNumberParts(line.text, page.pageNumber, totalPages);
+        const value = Number(parts?.currentPage);
+        if (Number.isInteger(value) && value > 0 && value <= 9999) {
+            return value;
+        }
+    }
+    return null;
+}
+
 function createZoneParagraphs(zone, page, margins, totalPages = 1) {
     if (!zone?.lines?.length) {
         return [];
@@ -823,7 +849,21 @@ function createZoneParagraphs(zone, page, margins, totalPages = 1) {
             children.push(new SimpleField("PAGE", String(pageParts.currentPage)));
             if (pageParts.hasTotal) {
                 children.push(new TextRun({ text: pageParts.totalSeparator, font: fontFamily, size: fontSizeHalfPoints, color, bold, italics }));
-                children.push(new SimpleField("NUMPAGES", String(pageParts.totalPages)));
+                const extractedTotal = Number(pageParts.totalPages);
+                if (extractedTotal === Number(totalPages)) {
+                    children.push(new SimpleField("NUMPAGES", String(pageParts.totalPages)));
+                } else {
+                    // Un PDF puede ser un extracto (por ejemplo, páginas 169–230).
+                    // NUMPAGES devolvería 62 y alteraría el contenido original.
+                    children.push(new TextRun({
+                        text: String(pageParts.totalPages),
+                        font: fontFamily,
+                        size: fontSizeHalfPoints,
+                        color,
+                        bold,
+                        italics,
+                    }));
+                }
             }
             if (pageParts.suffix) {
                 children.push(new TextRun({ text: pageParts.suffix, font: fontFamily, size: fontSizeHalfPoints, color, bold, italics }));
@@ -1479,7 +1519,7 @@ function isTextGroupInsideTable(group, table) {
 }
 
 function startsBullet(text) {
-    return /^[•▪◦‣·]\s*/.test(cleanText(text));
+    return /^[•●○▪◦‣·✓✔]\s*/.test(cleanText(text));
 }
 
 function startsStructuredHeading(text) {
@@ -1646,13 +1686,12 @@ function createEditablePageChildren(page) {
     });
 
     const printableWidth = Math.max(100, page.dimensions.width - margins.left - margins.right);
-    let hasComplexTables = false;
+    const complexTables = [];
     (page.analysis?.tables || []).forEach((table) => {
-        if (isComplexPositionedTable(table)) {
-            // Tablas ultra-complejas (>12 columnas o >24 filas): Word acumula
-            // márgenes internos de celda y desborda la página. Se renderiza como
-            // imagen de fondo y el texto nativo se superpone encima.
-            hasComplexTables = true;
+        if (isComplexFlowTable(table)) {
+            // Las tablas realmente extremas conservan cuadrícula y geometría en
+            // una placa limpia; sus líneas se añaden luego como texto editable.
+            complexTables.push(table);
             return;
         }
         const element = createWordTable(table, {
@@ -1672,7 +1711,7 @@ function createEditablePageChildren(page) {
 
     // Si hay tablas ultra-complejas y existe una imagen de fondo limpia, añadirla
     // como placa detrás del contenido para preservar la estructura visual.
-    if (hasComplexTables && page.renderedPage && !page.review?.excludeImages) {
+    if (complexTables.length && page.renderedPage && !page.review?.excludeImages) {
         floatingImages.unshift(
             createFloatingImage(
                 {
@@ -1687,6 +1726,23 @@ function createEditablePageChildren(page) {
             )
         );
     }
+
+    const complexTableTextFrames = (page.content?.lines || [])
+        .filter((line) => complexTables.some((table) => isTextGroupInsideTable(line, table)))
+        .flatMap((line) => splitLineByComplexTableCells(line, complexTables))
+        .filter((line) => complexTables.some((table) => isTextGroupInsideTable(line, table)))
+        .flatMap((line) => splitLineByLargeMeasuredGaps(line))
+        .map((line, index) => {
+            const region = {
+                id: `p${page.pageNumber}-flow-table-line-${index + 1}`,
+                type: "text",
+                bbox: line.bbox,
+                text: line.text,
+                words: line.words || [],
+                lines: [line],
+            };
+            return createRotatedTextFrame(region) || createTextFrame(region, page);
+        });
 
 
     (page.vectorObjects || []).forEach((shape) => {
@@ -1786,7 +1842,11 @@ function createEditablePageChildren(page) {
             return entry.element;
         })
         .filter(Boolean);
-    const children = [...floatingImages.filter(Boolean), ...flowChildren];
+    const children = [
+        ...floatingImages.filter(Boolean),
+        ...complexTableTextFrames.filter(Boolean),
+        ...flowChildren,
+    ];
 
     return children.length
         ? children
@@ -1893,7 +1953,22 @@ function createTextFrame(region, page) {
     // origin. Keep the visually calibrated value; OpenType ascent/descent and
     // lineGap are retained in the font resource for diagnostics, not applied
     // blindly to paragraph height.
-    const estimatedLineHeight = Math.max(7, (averageFontSize || 10) * 1.15);
+    const orderedLines = [...(region.lines || [])].sort(
+        (first, second) => toNumber(first.bbox?.y) - toNumber(second.bbox?.y)
+    );
+    const measuredAdvances = orderedLines.slice(1).map((line, index) =>
+        toNumber(line.bbox?.y) - toNumber(orderedLines[index].bbox?.y)
+    ).filter((advance) => advance > 0);
+    const measuredLineAdvance = measuredAdvances.length
+        ? median(measuredAdvances)
+        : 0;
+    const estimatedLineHeight = measuredLineAdvance > 0
+        ? clamp(
+            measuredLineAdvance,
+            Math.max(7, (averageFontSize || 10) * 0.95),
+            (averageFontSize || 10) * 2.1
+        )
+        : Math.max(7, (averageFontSize || 10) * 1.15);
     const usesSmallQuicksand =
         averageFontSize > 0 &&
         averageFontSize < 30 &&
@@ -1909,13 +1984,17 @@ function createTextFrame(region, page) {
     const alignment = inferAlignment(bbox, page.dimensions.width, region.lines);
     const children = [];
 
-    (region.lines || []).forEach((line, index) => {
+    orderedLines.forEach((line, index) => {
         children.push(...createWordRuns(line.words || [], {
             firstBreak: index > 0,
             // En títulos, listas y rótulos la separación horizontal también
             // forma parte del diseño. Los párrafos justificados quedan a cargo
             // del motor de Word para evitar duplicar la expansión de espacios.
-            preserveGaps: alignment !== AlignmentType.JUSTIFIED,
+            // En un cuadro multilínea Word ya controla los espacios y la
+            // justificación. Reinyectar separaciones PDF por palabra acumula
+            // cientos de puntos cuando un proveedor usa coordenadas anidadas.
+            preserveGaps:
+                lineCount === 1 && alignment !== AlignmentType.JUSTIFIED,
             horizontalScale: nativeHorizontalScale,
             artworkContainsDecorations:
                 page.renderedPage?.role === "clean-editable-background" &&
@@ -1940,11 +2019,18 @@ function createTextFrame(region, page) {
             toNumber(bbox.width) * 0.22
         )
         : 0;
+    const multiLineReserve = lineCount > 1
+        ? Math.max(
+            (averageFontSize || 10) * 2,
+            toNumber(bbox.width) * 0.06
+        )
+        : 0;
     const horizontalReserve = alignment === AlignmentType.CENTER
-        ? Math.max(8, singleLineReserve, toNumber(bbox.width) * 0.12)
+        ? Math.max(8, singleLineReserve, multiLineReserve, toNumber(bbox.width) * 0.12)
         : Math.max(
             4,
             singleLineReserve,
+            multiLineReserve,
             (averageFontSize || 10) * 0.6,
             toNumber(bbox.width) * 0.015
         );
@@ -2005,6 +2091,126 @@ function createTextFrame(region, page) {
         },
         keepLines: true,
     });
+}
+
+const POSITIONED_TEXT_REGION_TYPES = new Set([
+    "text",
+    "heading",
+    "list-item",
+    "text-box",
+    "caption",
+    "footnote",
+    "form-field",
+]);
+
+function positionedLineKey(line = {}) {
+    const bbox = line.bbox || {};
+    return [
+        cleanText(line.text).toLocaleLowerCase("es"),
+        Math.round(toNumber(bbox.x) * 2),
+        Math.round(toNumber(bbox.y) * 2),
+        Math.round(toNumber(bbox.width) * 2),
+    ].join("|");
+}
+
+function positionedLinesBoundingBox(lines = []) {
+    const valid = lines.filter((line) => line?.bbox);
+    if (!valid.length) return { x: 0, y: 0, width: 0, height: 0 };
+    const left = Math.min(...valid.map((line) => toNumber(line.bbox.x)));
+    const top = Math.min(...valid.map((line) => toNumber(line.bbox.y)));
+    const right = Math.max(
+        ...valid.map((line) => toNumber(line.bbox.x) + toNumber(line.bbox.width))
+    );
+    const bottom = Math.max(
+        ...valid.map((line) => toNumber(line.bbox.y) + toNumber(line.bbox.height))
+    );
+    return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+function sourceLinesForPositionedRegion(region, pageLines = [], coveredLineKeys = new Set()) {
+    const regionLineKeys = new Set((region.lines || []).map(positionedLineKey));
+    const exact = pageLines.filter(
+        (line) =>
+            !coveredLineKeys.has(positionedLineKey(line)) &&
+            regionLineKeys.has(positionedLineKey(line))
+    );
+    if (exact.length) return exact;
+
+    const regionText = cleanText(region.text).toLocaleLowerCase("es");
+    return pageLines.filter((line) => {
+        if (coveredLineKeys.has(positionedLineKey(line))) return false;
+        const text = cleanText(line.text).toLocaleLowerCase("es");
+        return text && regionText.includes(text) &&
+            boxOverlapRatio(region.bbox, line.bbox) >= 0.82;
+    });
+}
+
+function canGroupPositionedLines(lines = []) {
+    if (lines.length < 2 || lines.length > 24) return false;
+    // Una lista mezcla sangrías (viñeta, rótulo y cuerpo). Word justificaría
+    // las líneas con salto manual y separaría el rótulo hasta el margen derecho.
+    // Mantenerlas como cuadros independientes conserva cada coordenada PDF.
+    if (lines.some((line) => startsBullet(line.text))) return false;
+    const ordered = [...lines].sort(
+        (first, second) => toNumber(first.bbox?.y) - toNumber(second.bbox?.y)
+    );
+    const fontSizes = ordered.flatMap((line) => (line.words || [])
+        .map((word) => toNumber(word.fontSize, word.height * 0.82))
+        .filter((value) => value > 0));
+    const typicalFontSize = median(fontSizes) || 10;
+    if (
+        fontSizes.length &&
+        Math.max(...fontSizes) > Math.max(typicalFontSize * 1.45, typicalFontSize + 3)
+    ) {
+        return false;
+    }
+
+    const advances = ordered.slice(1).map((line, index) =>
+        toNumber(line.bbox?.y) - toNumber(ordered[index].bbox?.y)
+    );
+    if (advances.some((advance) => advance <= 0 || advance > typicalFontSize * 2.15)) {
+        return false;
+    }
+    const typicalAdvance = median(advances) || typicalFontSize * 1.15;
+    if (
+        advances.some(
+            (advance) =>
+                Math.abs(advance - typicalAdvance) > Math.max(2.25, typicalAdvance * 0.22)
+        )
+    ) {
+        return false;
+    }
+
+    return ordered.every((line) => splitLineByLargeMeasuredGaps(line).length === 1);
+}
+
+function createPositionedRegionFrames(region, page) {
+    const lines = (region.lines || []).filter((line) => cleanText(line.text));
+    if (!lines.length) return [];
+    if (canGroupPositionedLines(lines)) {
+        const ordered = [...lines].sort(
+            (first, second) => toNumber(first.bbox?.y) - toNumber(second.bbox?.y)
+        );
+        // Las líneas normalizadas siempre conservan coordenadas de página; las
+        // palabras de algunos proveedores solo exponen `bbox` anidado. Usar
+        // word.x/word.y en esos casos enviaba el párrafo a (0, 0), superponiendo
+        // y ocultando bloques enteros en Word.
+        const bbox = positionedLinesBoundingBox(ordered);
+        return [createTextFrame({ ...region, lines: ordered, bbox }, page)];
+    }
+    return lines
+        .flatMap((line) => splitLineByLargeMeasuredGaps(line))
+        .map((line, index) => {
+            const lineRegion = {
+                ...region,
+                id: `${region.id || `p${page.pageNumber}-region`}-line-${index + 1}`,
+                bbox: line.bbox,
+                text: line.text,
+                words: line.words || [],
+                lines: [line],
+            };
+            return createRotatedTextFrame(lineRegion) || createTextFrame(lineRegion, page);
+        });
 }
 
 function normalizedQuarterTurn(words = []) {
@@ -2147,7 +2353,7 @@ function createCorrectedPageFrame(page) {
     });
 }
 
-function createLayeredFidelityPageChildren(page) {
+function createLayeredFidelityPageChildren(page, { separateDocumentZones = false } = {}) {
     const children = [];
     const header = getZone(page, "header");
     const footer = getZone(page, "footer");
@@ -2193,48 +2399,119 @@ function createLayeredFidelityPageChildren(page) {
             (region) => region.type === "formula" && region.source === "neural-layout"
         );
         const pageTables = page.analysis?.tables || [];
-        const usesLayeredTableBackground =
-            page.renderedPage?.role === "clean-editable-background" &&
-            pageTables.length > 0;
-        const editableTables = usesLayeredTableBackground
-            ? []
-            : pageTables.filter((table) => !isComplexPositionedTable(table));
-        const complexTables = usesLayeredTableBackground
-            ? pageTables
-            : pageTables.filter(isComplexPositionedTable);
-        editableTables.forEach((table) => {
-            const element = createWordTable(table, { floating: true });
-            if (element) children.push(element);
-        });
-        formulaRegions.forEach((region) => children.push(createFormulaFrame(region)));
-        const positionedLines = (page.content?.lines || [])
-            .flatMap((line) => splitLineByComplexTableCells(line, complexTables))
-            .flatMap((line) => splitLineByLargeMeasuredGaps(line));
-        positionedLines.forEach((line, index) => {
-            const lineRegion = {
-                id: `p${page.pageNumber}-fixed-line-${index + 1}`,
-                type: "text",
-                bbox: line.bbox,
-                text: line.text,
-                words: line.words || [],
-                lines: [line],
-            };
+        // Un fondo limpio puede ser necesario por máscaras, firmas o arte PDF;
+        // eso no convierte automáticamente sus tablas en imágenes. Mantener la
+        // cuadrícula nativa encima del fondo conserva selección de filas/celdas.
+        const editableTables = pageTables.filter(
+            (table) => !isComplexPositionedTable(table)
+        );
+        const complexTables = pageTables.filter(isComplexPositionedTable);
+        const renderedTables = new Set();
+        const renderedFormulas = new Set();
+        const coveredLineKeys = new Set();
+        const orderedRegions = [...(page.regionAnalysis?.regions || [])].sort(
+            (first, second) =>
+                toNumber(first.readingOrder, Number.MAX_SAFE_INTEGER) -
+                    toNumber(second.readingOrder, Number.MAX_SAFE_INTEGER) ||
+                toNumber(first.bbox?.y) - toNumber(second.bbox?.y) ||
+                toNumber(first.bbox?.x) - toNumber(second.bbox?.x)
+        );
+
+        orderedRegions.forEach((region) => {
             if (
-                (isInsideZone(lineRegion, header) && isZoneExcluded(page, "header")) ||
-                (isInsideZone(lineRegion, footer) && isZoneExcluded(page, "footer")) ||
-                formulaRegions.some(
-                    (formula) => boxOverlapRatio(formula.bbox, lineRegion.bbox) >= 0.58
-                ) ||
-                editableTables.some(
-                    (table) => boxOverlapRatio(table.bbox, lineRegion.bbox) >= 0.55
-                )
+                (isInsideZone(region, header) &&
+                    (separateDocumentZones || isZoneExcluded(page, "header"))) ||
+                (isInsideZone(region, footer) &&
+                    (separateDocumentZones || isZoneExcluded(page, "footer")))
             ) {
                 return;
             }
-            children.push(
-                createRotatedTextFrame(lineRegion) || createTextFrame(lineRegion, page)
+
+            if (region.type === "table") {
+                const sourceTable = editableTables.find(
+                    (table) =>
+                        table === region.content ||
+                        boxOverlapRatio(table.bbox, region.bbox) >= 0.88
+                );
+                if (sourceTable && !renderedTables.has(sourceTable)) {
+                    const element = createWordTable(sourceTable, { floating: true });
+                    if (element) children.push(element);
+                    renderedTables.add(sourceTable);
+                }
+                return;
+            }
+
+            if (region.type === "formula" && region.source === "neural-layout") {
+                children.push(createFormulaFrame(region));
+                renderedFormulas.add(region);
+                return;
+            }
+
+            if (!POSITIONED_TEXT_REGION_TYPES.has(region.type)) return;
+            const safeLines = sourceLinesForPositionedRegion(
+                region,
+                page.content?.lines || [],
+                coveredLineKeys
+            ).filter(
+                (line) =>
+                    !editableTables.some(
+                        (table) => boxOverlapRatio(table.bbox, line.bbox) >= 0.55
+                    ) &&
+                    !formulaRegions.some(
+                        (formula) => boxOverlapRatio(formula.bbox, line.bbox) >= 0.58
+                    )
             );
+            if (!safeLines.length) return;
+            safeLines.forEach((line) => coveredLineKeys.add(positionedLineKey(line)));
+            createPositionedRegionFrames({ ...region, lines: safeLines }, page)
+                .filter(Boolean)
+                .forEach((element) => children.push(element));
         });
+
+        // Compatibilidad con proveedores que no hayan creado regiones para
+        // todos los elementos. Se añaden por coordenadas y sin duplicar texto.
+        editableTables
+            .filter((table) => !renderedTables.has(table))
+            .sort((first, second) => toNumber(first.bbox?.y) - toNumber(second.bbox?.y))
+            .forEach((table) => {
+                const element = createWordTable(table, { floating: true });
+                if (element) children.push(element);
+            });
+        formulaRegions
+            .filter((formula) => !renderedFormulas.has(formula))
+            .forEach((region) => children.push(createFormulaFrame(region)));
+
+        (page.content?.lines || [])
+            .filter((line) => !coveredLineKeys.has(positionedLineKey(line)))
+            .flatMap((line) => splitLineByComplexTableCells(line, complexTables))
+            .flatMap((line) => splitLineByLargeMeasuredGaps(line))
+            .forEach((line, index) => {
+                const lineRegion = {
+                    id: `p${page.pageNumber}-fixed-line-${index + 1}`,
+                    type: "text",
+                    bbox: line.bbox,
+                    text: line.text,
+                    words: line.words || [],
+                    lines: [line],
+                };
+                if (
+                    (isInsideZone(lineRegion, header) &&
+                        (separateDocumentZones || isZoneExcluded(page, "header"))) ||
+                    (isInsideZone(lineRegion, footer) &&
+                        (separateDocumentZones || isZoneExcluded(page, "footer"))) ||
+                    formulaRegions.some(
+                        (formula) => boxOverlapRatio(formula.bbox, lineRegion.bbox) >= 0.58
+                    ) ||
+                    editableTables.some(
+                        (table) => boxOverlapRatio(table.bbox, lineRegion.bbox) >= 0.55
+                    )
+                ) {
+                    return;
+                }
+                children.push(
+                    createRotatedTextFrame(lineRegion) || createTextFrame(lineRegion, page)
+                );
+            });
 
         children.push(createPositionedSectionAnchor());
         return children;
@@ -2355,6 +2632,7 @@ function createSection(page, mode, totalPages = 1) {
         : getPageMargins(page);
     const header = getZone(page, "header");
     const footer = getZone(page, "footer");
+    const pageNumberStart = getSectionPageNumberStart(footer, page, totalPages);
 
     return {
         properties: {
@@ -2372,6 +2650,9 @@ function createSection(page, mode, totalPages = 1) {
                     header: pointsToTwips(Math.max(8, margins.top * 0.35)),
                     footer: pointsToTwips(Math.max(8, margins.bottom * 0.35)),
                 },
+                ...(pageNumberStart
+                    ? { pageNumbers: { start: pageNumberStart } }
+                    : {}),
             },
         },
         headers:
@@ -2407,7 +2688,9 @@ function createSection(page, mode, totalPages = 1) {
                   // - "flow": páginas de texto/tablas digitales → párrafos fluidos y
                   //   tablas nativas Word via createWordTable({ floating: false })
                   : page.editableLayout === "positioned"
-                    ? createLayeredFidelityPageChildren(page)
+                    ? createLayeredFidelityPageChildren(page, {
+                        separateDocumentZones: true,
+                    })
                     : createEditablePageChildren(page),
     };
 }

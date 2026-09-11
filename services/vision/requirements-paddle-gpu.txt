@@ -1,0 +1,3 @@
+# Wheel validado en Windows x64, Python 3.12, CUDA 12.9 y RTX serie 50.
+paddlepaddle-gpu @ https://paddle-qa.bj.bcebos.com/paddle-pipeline/Develop-TagBuild-Training-Windows-Gpu-Cuda12.9-Cudnn9.9-Trt10.5-Mkl-Avx-VS2019-SelfBuiltPypiUse/86d658f56ebf3a5a7b2b33ace48f22d10680d311/paddlepaddle_gpu-3.0.0.dev20250717-cp312-cp312-win_amd64.whl#sha256=2a44ad98d2b57b2bd26ab9c695d517b39a86c7ed2e0c0684ae30e773118d083e
+

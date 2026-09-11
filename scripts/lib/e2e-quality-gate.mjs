@@ -213,12 +213,16 @@ export function evaluateQualityGate({
     previousVisual,
     currentDocx,
     previousDocx,
+    performance,
     thresholds = {},
 }) {
     const limits = {
         maximumPageRegression: Number(thresholds.maximumPageRegression ?? 0.25),
         minimumTextCoverage: Number(thresholds.minimumTextCoverage ?? 99.9),
         minimumTableCellCoverage: Number(thresholds.minimumTableCellCoverage ?? 100),
+        maximumPeakBrowserHeapMB: Number(
+            thresholds.maximumPeakBrowserHeapMB ?? Number.POSITIVE_INFINITY
+        ),
         requirePageCountMatch: thresholds.requirePageCountMatch !== false,
         requireVisualValidation: thresholds.requireVisualValidation !== false,
     };
@@ -253,6 +257,18 @@ export function evaluateQualityGate({
     }
     if (textComparison && textComparison.tableCellCoverage < limits.minimumTableCellCoverage) {
         failures.push({ code: "table_cell_loss", coverage: textComparison.tableCellCoverage });
+    }
+    const peakBrowserHeapMB = Number(performance?.peakBrowserHeapMB);
+    if (
+        Number.isFinite(limits.maximumPeakBrowserHeapMB) &&
+        Number.isFinite(peakBrowserHeapMB) &&
+        peakBrowserHeapMB > limits.maximumPeakBrowserHeapMB
+    ) {
+        failures.push({
+            code: "memory_budget_exceeded",
+            maximumPeakBrowserHeapMB: limits.maximumPeakBrowserHeapMB,
+            peakBrowserHeapMB,
+        });
     }
     return { passed: failures.length === 0, thresholds: limits, failures, textComparison, pageRegressions };
 }

@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { authorizedLocalFetch } from "../src/engine/service/LocalServiceSession.js";
 
 const argumentsList = process.argv.slice(2);
 const pagesArgument = argumentsList.find((value) => value.startsWith("--pages="));
@@ -24,7 +25,7 @@ if (!files.length) {
         form.append("pdf", new Blob([bytes], { type: "application/pdf" }), path.basename(filename));
         form.append("pages", pages);
         form.append("include_tables", "true");
-        const response = await fetch(endpoint, {
+        const response = await authorizedLocalFetch(endpoint, {
             method: "POST",
             headers: { Accept: "application/json" },
             body: form,
@@ -52,4 +53,3 @@ if (!files.length) {
     }
     console.log(JSON.stringify(report, null, 2));
 }
-

@@ -285,6 +285,7 @@ async function visualQuality(pdfPath, docxPath, endpoint, pageRange, timeoutMs) 
 async function setCheckbox(page, testId, expected) {
     if (expected === undefined) return;
     const locator = page.getByTestId(testId);
+    if (await locator.isDisabled()) return;
     if (await locator.isChecked() !== Boolean(expected)) await locator.click();
 }
 
@@ -319,22 +320,42 @@ async function runBrowserConversion(browser, manifest, document, artifactDirecto
     const page = await context.newPage();
     page.setDefaultTimeout(Number(document.timeoutMs || manifest.timeoutMs || 1_800_000));
     const consoleErrors = [];
+    let progressTimer = null;
+    let lastProgressText = "";
     page.on("console", (message) => {
-        if (message.type() === "error") consoleErrors.push(message.text());
+        if (message.type() === "error") {
+            consoleErrors.push(message.text());
+            process.stdout.write(`E2E ${document.id}: consola: ${message.text()}\n`);
+        }
+    });
+    page.on("requestfailed", (request) => {
+        process.stdout.write(
+            `E2E ${document.id}: red: ${request.method()} ${request.url()} · ` +
+            `${request.failure()?.errorText || "falló"}\n`
+        );
+    });
+    page.on("crash", () => {
+        process.stdout.write(`E2E ${document.id}: la página de Chrome se bloqueó.\n`);
     });
     const stopHeapSampler = await startHeapSampler(context, page);
     const startedAt = performance.now();
+    const traceStep = (detail) => process.stdout.write(`E2E ${document.id}: ${detail}\n`);
     try {
+        traceStep("abriendo la interfaz…");
         await page.goto(manifest.frontendUrl, { waitUntil: "networkidle" });
+        traceStep("interfaz lista; configurando modo…");
         await page.getByTestId(`pdf-word-mode-${document.mode || "editable"}`).click();
+        traceStep("cargando el PDF…");
         await page.getByTestId("pdf-word-input").setInputFiles(document.pdf);
+        traceStep("PDF cargado; configurando OCR y rango…");
         if ((document.mode || "editable") !== "visual") {
             await page.getByTestId("pdf-word-ocr-mode").selectOption(document.ocrMode || "auto");
         }
         await page.getByTestId("pdf-word-page-range").fill(document.pageRange || "all");
+        traceStep("configurando validación y visión…");
         await setCheckbox(page, "pdf-word-review-before-download", false);
-        await setCheckbox(page, "pdf-word-validate-quality", document.validateVisualQuality !== false);
         await setCheckbox(page, "pdf-word-auto-quality-retry", document.autoQualityRetry !== false);
+        await setCheckbox(page, "pdf-word-validate-quality", document.validateVisualQuality !== false);
         await setCheckbox(page, "pdf-word-advanced-vision", document.advancedVision !== false);
         if (document.advancedVision !== false) {
             await page.getByTestId("pdf-word-vision-provider").selectOption(document.visionProvider || "auto");
@@ -343,10 +364,54 @@ async function runBrowserConversion(browser, manifest, document, artifactDirecto
             }
         }
         if (document.maximumCanvasMegapixels) {
-            await page.getByTestId("pdf-word-render-limit").selectOption(String(document.maximumCanvasMegapixels));
+            const renderLimit = page.getByTestId("pdf-word-render-limit");
+            const requestedLimit = String(document.maximumCanvasMegapixels);
+            if (!await renderLimit.locator(`option[value="${requestedLimit}"]`).count()) {
+                throw new Error(`Límite de render no disponible: ${requestedLimit} MP.`);
+            }
+            await renderLimit.selectOption(requestedLimit);
         }
 
+        traceStep("iniciando la conversión…");
         await page.getByTestId("pdf-word-convert").click();
+        traceStep("conversión iniciada; esperando el DOCX…");
+        progressTimer = setInterval(async () => {
+            try {
+                const status = await page.evaluate(() => ({
+                    progress: document.querySelector(".pdf-word-progress")?.innerText || "",
+                    error: document.querySelector('[data-testid="pdf-word-error"]')?.textContent || "",
+                    action: document.querySelector('[data-testid="pdf-word-convert"]')?.textContent || "",
+                    actionDisabled: Boolean(
+                        document.querySelector('[data-testid="pdf-word-convert"]')?.disabled
+                    ),
+                    completed: document.querySelector(".pdf-word-report")?.innerText
+                        ?.split("\n")
+                        .slice(0, 3)
+                        .join(" ") || "",
+                    resultReady: Boolean(window.__NOVAPDF_E2E_RESULT__?.report?.outputBytes),
+                }));
+                const current = [
+                    status.progress,
+                    status.error,
+                    status.action
+                        ? `${status.action}${status.actionDisabled ? " (deshabilitado)" : ""}`
+                        : "",
+                    status.completed,
+                    status.resultReady ? "resultado E2E listo" : "",
+                ]
+                    .filter(Boolean)
+                    .join(" · ")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                if (current && current !== lastProgressText) {
+                    lastProgressText = current;
+                    process.stdout.write(`E2E ${document.id}: ${current}\n`);
+                }
+            } catch {
+                // El evento crash/requestfailed aporta el diagnóstico si el
+                // contexto deja de estar disponible entre dos muestras.
+            }
+        }, 15_000);
         await page.waitForFunction(
             () => window.__NOVAPDF_E2E_RESULT__?.report?.outputBytes > 0,
             null,
@@ -372,6 +437,7 @@ async function runBrowserConversion(browser, manifest, document, artifactDirecto
         const visibleError = await page.getByTestId("pdf-word-error").textContent().catch(() => "");
         throw new Error(`${document.id}: ${visibleError || error.message}`);
     } finally {
+        if (progressTimer) clearInterval(progressTimer);
         await context.close();
     }
 }
@@ -490,6 +556,9 @@ async function main() {
                 previousVisual,
                 currentDocx,
                 previousDocx: gateReference,
+                performance: {
+                    peakBrowserHeapMB: conversion.peakBrowserHeapMB,
+                },
                 thresholds: { ...manifest.thresholds, ...document.thresholds },
             });
             const currentHash = sha256(outputBytes);

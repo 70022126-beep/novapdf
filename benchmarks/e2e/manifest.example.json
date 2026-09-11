@@ -11,6 +11,7 @@
   "thresholds": {
     "maximumPageRegression": 0.25,
     "minimumTextCoverage": 99.9,
+    "maximumPeakBrowserHeapMB": 512,
     "minimumTableCellCoverage": 100,
     "requirePageCountMatch": true,
     "requireVisualValidation": true

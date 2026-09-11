@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "bundle:check": "npm run build && node scripts/check-bundle-size.mjs",
     "lint": "eslint .",
     "test": "node --test",
     "benchmark:pdf": "node scripts/benchmark-pdf-classification.mjs",
@@ -22,7 +23,9 @@
     "vision:check": "node scripts/check-neural-vision.mjs",
     "vision:warmup": "node scripts/warm-neural-vision.mjs",
     "vision:runtime": "services\\vision\\.venv\\Scripts\\python.exe services/vision/check_runtime.py",
-    "vision:test": "services\\vision\\.venv\\Scripts\\python.exe -m unittest services.vision.test_app services.vision.test_table_text_audit services.vision.test_scalability",
+    "vision:test": "services\\vision\\.venv\\Scripts\\python.exe -m unittest services.vision.test_app services.vision.test_table_text_audit services.vision.test_scalability services.vision.test_productization",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -35,11 +38,12 @@
     "pdfjs-dist": "^6.2.108",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-router-dom": "^6.30.4",
+    "react-router-dom": "^7.18.3",
     "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",

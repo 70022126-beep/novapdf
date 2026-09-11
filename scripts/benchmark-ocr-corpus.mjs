@@ -4,6 +4,7 @@ import path from "node:path";
 import { performance } from "node:perf_hooks";
 
 import { createWorker, OEM, PSM } from "tesseract.js";
+import { authorizedLocalFetch } from "../src/engine/service/LocalServiceSession.js";
 
 import {
     OCR_CORPUS_CATEGORIES,
@@ -62,7 +63,7 @@ async function runPaddle(imageBytes, imageName, dimensions, endpoint) {
     form.append("page_width", String(dimensions.width));
     form.append("page_height", String(dimensions.height));
     form.append("coordinate_space", "image-pixels");
-    const response = await fetch(endpoint, { method: "POST", body: form, signal: AbortSignal.timeout(300_000) });
+    const response = await authorizedLocalFetch(endpoint, { method: "POST", body: form, signal: AbortSignal.timeout(300_000) });
     if (!response.ok) {
         const detail = await response.text();
         throw new Error(`PaddleOCR HTTP ${response.status}: ${detail.slice(0, 160)}`);

@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .runtime/
 services/vision/.venv/
+services/vision/.venv-pdf2docx/
 services/vision/.models/
 .novapdf-*
 tmp/

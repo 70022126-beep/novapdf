@@ -1,6 +1,6 @@
 param(
-    [ValidateSet("gpu:0", "cpu")]
-    [string]$Device = "gpu:0",
+    [ValidateSet("auto", "gpu:0", "cpu")]
+    [string]$Device = "auto",
     [int]$Port = 8765
 )
 
@@ -13,6 +13,8 @@ if (-not (Test-Path -LiteralPath $pythonPath)) {
 }
 
 $env:NOVAPDF_VISION_DEVICE = $Device
+$env:NOVAPDF_PDF2DOCX_PYTHON = Join-Path $serviceRoot ".venv-pdf2docx\Scripts\python.exe"
+$env:NOVAPDF_SESSION_AUTH = "true"
 $env:NOVAPDF_VISION_LANGUAGE = "es"
 $env:NOVAPDF_VISION_MODEL_CACHE = Join-Path $serviceRoot ".models"
 $env:PADDLE_PDX_CACHE_HOME = Join-Path $env:NOVAPDF_VISION_MODEL_CACHE "paddlex"
